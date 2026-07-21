@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>נדב בן מנחם — תיק עבודות</title>
+  <meta name="description" content="תיק עבודות — דשבורדים אינטראקטיביים לניתוח נתונים (הדגמות חיות, נתונים סינתטיים)">
+  <style>
+    :root{
+      --bg:#0f172a; --bg2:#131f38; --card:#1e293b; --card-line:#334155;
+      --ink:#e2e8f0; --muted:#94a3b8; --accent:#3b82f6; --accent-soft:#60a5fa;
+    }
+    *{box-sizing:border-box; margin:0; padding:0;}
+    body{
+      font-family:'Segoe UI',Arial,sans-serif;
+      background:radial-gradient(1200px 600px at 50% -10%,#1e293b 0%,var(--bg) 55%);
+      color:var(--ink); min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:48px 20px;
+    }
+    header{text-align:center; margin-bottom:36px;}
+    h1{font-size:30px; letter-spacing:.2px; margin-bottom:10px;}
+    h1 .accent{color:var(--accent-soft);}
+    .role{color:var(--muted); font-size:15px; margin-bottom:14px;}
+    .sub{color:var(--muted); font-size:14px; max-width:520px; line-height:1.7; margin:0 auto;}
+
+    .grid{
+      display:grid; gap:20px; width:100%; max-width:820px;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    }
+    .card{
+      position:relative; background:var(--card); border:1px solid var(--card-line);
+      border-radius:16px; padding:26px 24px; text-decoration:none; color:inherit;
+      display:flex; flex-direction:column; min-height:180px;
+      transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    .card--live:hover{
+      transform:translateY(-5px); border-color:var(--accent);
+      box-shadow:0 12px 32px -12px rgba(59,130,246,.5);
+    }
+    .tag{
+      align-self:flex-start; font-size:11px; font-weight:700; letter-spacing:.4px;
+      padding:3px 9px; border-radius:999px; margin-bottom:14px;
+    }
+    .tag--live{background:rgba(34,197,94,.15); color:#4ade80;}
+    .tag--soon{background:rgba(148,163,184,.15); color:var(--muted);}
+    .card h2{font-size:20px; margin-bottom:8px;}
+    .card p{color:var(--muted); font-size:14px; line-height:1.65; flex:1;}
+    .badge{display:inline-block; margin-top:16px; color:var(--accent-soft); font-size:13.5px; font-weight:600;}
+
+    .card--soon{border-style:dashed; opacity:.75;}
+    .card--soon .badge{color:var(--muted);}
+
+    footer{margin-top:40px; color:var(--muted); font-size:12.5px; text-align:center; line-height:1.8;}
+    footer a{color:var(--accent-soft); text-decoration:none;}
+    footer a:hover{text-decoration:underline;}
+
+    @media (max-width:520px){ h1{font-size:25px;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>נדב בן מנחם<span class="accent"> · תיק עבודות</span></h1>
+    <div class="role">BI Developer / Data Analyst</div>
+    <p class="sub">דשבורדים אינטראקטיביים לניתוח נתונים. בחר פרויקט לצפייה בהדגמה חיה — כל הנתונים סינתטיים ונוצרו לצורך הדגמה בלבד.</p>
+  </header>
+
+  <main class="grid">
+
+    <!-- פרויקט 1 — פעיל -->
+    <a class="card card--live" href="https://nadavbenmenan.github.io/geo-heatmap-demo/">
+      <span class="tag tag--live">הדגמה חיה</span>
+      <h2>מפת חום גיוס/איוש</h2>
+      <p>מפה גאוגרפית אינטראקטיבית לניתוח איוש תחנות לפי מחוז ומרחב — עם לוח בקרה, מקרא צבעים דינמי, זמני נסיעה ותובנות אוטומטיות.</p>
+      <span class="badge">פתח הדגמה &larr;</span>
+    </a>
+
+    <!-- פרויקט 2 — מקום מוכן (החלף בפרטי הפרויקט הבא והפוך את התגית ל-tag--live ואת ה-class ל-card--live עם href) -->
+    <div class="card card--soon">
+      <span class="tag tag--soon">בקרוב</span>
+      <h2>הפרויקט הבא</h2>
+      <p>כאן ייכנס הפרויקט השני. לאחר העלאתו כמאגר דמו פומבי, החלף את הכרטיס הזה בקישור ובתיאור.</p>
+      <span class="badge">בהכנה</span>
+    </div>
+
+  </main>
+
+  <footer>
+    נדב בן מנחם &middot; <a href="mailto:nadavben122@gmail.com">nadavben122@gmail.com</a><br>
+    כל ההדגמות סטטיות ומבוססות נתונים סינתטיים בלבד.
+  </footer>
+</body>
+</html>
