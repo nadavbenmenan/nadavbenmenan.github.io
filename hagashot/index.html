@@ -348,7 +348,7 @@ async function כתוב(שנה, הודעה){
   return false;
 }
 
-const מיין = רשימה => [...רשימה].sort((a,b)=>
+const מיין = רשימה => רשימה.filter(r=>!r.נמחק).sort((a,b)=>
   String(b.תאריך||'').localeCompare(String(a.תאריך||'')) ||
   String(b.עודכן||'').localeCompare(String(a.עודכן||'')));
 
@@ -499,7 +499,7 @@ $('טופס').addEventListener('submit',async e=>{
     קישור, הערות:$('הערות').value.trim()};
   await פעולה(async()=>{
     await כתוב(רשימה=>{
-      const קיים=רשימה.find(r=>r.id===id);
+      const קיים=רשימה.find(r=>r.id===id && !r.נמחק);
       const רשומה={id, שם_עברית:קיים?.שם_עברית||'', שם_אנגלית:קיים?.שם_אנגלית||'',
                    ...שדות, עודכן:עכשיו()};
       return קיים ? רשימה.map(r=>r.id===id?רשומה:r) : [...רשימה, רשומה];
@@ -515,7 +515,8 @@ document.addEventListener('click',async e=>{
   const r=הגשות.find(x=>x.id===מ);
   if(!confirm(`למחוק את ההגשה ל"${r?.חברה}"? הפעולה אינה הפיכה.`)) return;
   await פעולה(async()=>{
-    await כתוב(רשימה=>רשימה.filter(x=>x.id!==מ), `מחיקת הגשה: ${r?.חברה||מ}`);
+    await כתוב(רשימה=>רשימה.map(x=>x.id===מ
+      ? {id:מ, נמחק:true, עודכן:עכשיו()} : x), `מחיקת הגשה: ${r?.חברה||מ}`);
     if($('מזהה').value===מ) אפס();
   },'ההגשה נמחקה מהמאגר');
 });
