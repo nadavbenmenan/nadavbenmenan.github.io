@@ -1,0 +1,11 @@
+{
+  "name": "מעקב הגשות קורות חיים",
+  "short_name": "הגשות",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1f3864"
+}
