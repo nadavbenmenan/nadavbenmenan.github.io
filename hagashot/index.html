@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f3864">
+<meta name="robots" content="noindex,nofollow">
+<title>מעקב הגשות</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --נייבי:#1f3864; --נייבי-רך:#33518a; --צפחה:#6e7a8c; --דיו:#222;
+    --נייר:#f5f7fa; --לוח:#fff; --קו:#dde3ec; --קו-רך:#eaeff5;
+    --ירוק:#136b40; --ענבר:#8a5a00; --ענבר-נייר:#fdf6e6; --ענבר-קו:#ecd9a6;
+    --אדום:#a8241d; --אדום-נייר:#fdf0ef; --אדום-קו:#eec5c1; --סגול:#523a99;
+    --טבעת:rgba(31,56,100,.16);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --נייבי:#9db9ee; --נייבי-רך:#7e9ee0; --צפחה:#8e9bb0; --דיו:#e9edf4;
+      --נייר:#10141b; --לוח:#181d26; --קו:#2a313d; --קו-רך:#212734;
+      --ירוק:#5ccf98; --ענבר:#e2b74a; --ענבר-נייר:#27220f; --ענבר-קו:#4a4020;
+      --אדום:#f0928a; --אדום-נייר:#291a19; --אדום-קו:#4b2a27; --סגול:#b9a4f2;
+      --טבעת:rgba(157,185,238,.22);
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--נייר);color:var(--דיו);
+       font:16px/1.6 "Segoe UI",Arial,system-ui,sans-serif;
+       font-variant-numeric:tabular-nums;
+       padding:env(safe-area-inset-top) 0 0}
+  .עטיפה{max-width:640px;margin:0 auto;padding:0 14px 90px}
+
+  .סרגל{position:sticky;top:0;z-index:5;background:var(--נייר);padding:14px 0 10px;
+        border-bottom:1px solid var(--קו-רך);display:flex;align-items:baseline;
+        gap:9px;flex-wrap:wrap}
+  .סרגל h1{margin:0;font-size:20px;font-weight:800;color:var(--נייבי)}
+  .מונה{font-size:13px;font-weight:700;color:var(--צפחה);border:1px solid var(--קו);
+        border-radius:999px;padding:5px 11px}
+  .גמיש{flex:1 1 auto}
+
+  .לוח{background:var(--לוח);border:1px solid var(--קו);border-radius:14px;
+       padding:16px;margin-top:14px}
+  .לוח h2{margin:0 0 12px;font-size:15px;font-weight:700}
+  .זוג{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .שדה{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-width:0}
+  label{font-size:12px;font-weight:600;color:var(--צפחה)}
+  label em{font-style:normal;font-weight:400;opacity:.75}
+  input,select,textarea{font:400 16px/1.4 inherit;color:var(--דיו);background:var(--לוח);
+    border:1px solid var(--קו);border-radius:10px;padding:11px 12px;width:100%;
+    min-height:46px;font-family:inherit}
+  textarea{min-height:58px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--נייבי-רך);
+    box-shadow:0 0 0 3px var(--טבעת)}
+  #חברה{font-size:17px;font-weight:600}
+
+  button{font:600 15px/1 inherit;font-family:inherit;border-radius:10px;padding:13px 18px;
+         min-height:46px;border:1px solid transparent;cursor:pointer}
+  button:focus-visible{outline:2px solid var(--נייבי-רך);outline-offset:2px}
+  button[disabled]{opacity:.55;cursor:default}
+  .ראשי{background:var(--נייבי);color:var(--לוח);font-weight:700;width:100%;margin-top:12px}
+  .משני{background:transparent;border-color:var(--קו);color:var(--צפחה)}
+  .זעיר{min-height:38px;padding:8px 13px;font-size:13.5px;border-radius:9px}
+  .שורה{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+  #התראה{display:none;margin-top:12px;border-radius:11px;padding:12px 13px;
+         border:1px solid;font-size:14.5px}
+  #התראה.פעיל{display:block}
+  #התראה.כבר{background:var(--אדום-נייר);border-color:var(--אדום-קו)}
+  #התראה.דומה{background:var(--ענבר-נייר);border-color:var(--ענבר-קו)}
+  #התראה .כותרת{font-weight:700;margin-bottom:8px;line-height:1.45}
+  #התראה.כבר .כותרת{color:var(--אדום)}
+  #התראה.דומה .כותרת{color:var(--ענבר)}
+  #התראה ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+  #התראה li{background:var(--לוח);border-radius:8px;padding:8px 11px;font-size:13.5px}
+  #התראה li b{color:var(--נייבי)}
+
+  .מסננים{display:flex;gap:7px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none}
+  .מסננים::-webkit-scrollbar{display:none}
+  .שבב{flex:0 0 auto;background:var(--לוח);border:1px solid var(--קו);color:var(--צפחה);
+       border-radius:999px;padding:8px 14px;min-height:38px;font-size:13.5px;font-weight:600}
+  .שבב[aria-pressed="true"]{background:var(--נייבי);border-color:var(--נייבי);color:var(--לוח)}
+
+  .רשימה{margin-top:10px;background:var(--לוח);border:1px solid var(--קו);
+         border-radius:14px;overflow:hidden}
+  .הגשה{display:grid;grid-template-columns:4px 1fr;border-bottom:1px solid var(--קו-רך)}
+  .הגשה:last-child{border-bottom:none}
+  .פס{background:var(--צפחה)}
+  .פס.בהמתנה{background:var(--ענבר)} .פס.ראיון{background:var(--סגול)}
+  .פס.נדחה{background:var(--אדום)}   .פס.התקבל{background:var(--ירוק)}
+  .תוכן{padding:13px 14px}
+  .שם{font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .לועזי{font-size:13px;color:var(--צפחה);margin-top:2px;direction:ltr;text-align:right}
+  .מטא{margin-top:6px;color:var(--צפחה);font-size:13.5px;display:grid;gap:2px}
+  .מטא a{color:var(--נייבי-רך);word-break:break-all}
+  .פעולות{display:flex;gap:4px;margin-top:8px}
+  .טקסטי{background:none;border:none;color:var(--נייבי-רך);padding:7px 6px;min-height:36px;
+         font-size:13.5px;text-decoration:underline;text-underline-offset:3px}
+  .טקסטי.סכנה{color:var(--אדום)}
+
+  .תג{font-size:12px;font-weight:600;border-radius:999px;padding:5px 10px;
+      border:1px solid currentColor;white-space:nowrap}
+  .תג.נשלח{color:var(--צפחה)}  .תג.בהמתנה{color:var(--ענבר)}
+  .תג.ראיון{color:var(--סגול)} .תג.נדחה{color:var(--אדום)}
+  .תג.התקבל{color:var(--ירוק)}
+
+  .ריק{padding:34px 22px;text-align:center;color:var(--צפחה);font-size:14.5px}
+  .ריק b{display:block;font-size:16px;font-weight:700;color:var(--דיו);margin-bottom:6px}
+
+  .הסבר{color:var(--צפחה);font-size:13.5px;line-height:1.7}
+  .הסבר ol{padding-inline-start:20px;margin:8px 0}
+  .הסבר li{margin-bottom:5px}
+  .הסבר a{color:var(--נייבי-רך)}
+  .הסבר code{background:var(--קו-רך);border-radius:5px;padding:2px 6px;font-size:12.5px;
+             direction:ltr;display:inline-block}
+  .רגלית{margin-top:16px;color:var(--צפחה);font-size:12.5px;line-height:1.7}
+  .רגלית button{padding:0;min-height:0;background:none;border:none;color:var(--נייבי-רך);
+                text-decoration:underline;font-size:12.5px}
+
+  #טוסט{position:fixed;inset-block-end:18px;inset-inline:14px auto;z-index:9;
+    background:var(--נייבי);color:var(--לוח);padding:12px 18px;border-radius:11px;
+    font-size:14.5px;font-weight:600;opacity:0;transform:translateY(12px);
+    transition:opacity .2s,transform .2s;pointer-events:none;
+    max-width:min(400px,calc(100vw - 28px));box-shadow:0 8px 28px rgba(0,0,0,.18)}
+  #טוסט.פעיל{opacity:1;transform:none}
+  #טוסט.רע{background:var(--אדום)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (max-width:380px){.זוג{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="עטיפה">
+  <div class="סרגל">
+    <h1>מעקב הגשות</h1>
+    <span class="מונה" id="מונה">טוען</span>
+    <span class="גמיש"></span>
+    <button class="משני זעיר" id="כפתור-רענון" type="button">רענן</button>
+  </div>
+
+  <!-- ============ מסך חיבור, מוצג עד שיש אסימון תקין ============ -->
+  <section class="לוח" id="מסך-חיבור" hidden>
+    <h2>חיבור למאגר שלך</h2>
+    <div class="הסבר">
+      האפליקציה שומרת את ההגשות בקובץ <code>הגשות.json</code> שבמאגר הפרטי
+      <code>nadavbenmenan/cv</code>. אין כאן שרת ואין שום צד שלישי: הדפדפן
+      מדבר ישירות מול גיטהאב. צריך אסימון אישי פעם אחת במכשיר הזה.
+      <ol>
+        <li>פתח את
+          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+          יצירת אסימון מדויק</a> בחשבון <code>nadavbenmenan</code>.</li>
+        <li>ב-Repository access בחר <b>Only select repositories</b> ואז <code>cv</code>.</li>
+        <li>ב-Permissions פתח <b>Contents</b> והעבר ל-<b>Read and write</b>.</li>
+        <li>צור, העתק את האסימון והדבק כאן.</li>
+      </ol>
+    </div>
+    <div class="שדה" style="margin-top:12px">
+      <label for="אסימון">אסימון גיטהאב</label>
+      <input id="אסימון" type="password" placeholder="github_pat_..." autocomplete="off"
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="ראשי" type="button" id="כפתור-חיבור">התחבר</button>
+    <div class="הסבר" style="margin-top:12px">
+      האסימון נשמר רק בדפדפן הזה ולא נשלח לשום מקום חוץ מגיטהאב. אפשר
+      לבטל אותו בכל רגע בהגדרות החשבון, וההגשות לא ייפגעו.
+    </div>
+  </section>
+
+  <!-- ============ האפליקציה ============ -->
+  <div id="אפליקציה" hidden>
+    <form class="לוח" id="טופס" autocomplete="off" novalidate>
+      <h2 id="כותרת-טופס">הגשה חדשה</h2>
+      <input type="hidden" id="מזהה">
+      <div class="שדה">
+        <label for="חברה">חברה</label>
+        <input id="חברה" placeholder="שם החברה" autocapitalize="words" enterkeyhint="next">
+      </div>
+      <div id="התראה" role="alert" aria-live="assertive"></div>
+      <div class="זוג">
+        <div class="שדה">
+          <label for="תפקיד">תפקיד <em>לא חובה</em></label>
+          <input id="תפקיד" placeholder="שם המשרה">
+        </div>
+        <div class="שדה">
+          <label for="תאריך">תאריך שליחה</label>
+          <input id="תאריך" type="date">
+        </div>
+      </div>
+      <div class="זוג">
+        <div class="שדה">
+          <label for="גרסה">גרסת קורות חיים</label>
+          <select id="גרסה"></select>
+        </div>
+        <div class="שדה">
+          <label for="סטטוס">סטטוס</label>
+          <select id="סטטוס"></select>
+        </div>
+      </div>
+      <div class="שדה">
+        <label for="קישור">קישור למשרה <em>לא חובה</em></label>
+        <input id="קישור" inputmode="url" placeholder="example.com/jobs/12">
+      </div>
+      <div class="שדה">
+        <label for="הערות">הערות <em>לא חובה</em></label>
+        <textarea id="הערות" rows="2" placeholder="איש קשר, מקור המשרה, מה סוכם"></textarea>
+      </div>
+      <button class="ראשי" type="submit" id="כפתור-שמירה">הוסף הגשה</button>
+      <div class="שורה" id="שורת-ביטול" hidden>
+        <button class="משני זעיר" type="button" id="כפתור-ביטול">ביטול העריכה</button>
+      </div>
+    </form>
+
+    <div class="מסננים" id="מסננים"></div>
+    <div class="רשימה" id="רשימה"></div>
+
+    <p class="רגלית">
+      הנתונים נשמרים ישירות במאגר הפרטי שלך בגיטהאב. במחשב, השרת המקומי
+      מושך מאותו מקום וכותב את <b>הגשות.xlsx</b>.
+      <button type="button" id="כפתור-ניתוק">נתק את המכשיר הזה</button>
+    </p>
+  </div>
+</div>
+
+<div id="טוסט" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   מעקב הגשות. אפליקציה עצמאית לגמרי.
+   אין שרת, אין בינה מלאכותית ואין צד שלישי: הדפדפן קורא וכותב
+   ישירות את קובץ ההגשות שבמאגר הפרטי בגיטהאב.
+   ============================================================ */
+const בעלים = 'nadavbenmenan', מאגר = 'cv', ענף = 'main';
+const נתיב = 'קלוד/מעקב הגשות/הגשות.json';
+const מפתח_אחסון = 'הגשות.אסימון';
+
+const גרסאות = ['BI Developer','BUSINESS ANALYST','Data Analyst',
+                'MARKETING ANALYST','Marketing Data & AI Analyst','Project Manager'];
+const סטטוסים = ['נשלח','בהמתנה','ראיון','נדחה','התקבל'];
+
+/* ---------- זיהוי כפילות. תאום מלא עם "התאמה.py" שבמחשב ---------- */
+const סיומות = new Set(['בעמ','ltd','limited','inc','incorporated','llc','plc','corp',
+  'corporation','co','company','gmbh','group','holdings','technologies','technology',
+  'tech','systems','solutions','labs','israel','ישראל','הישראלית']);
+const סופיות = {'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'};
+function נרמול(ש){
+  if(!ש) return '';
+  let t = String(ש).normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase();
+  t = t.replace(/[ךםןףץ]/g,c=>סופיות[c]).replace(/[^\p{L}\p{N}]+/gu,' ');
+  const מ = t.split(' ').filter(Boolean);
+  while(מ.length && סיומות.has(מ[מ.length-1])) מ.pop();
+  return מ.join(' ');
+}
+function מרחק(א,ב,תקרה=3){
+  if(א===ב) return 0;
+  if(Math.abs(א.length-ב.length)>תקרה) return תקרה+1;
+  let ק=Array.from({length:ב.length+1},(_,i)=>i);
+  for(let i=1;i<=א.length;i++){
+    const נ=[i]; let מין=i;
+    for(let j=1;j<=ב.length;j++){
+      const v=Math.min(ק[j]+1,נ[j-1]+1,ק[j-1]+(א[i-1]!==ב[j-1]?1:0));
+      נ.push(v); if(v<מין) מין=v;
+    }
+    if(מין>תקרה) return תקרה+1;
+    ק=נ;
+  }
+  return ק[ב.length];
+}
+const סבילות = n => n<=4?0 : n<=8?1 : n<=14?2 : 3;
+function השוואה(מוקלד,שם){
+  const א=נרמול(מוקלד), ב=נרמול(שם);
+  if(!א||!ב) return {רמה:null,ניקוד:0};
+  if(א===ב) return {רמה:'זהה',ניקוד:100};
+  const [קצר,ארוך] = א.length<=ב.length?[א,ב]:[ב,א];
+  if(קצר.length>=3 && ארוך.includes(קצר))
+    return {רמה:'מכיל',ניקוד:90-(ארוך.length-קצר.length)};
+  const ס=סבילות(Math.min(א.length,ב.length));
+  if(ס){ const ד=מרחק(א,ב,ס); if(ד<=ס) return {רמה:'דומה',ניקוד:80-ד*10}; }
+  return {רמה:null,ניקוד:0};
+}
+function התאמות(מוקלד,רשומות,מלבד){
+  const out=[];
+  for(const ר of רשומות){
+    if(מלבד && ר.id===מלבד) continue;
+    let טוב={רמה:null,ניקוד:0};
+    for(const שם of [ר.חברה,ר.שם_עברית,ר.שם_אנגלית]){
+      const t=השוואה(מוקלד,שם);
+      if(t.רמה && t.ניקוד>טוב.ניקוד) טוב=t;
+    }
+    if(טוב.רמה) out.push({רשומה:ר,...טוב});
+  }
+  return out.sort((a,b)=>b.ניקוד-a.ניקוד);
+}
+
+/* ---------- גישה לגיטהאב ---------- */
+const $ = s => document.getElementById(s);
+let אסימון = '', הגשות = [], sha = null, מסנן = '', אושר = false;
+
+const כתובת_קובץ = () => `https://api.github.com/repos/${בעלים}/${מאגר}/contents/`
+  + נתיב.split('/').map(encodeURIComponent).join('/');
+
+const ל64 = ט => btoa(String.fromCharCode(...new TextEncoder().encode(ט)));
+const מ64 = ב => new TextDecoder().decode(
+  Uint8Array.from(atob(ב.replace(/\s/g,'')), c => c.charCodeAt(0)));
+
+async function גיט(שיטה, גוף){
+  const ת = await fetch(כתובת_קובץ() + (שיטה==='GET' ? `?ref=${ענף}&t=${Date.now()}` : ''), {
+    method: שיטה,
+    headers: {Authorization:'Bearer '+אסימון, Accept:'application/vnd.github+json',
+              'X-GitHub-Api-Version':'2022-11-28'},
+    body: גוף ? JSON.stringify(גוף) : undefined,
+    cache: 'no-store',
+  });
+  if(ת.status===404 && שיטה==='GET') return null;
+  if(ת.status===401) throw Object.assign(new Error('האסימון אינו תקף'),{קוד:401});
+  if(ת.status===403) throw new Error('לאסימון אין הרשאת כתיבה למאגר');
+  if(ת.status===409) throw Object.assign(new Error('התנגשות'),{קוד:409});
+  if(!ת.ok) throw new Error('גיטהאב החזיר שגיאה ' + ת.status);
+  return ת.json();
+}
+
+async function קרא(){
+  const ג = await גיט('GET');
+  if(!ג){ sha=null; return []; }
+  sha = ג.sha;
+  const טקסט = מ64(ג.content || '').trim();
+  const נתונים = טקסט ? JSON.parse(טקסט) : [];
+  return Array.isArray(נתונים) ? נתונים : [];
+}
+
+/** כותב אחרי מיזוג עם המצב שבמאגר, כדי לא לדרוס שינוי שנעשה במחשב. */
+async function כתוב(שנה, הודעה){
+  for(let ניסיון=0; ניסיון<3; ניסיון++){
+    const רחוק = await קרא();
+    const אחרי = שנה(רחוק);
+    const תוכן = JSON.stringify(אחרי, null, 2);
+    try{
+      const גוף = {message: הודעה, content: ל64(תוכן), branch: ענף};
+      if(sha) גוף.sha = sha;
+      const ת = await גיט('PUT', גוף);
+      sha = ת.content?.sha ?? null;
+      הגשות = מיין(אחרי);
+      return true;
+    }catch(err){
+      if(err.קוד===409 && ניסיון<2) continue;   // מישהו כתב במקביל, ננסה שוב
+      throw err;
+    }
+  }
+  return false;
+}
+
+const מיין = רשימה => [...רשימה].sort((a,b)=>
+  String(b.תאריך||'').localeCompare(String(a.תאריך||'')) ||
+  String(b.עודכן||'').localeCompare(String(a.עודכן||'')));
+
+/* ---------- תצוגה ---------- */
+const בטוח = t => String(t ?? '').replace(/[&<>"']/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function טוסט(ט, רע=false){
+  const t=$('טוסט'); t.textContent=ט; t.classList.toggle('רע',רע);
+  t.classList.add('פעיל'); clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('פעיל'),3600);
+}
+const מזהה_חדש = () => Math.random().toString(16).slice(2,10)+Date.now().toString(16).slice(-4);
+const עכשיו = () => new Date().toISOString().slice(0,16).replace('T',' ');
+
+function צייר_מסננים(){
+  $('מסננים').innerHTML = [['','הכל'],...סטטוסים.map(s=>[s,s])]
+    .map(([v,ט])=>`<button class="שבב" type="button" data-מסנן="${בטוח(v)}"
+      aria-pressed="${מסנן===v}">${בטוח(ט)}</button>`).join('');
+}
+function שורת_מטא(r){
+  const ח=[];
+  if(r.תפקיד) ח.push(בטוח(r.תפקיד));
+  if(r.גרסה)  ח.push('גרסת '+בטוח(r.גרסה));
+  ח.push(בטוח(r.תאריך));
+  return ח.join(' · ');
+}
+function צייר_רשימה(){
+  const שורות = מסנן ? הגשות.filter(r=>r.סטטוס===מסנן) : הגשות;
+  $('מונה').textContent = הגשות.length ? `${הגשות.length} הגשות` : 'אין הגשות';
+  if(!שורות.length){
+    $('רשימה').innerHTML = `<div class="ריק">
+      <b>${הגשות.length?'אין הגשות בסטטוס הזה':'עוד לא רשמת הגשות'}</b>
+      ${הגשות.length?'החלף מסנן כדי לראות את השאר.'
+        :'הקלד שם חברה למעלה. אם כבר הגשת לה, תקבל התראה עוד לפני השמירה.'}</div>`;
+    return;
+  }
+  $('רשימה').innerHTML = שורות.map(r=>`<div class="הגשה">
+    <div class="פס ${בטוח(r.סטטוס)}"></div>
+    <div class="תוכן">
+      <div class="שם">${בטוח(r.חברה)}
+        <span class="תג ${בטוח(r.סטטוס)}">${בטוח(r.סטטוס)}</span></div>
+      ${(r.שם_עברית||r.שם_אנגלית)?`<div class="לועזי">${
+        בטוח([r.שם_עברית,r.שם_אנגלית].filter(Boolean).join('  ·  '))}</div>`:''}
+      <div class="מטא">
+        <span>${שורת_מטא(r)}</span>
+        ${r.קישור?`<span><a href="${בטוח(r.קישור)}" target="_blank" rel="noopener">${
+          בטוח(r.קישור.replace(/^https?:\/\/(www\.)?/,'').slice(0,44))}</a></span>`:''}
+        ${r.הערות?`<span>${בטוח(r.הערות)}</span>`:''}
+      </div>
+      <div class="פעולות">
+        <button class="טקסטי" type="button" data-edit="${בטוח(r.id)}">עריכה</button>
+        <button class="טקסטי סכנה" type="button" data-del="${בטוח(r.id)}">מחיקה</button>
+      </div>
+    </div></div>`).join('');
+}
+
+function בדוק(){
+  const ה=$('התראה'), מוקלד=$('חברה').value.trim(), נוכחי=$('מזהה').value;
+  ה.className=''; ה.innerHTML='';
+  if(מוקלד.length<2) return null;
+  const נמצאו=התאמות(מוקלד,הגשות,נוכחי);
+  if(!נמצאו.length) return null;
+  const ודאי=נמצאו.filter(t=>t.רמה==='זהה'||t.רמה==='מכיל');
+  const קבוצה=ודאי.length?ודאי:נמצאו, סוג=ודאי.length?'כבר':'דומה';
+  const שמות=[...new Set(קבוצה.map(t=>t.רשומה.חברה))];
+  ה.innerHTML=`<div class="כותרת">${ סוג==='כבר'
+      ? `כבר הגשת ל${שמות.length>1?'חברות האלה':'־'+בטוח(שמות[0])}`
+      : `הגשת למשהו דומה בשם ${שמות.map(s=>'"'+בטוח(s)+'"').join(', ')}. זו אותה חברה?`}</div>
+    <ul>${קבוצה.slice(0,4).map(t=>`<li><b>${בטוח(t.רשומה.חברה)}</b> · ${
+      שורת_מטא(t.רשומה)} · ${בטוח(t.רשומה.סטטוס)}</li>`).join('')}</ul>
+    <div class="שורה">
+      <button class="משני זעיר" type="button" data-פתח="${בטוח(קבוצה[0].רשומה.id)}">פתח את הקיימת</button>
+      <button class="משני זעיר" type="button" data-אחרת="1">${
+        סוג==='כבר'?'זו הגשה נוספת':'לא, חברה אחרת'}</button>
+    </div>`;
+  ה.classList.add('פעיל',סוג);
+  return {סוג,קבוצה};
+}
+
+function אפס(){
+  for(const id of ['מזהה','חברה','תפקיד','קישור','הערות']) $(id).value='';
+  $('גרסה').value=''; $('סטטוס').value=סטטוסים[0];
+  $('תאריך').value=new Date().toISOString().slice(0,10);
+  $('כותרת-טופס').textContent='הגשה חדשה';
+  $('כפתור-שמירה').textContent='הוסף הגשה';
+  $('שורת-ביטול').hidden=true;
+  אושר=false; בדוק();
+}
+function ערוך(id){
+  const r=הגשות.find(x=>x.id===id); if(!r) return;
+  $('מזהה').value=r.id;
+  for(const k of ['חברה','תפקיד','גרסה','סטטוס','תאריך','קישור','הערות']) $(k).value=r[k]??'';
+  $('כותרת-טופס').textContent='עריכת ההגשה ל'+r.חברה;
+  $('כפתור-שמירה').textContent='שמור שינויים';
+  $('שורת-ביטול').hidden=false;
+  אושר=false; בדוק();
+  $('טופס').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- אירועים ---------- */
+let טיימר;
+$('חברה').addEventListener('input',()=>{
+  אושר=false; clearTimeout(טיימר); טיימר=setTimeout(בדוק,140);
+});
+$('התראה').addEventListener('click',e=>{
+  const פתח=e.target.getAttribute?.('data-פתח');
+  if(פתח) return ערוך(פתח);
+  if(e.target.getAttribute?.('data-אחרת')){
+    אושר=true; $('התראה').className=''; $('התראה').innerHTML=''; $('תפקיד').focus();
+  }
+});
+$('מסננים').addEventListener('click',e=>{
+  const v=e.target.getAttribute?.('data-מסנן');
+  if(v===null||v===undefined) return;
+  מסנן=v; צייר_מסננים(); צייר_רשימה();
+});
+$('כפתור-ביטול').addEventListener('click',אפס);
+
+async function פעולה(עבודה, הצלחה){
+  const כפתורים=[...document.querySelectorAll('button')];
+  כפתורים.forEach(b=>b.disabled=true);
+  try{ await עבודה(); צייר_רשימה(); טוסט(הצלחה); }
+  catch(err){
+    if(err.קוד===401){ נתק(); טוסט('האסימון אינו תקף. חבר מחדש.',true); }
+    else טוסט(err.message||'הפעולה נכשלה',true);
+  }
+  finally{ כפתורים.forEach(b=>b.disabled=false); }
+}
+
+$('טופס').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const חברה=$('חברה').value.trim();
+  if(!חברה){ $('חברה').focus(); return טוסט('שם החברה הוא שדה חובה',true); }
+  const כפילות=בדוק();
+  if(כפילות && !אושר){
+    const שם=כפילות.קבוצה[0].רשומה.חברה;
+    if(!confirm(כפילות.סוג==='כבר'
+      ? `כבר יש הגשה ל"${שם}". להוסיף בכל זאת הגשה נוספת?`
+      : `יש הגשה לחברה בשם דומה, "${שם}". זו חברה אחרת ולהוסיף?`)) return;
+  }
+  const id=$('מזהה').value||מזהה_חדש(), היה=!!$('מזהה').value;
+  let קישור=$('קישור').value.trim();
+  if(קישור && !/^https?:\/\//i.test(קישור)) קישור='https://'+קישור.replace(/^\/+/,'');
+  const שדות={חברה, תפקיד:$('תפקיד').value.trim(), גרסה:$('גרסה').value,
+    סטטוס:$('סטטוס').value||סטטוסים[0],
+    תאריך:$('תאריך').value||new Date().toISOString().slice(0,10),
+    קישור, הערות:$('הערות').value.trim()};
+  await פעולה(async()=>{
+    await כתוב(רשימה=>{
+      const קיים=רשימה.find(r=>r.id===id);
+      const רשומה={id, שם_עברית:קיים?.שם_עברית||'', שם_אנגלית:קיים?.שם_אנגלית||'',
+                   ...שדות, עודכן:עכשיו()};
+      return קיים ? רשימה.map(r=>r.id===id?רשומה:r) : [...רשימה, רשומה];
+    }, `${היה?'עדכון':'הוספת'} הגשה: ${חברה}`);
+    אפס();
+  }, היה?'השינויים נשמרו במאגר':'ההגשה נוספה למאגר');
+});
+
+document.addEventListener('click',async e=>{
+  const ע=e.target.getAttribute?.('data-edit'), מ=e.target.getAttribute?.('data-del');
+  if(ע) return ערוך(ע);
+  if(!מ) return;
+  const r=הגשות.find(x=>x.id===מ);
+  if(!confirm(`למחוק את ההגשה ל"${r?.חברה}"? הפעולה אינה הפיכה.`)) return;
+  await פעולה(async()=>{
+    await כתוב(רשימה=>רשימה.filter(x=>x.id!==מ), `מחיקת הגשה: ${r?.חברה||מ}`);
+    if($('מזהה').value===מ) אפס();
+  },'ההגשה נמחקה מהמאגר');
+});
+
+$('כפתור-רענון').addEventListener('click',()=>
+  פעולה(async()=>{ הגשות=מיין(await קרא()); },'רוענן מהמאגר'));
+
+/* ---------- חיבור וניתוק ---------- */
+function נתק(){
+  try{ localStorage.removeItem(מפתח_אחסון); }catch(e){}
+  אסימון=''; הגשות=[]; sha=null;
+  $('אפליקציה').hidden=true; $('מסך-חיבור').hidden=false;
+  $('מונה').textContent='לא מחובר';
+}
+$('כפתור-ניתוק').addEventListener('click',()=>{
+  if(confirm('לנתק את המכשיר הזה? ההגשות יישארו במאגר, ותצטרך להדביק אסימון שוב.')) נתק();
+});
+
+$('כפתור-חיבור').addEventListener('click',async e=>{
+  const ערך=$('אסימון').value.trim();
+  if(!ערך) return טוסט('הדבק אסימון',true);
+  e.target.disabled=true; e.target.textContent='בודק...';
+  אסימון=ערך;
+  try{
+    הגשות=מיין(await קרא());
+    try{ localStorage.setItem(מפתח_אחסון,ערך); }catch(err){}
+    $('אסימון').value='';
+    הפעל();
+    טוסט('מחובר למאגר');
+  }catch(err){
+    אסימון='';
+    טוסט(err.קוד===401?'האסימון אינו תקף':(err.message||'החיבור נכשל'),true);
+  }finally{ e.target.disabled=false; e.target.textContent='התחבר'; }
+});
+
+function הפעל(){
+  $('מסך-חיבור').hidden=true;
+  $('אפליקציה').hidden=false;
+  אפס(); צייר_מסננים(); צייר_רשימה();
+}
+
+/* ---------- אתחול ---------- */
+$('גרסה').innerHTML='<option value="">לא צוינה</option>'+
+  גרסאות.map(v=>`<option>${בטוח(v)}</option>`).join('');
+$('סטטוס').innerHTML=סטטוסים.map(s=>`<option>${בטוח(s)}</option>`).join('');
+
+(async function(){
+  let שמור='';
+  try{ שמור=localStorage.getItem(מפתח_אחסון)||''; }catch(e){}
+  if(!שמור){ נתק(); return; }
+  אסימון=שמור;
+  try{
+    הגשות=מיין(await קרא());
+    הפעל();
+  }catch(err){
+    נתק();
+    טוסט(err.קוד===401?'האסימון פג. חבר מחדש.':'אין חיבור לגיטהאב',true);
+  }
+})();
+</script>
+</body>
+</html>
