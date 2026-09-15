@@ -25,6 +25,7 @@
     }
   }
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--נייר);color:var(--דיו);
        font:16px/1.6 "Segoe UI",Arial,system-ui,sans-serif;
@@ -125,8 +126,36 @@
     max-width:min(400px,calc(100vw - 28px));box-shadow:0 8px 28px rgba(0,0,0,.18)}
   #טוסט.פעיל{opacity:1;transform:none}
   #טוסט.רע{background:var(--אדום)}
+  /* ---------- פריסה: טופס וכרטיס הפרטים. זה לצד זה במחשב, זה מתחת לזה בנייד ---------- */
+  .פריסה{display:grid;grid-template-columns:minmax(0,1fr);column-gap:16px;align-items:start}
+  @media (min-width:960px){
+    .עטיפה{max-width:1060px}
+    .פריסה{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+    #כרטיס-פרטים{position:sticky;top:66px}
+  }
+
+  /* ---------- כרטיס פרטים להעתקה מהירה ---------- */
+  #כרטיס-פרטים h2{margin-bottom:4px}
+  .פרטים-הסבר{margin:0 0 10px;color:var(--צפחה);font-size:12.5px}
+  .פריט{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--קו-רך)}
+  .פריט-טקסט{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .פריט-תווית{font-size:12px;font-weight:600;color:var(--צפחה)}
+  .פריט-ערך{font-size:14.5px;direction:ltr;text-align:left;overflow-wrap:anywhere;color:var(--דיו)}
+  .פריט-ערך.ארוך{font-size:13.5px;line-height:1.55}
+  .פריט-פעולות{flex:0 0 auto;display:flex;gap:6px;align-self:center}
+  .העתק,.פתיחה{min-height:36px;padding:7px 11px;font-size:13px;font-weight:600;border-radius:9px;
+    background:transparent;border:1px solid var(--קו);color:var(--נייבי-רך);
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+  .העתק{min-width:78px}
+  .פתיחה{text-decoration:none}
+  .העתק:hover,.פתיחה:hover{border-color:var(--נייבי-רך)}
+  .העתק.הועתק{color:var(--ירוק);border-color:var(--ירוק)}
+  .פרטים-ריק{color:var(--צפחה);font-size:13.5px;padding:6px 0}
+  .לקורא-מסך{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-  @media (max-width:380px){.זוג{grid-template-columns:1fr}}
+  @media (max-width:380px){.זוג{grid-template-columns:1fr}
+    .פריט{flex-wrap:wrap}.פריט-פעולות{margin-inline-start:auto}}
 </style>
 </head>
 <body>
@@ -168,6 +197,7 @@
 
   <!-- ============ האפליקציה ============ -->
   <div id="אפליקציה" hidden>
+    <div class="פריסה">
     <form class="לוח" id="טופס" autocomplete="off" novalidate>
       <h2 id="כותרת-טופס">הגשה חדשה</h2>
       <input type="hidden" id="מזהה">
@@ -210,6 +240,15 @@
       </div>
     </form>
 
+    <!-- כרטיס פרטים להעתקה מהירה. הערכים נקראים מ"פרופיל.json" שבמאגר הפרטי -->
+    <aside class="לוח" id="כרטיס-פרטים" aria-labelledby="כותרת-פרטים">
+      <h2 id="כותרת-פרטים">פרטים להעתקה מהירה</h2>
+      <p class="פרטים-הסבר">לטופסי הגשה. "העתק" מעתיק את הערך ללוח.</p>
+      <div id="פרטים"><div class="פרטים-ריק">טוען</div></div>
+      <span class="לקורא-מסך" id="הודעת-העתקה" role="status" aria-live="polite"></span>
+    </aside>
+    </div>
+
     <div class="מסננים" id="מסננים"></div>
     <div class="רשימה" id="רשימה"></div>
 
@@ -231,6 +270,7 @@
    ============================================================ */
 const בעלים = 'nadavbenmenan', מאגר = 'cv', ענף = 'main';
 const נתיב = 'קלוד/מעקב הגשות/הגשות.json';
+const נתיב_פרופיל = 'קלוד/מעקב הגשות/פרופיל.json';   // לא כאן בקוד: המאגר הזה ציבורי
 const מפתח_אחסון = 'הגשות.אסימון';
 
 const גרסאות = ['BI Developer','BI System Analyst','BUSINESS ANALYST','Data Analyst',
@@ -293,17 +333,17 @@ function התאמות(מוקלד,רשומות,מלבד){
 
 /* ---------- גישה לגיטהאב ---------- */
 const $ = s => document.getElementById(s);
-let אסימון = '', הגשות = [], sha = null, מסנן = '', אושר = false;
+let אסימון = '', הגשות = [], sha = null, מסנן = '', אושר = false, פרטים = [];
 
-const כתובת_קובץ = () => `https://api.github.com/repos/${בעלים}/${מאגר}/contents/`
-  + נתיב.split('/').map(encodeURIComponent).join('/');
+const כתובת_קובץ = (נ = נתיב) => `https://api.github.com/repos/${בעלים}/${מאגר}/contents/`
+  + נ.split('/').map(encodeURIComponent).join('/');
 
 const ל64 = ט => btoa(String.fromCharCode(...new TextEncoder().encode(ט)));
 const מ64 = ב => new TextDecoder().decode(
   Uint8Array.from(atob(ב.replace(/\s/g,'')), c => c.charCodeAt(0)));
 
-async function גיט(שיטה, גוף){
-  const ת = await fetch(כתובת_קובץ() + (שיטה==='GET' ? `?ref=${ענף}&t=${Date.now()}` : ''), {
+async function גיט(שיטה, גוף, נ = נתיב){
+  const ת = await fetch(כתובת_קובץ(נ) + (שיטה==='GET' ? `?ref=${ענף}&t=${Date.now()}` : ''), {
     method: שיטה,
     headers: {Authorization:'Bearer '+אסימון, Accept:'application/vnd.github+json',
               'X-GitHub-Api-Version':'2022-11-28'},
@@ -406,6 +446,57 @@ function צייר_רשימה(){
     </div></div>`).join('');
 }
 
+/* ---------- כרטיס פרטים להעתקה מהירה ---------- */
+/** לעולם אינו זורק: כשל בקובץ הפרטים לא יפיל את האפליקציה. */
+async function טען_פרטים(){
+  try{
+    const ג = await גיט('GET', undefined, נתיב_פרופיל);
+    const נתונים = ג ? JSON.parse(מ64(ג.content || '').trim() || '[]') : [];
+    פרטים = Array.isArray(נתונים) ? נתונים.filter(p => p && p.תווית && p.ערך) : [];
+  }catch(err){ פרטים = null; }
+  צייר_פרטים();
+}
+const קישור_תקין = v => /^https?:\/\//i.test(v);
+function צייר_פרטים(){
+  if(פרטים === null){
+    $('פרטים').innerHTML = '<div class="פרטים-ריק">הפרטים לא נטענו מהמאגר. נסה "רענן".</div>';
+    return;
+  }
+  if(!פרטים.length){
+    $('פרטים').innerHTML = `<div class="פרטים-ריק">אין פרטים. הם נקראים מ-<b>${
+      בטוח(נתיב_פרופיל)}</b> שבמאגר.</div>`;
+    return;
+  }
+  $('פרטים').innerHTML = פרטים.map((p,i)=>{
+    const ערך = String(p.ערך), תווית = בטוח(p.תווית);
+    return `<div class="פריט">
+      <div class="פריט-טקסט">
+        <span class="פריט-תווית">${תווית}</span>
+        <span class="פריט-ערך${ערך.length>60?' ארוך':''}">${בטוח(ערך)}</span>
+      </div>
+      <div class="פריט-פעולות">
+        ${קישור_תקין(ערך)?`<a class="פתיחה" href="${בטוח(ערך)}" target="_blank" rel="noopener"
+          aria-label="פתח את ${תווית} בחלון חדש">פתח ↗</a>`:''}
+        <button class="העתק" type="button" data-העתק="${i}" aria-label="העתק ${תווית}">העתק</button>
+      </div></div>`;
+  }).join('');
+}
+async function להעתיק(טקסט){
+  try{                                // writeText יכול להיתקע בלי להיכשל, ולכן תקרת זמן
+    await Promise.race([navigator.clipboard.writeText(טקסט),
+      new Promise((_,לא)=>setTimeout(()=>לא(new Error('זמן')),1000))]);
+    return true;
+  }catch(err){}
+  const ת = document.createElement('textarea');           // דפדפנים ישנים ו-iOS
+  ת.value = טקסט; ת.setAttribute('readonly','');
+  ת.style.cssText = 'position:fixed;top:0;opacity:0';
+  document.body.appendChild(ת); ת.select();
+  let הצליח = false;
+  try{ הצליח = document.execCommand('copy'); }catch(err){}
+  ת.remove();
+  return הצליח;
+}
+
 function בדוק(){
   const ה=$('התראה'), מוקלד=$('חברה').value.trim(), נוכחי=$('מזהה').value;
   ה.className=''; ה.innerHTML='';
@@ -467,6 +558,16 @@ $('מסננים').addEventListener('click',e=>{
   מסנן=v; צייר_מסננים(); צייר_רשימה();
 });
 $('כפתור-ביטול').addEventListener('click',אפס);
+$('פרטים').addEventListener('click',async e=>{
+  const כפתור = e.target.closest?.('[data-העתק]');
+  const p = כפתור && פרטים?.[+כפתור.getAttribute('data-העתק')];
+  if(!p) return;
+  if(!await להעתיק(String(p.ערך))) return טוסט('ההעתקה נכשלה. סמן את הערך והעתק ידנית',true);
+  כפתור.classList.add('הועתק'); כפתור.textContent = '✓ הועתק';
+  $('הודעת-העתקה').textContent = `${p.תווית} הועתק`;
+  clearTimeout(כפתור._t);
+  כפתור._t = setTimeout(()=>{ כפתור.classList.remove('הועתק'); כפתור.textContent = 'העתק'; },1500);
+});
 
 async function פעולה(עבודה, הצלחה){
   const כפתורים=[...document.querySelectorAll('button')];
@@ -522,7 +623,7 @@ document.addEventListener('click',async e=>{
 });
 
 $('כפתור-רענון').addEventListener('click',()=>
-  פעולה(async()=>{ הגשות=מיין(await קרא()); },'רוענן מהמאגר'));
+  פעולה(async()=>{ הגשות=מיין(await קרא()); await טען_פרטים(); },'רוענן מהמאגר'));
 
 /* ---------- חיבור וניתוק ---------- */
 function נתק(){
@@ -556,6 +657,7 @@ function הפעל(){
   $('מסך-חיבור').hidden=true;
   $('אפליקציה').hidden=false;
   אפס(); צייר_מסננים(); צייר_רשימה();
+  טען_פרטים();
 }
 
 /* ---------- אתחול ---------- */
