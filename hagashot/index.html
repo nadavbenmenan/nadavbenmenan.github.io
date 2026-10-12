@@ -283,8 +283,9 @@ const נתיב = 'קלוד/מעקב הגשות/הגשות.json';
 const נתיב_פרופיל = 'קלוד/מעקב הגשות/פרופיל.json';   // לא כאן בקוד: המאגר הזה ציבורי
 const מפתח_אחסון = 'הגשות.אסימון';
 
-const גרסאות = ['BI Analyst','BI System Analyst','BUSINESS ANALYST','Data Analyst',
-                'MARKETING ANALYST','Marketing Data & AI Analyst','Project Manager'];
+const גרסאות = ['Data Analyst','Business Analyst','BI Analyst','BI System Analyst',
+                'Marketing Analyst','Marketing Data & AI Analyst','Project Manager'];
+const גרסת_ברירת_מחדל = 'Data Analyst';
 const סטטוסים = ['נשלח','בהמתנה','ראיון','נדחה','התקבל'];
 
 /* ---------- זיהוי כפילות. תאום מלא עם "התאמה.py" שבמחשב ---------- */
@@ -532,7 +533,7 @@ function בדוק(){
 
 function אפס(){
   for(const id of ['מזהה','חברה','תפקיד','קישור','הערות']) $(id).value='';
-  $('גרסה').value=''; $('סטטוס').value=סטטוסים[0];
+  $('גרסה').value=גרסת_ברירת_מחדל; $('סטטוס').value=סטטוסים[0];
   $('תאריך').value=new Date().toISOString().slice(0,10);
   $('כותרת-טופס').textContent='הגשה חדשה';
   $('כפתור-שמירה').textContent='הוסף הגשה';
