@@ -62,6 +62,12 @@
   button[disabled]{opacity:.55;cursor:default}
   .ראשי{background:var(--נייבי);color:var(--לוח);font-weight:700;width:100%;margin-top:12px}
   .משני{background:transparent;border-color:var(--קו);color:var(--צפחה)}
+  .ראשי.גדול{font-size:18px;min-height:58px;margin:4px 0 16px;border-radius:12px}
+  .ראשית{grid-template-columns:3fr 2fr}
+  .נוספים{border-top:1px solid var(--קו);padding-top:12px}
+  .נוספים label{font-size:11px}
+  .נוספים input,.נוספים select,.נוספים textarea{padding-top:7px;padding-bottom:7px;min-height:0}
+  @media (min-width:700px){.נוספים input,.נוספים select,.נוספים textarea{font-size:14px}}
   .זעיר{min-height:38px;padding:8px 13px;font-size:13.5px;border-radius:9px}
   .שורה{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
@@ -201,40 +207,44 @@
     <form class="לוח" id="טופס" autocomplete="off" novalidate>
       <h2 id="כותרת-טופס">הגשה חדשה</h2>
       <input type="hidden" id="מזהה">
-      <div class="שדה">
-        <label for="חברה">חברה</label>
-        <input id="חברה" placeholder="שם החברה" autocapitalize="words" enterkeyhint="next">
-      </div>
-      <div id="התראה" role="alert" aria-live="assertive"></div>
-      <div class="זוג">
+      <div class="זוג ראשית">
         <div class="שדה">
-          <label for="תפקיד">תפקיד <em>לא חובה</em></label>
-          <input id="תפקיד" placeholder="שם המשרה">
+          <label for="חברה">חברה</label>
+          <input id="חברה" placeholder="שם החברה" autocapitalize="words" enterkeyhint="next">
         </div>
-        <div class="שדה">
-          <label for="תאריך">תאריך שליחה</label>
-          <input id="תאריך" type="date">
-        </div>
-      </div>
-      <div class="זוג">
         <div class="שדה">
           <label for="גרסה">גרסת קורות חיים</label>
           <select id="גרסה"></select>
         </div>
+      </div>
+      <div id="התראה" role="alert" aria-live="assertive"></div>
+      <button class="ראשי גדול" type="submit" id="כפתור-שמירה">הוסף הגשה</button>
+      <div class="נוספים">
+        <div class="זוג">
+          <div class="שדה">
+            <label for="תפקיד">תפקיד <em>לא חובה</em></label>
+            <input id="תפקיד" placeholder="שם המשרה">
+          </div>
+          <div class="שדה">
+            <label for="תאריך">תאריך שליחה</label>
+            <input id="תאריך" type="date">
+          </div>
+        </div>
+        <div class="זוג">
+          <div class="שדה">
+            <label for="סטטוס">סטטוס</label>
+            <select id="סטטוס"></select>
+          </div>
+          <div class="שדה">
+            <label for="קישור">קישור למשרה <em>לא חובה</em></label>
+            <input id="קישור" inputmode="url" placeholder="example.com/jobs/12">
+          </div>
+        </div>
         <div class="שדה">
-          <label for="סטטוס">סטטוס</label>
-          <select id="סטטוס"></select>
+          <label for="הערות">הערות <em>לא חובה</em></label>
+          <textarea id="הערות" rows="2" placeholder="איש קשר, מקור המשרה, מה סוכם"></textarea>
         </div>
       </div>
-      <div class="שדה">
-        <label for="קישור">קישור למשרה <em>לא חובה</em></label>
-        <input id="קישור" inputmode="url" placeholder="example.com/jobs/12">
-      </div>
-      <div class="שדה">
-        <label for="הערות">הערות <em>לא חובה</em></label>
-        <textarea id="הערות" rows="2" placeholder="איש קשר, מקור המשרה, מה סוכם"></textarea>
-      </div>
-      <button class="ראשי" type="submit" id="כפתור-שמירה">הוסף הגשה</button>
       <div class="שורה" id="שורת-ביטול" hidden>
         <button class="משני זעיר" type="button" id="כפתור-ביטול">ביטול העריכה</button>
       </div>
@@ -549,7 +559,7 @@ $('התראה').addEventListener('click',e=>{
   const פתח=e.target.getAttribute?.('data-פתח');
   if(פתח) return ערוך(פתח);
   if(e.target.getAttribute?.('data-אחרת')){
-    אושר=true; $('התראה').className=''; $('התראה').innerHTML=''; $('תפקיד').focus();
+    אושר=true; $('התראה').className=''; $('התראה').innerHTML=''; $('כפתור-שמירה').focus();
   }
 });
 $('מסננים').addEventListener('click',e=>{
