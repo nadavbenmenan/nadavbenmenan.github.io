@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>מעקב תרופות</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
     --נייבי:#1f3864; --צפחה:#6e7a8c; --דיו:#222;
@@ -655,6 +657,7 @@ $('אישור-חיבור').addEventListener('click', async e => {
 });
 
 /* ---------- אתחול ---------- */
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 צייר_הכל();
 צייר_מצב();
 setInterval(צייר_הכל, 20000);
