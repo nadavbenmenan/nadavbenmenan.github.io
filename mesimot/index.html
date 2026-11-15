@@ -207,18 +207,9 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
-  /* נעילה */
-  #lock{border:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border-radius:0;background:var(--bg);padding:20px}
-  #lock[open]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-  #lock::backdrop{background:var(--bg)}
-  #lock h2{font-size:22px}
-  .pin-dots{display:flex;gap:14px;direction:ltr}
-  .pin-dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted)}
-  .pin-dots i.on{background:var(--text);border-color:var(--text)}
-  .pad{display:grid;grid-template-columns:repeat(3,76px);gap:12px;direction:ltr}
-  .pad button{height:76px;border-radius:50%;border:0;background:var(--card);font-size:26px;font-weight:500}
-  .pad button.ghost{background:transparent;font-size:15px}
-  .lock-msg{min-height:22px;color:var(--red);font-size:14px;text-align:center}
+  .res{background:var(--soft);border-radius:14px;padding:12px;margin-top:12px}
+  .res b{font-size:22px}
+  .res pre{white-space:pre-wrap;font:inherit;margin:8px 0 0;font-size:14px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -349,14 +340,17 @@
   <div class="dlg" id="s-body"></div>
 </dialog>
 
+<dialog id="dlg-calc" class="full" aria-label="חשבונות הדייר">
+  <div class="dlg-head">
+    <button class="txt-btn" id="c-close">סגירה</button>
+    <h2>חשבונות הדייר</h2>
+    <span style="width:60px"></span>
+  </div>
+  <div class="dlg" id="c-body"></div>
+</dialog>
+
 <dialog id="dlg-onboard" class="full" aria-label="התחלה"><div class="dlg" id="o-body"></div></dialog>
 
-<dialog id="lock" aria-label="נעילה">
-  <h2 id="lock-title">קוד נעילה</h2>
-  <div class="pin-dots" id="pin-dots"><i></i><i></i><i></i><i></i></div>
-  <div class="lock-msg" id="lock-msg"></div>
-  <div class="pad" id="pad"></div>
-</dialog>
 
 <script src="ליבה.js"></script>
 <script>
@@ -364,8 +358,7 @@
 const ל = window.ליבה;
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
-const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', lock: 'משימות.נעילה',
-           tries: 'משימות.נעילה.ניסיונות', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה'};
+const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה'};
 
 /* ---------- עזר ---------- */
 const $ = id => document.getElementById(id);
@@ -441,6 +434,14 @@ function saveRec(r){
 function saveConfig(c){
   D.file.config = ל.config(Object.assign({}, D.config, c, {updatedAt: nowIso()}));
   persist('config', true); applyTheme(); changed();
+}
+/** משימות ותצורה של גרסה חדשה, למי שהתקין לפני (ליבה.migrate). */
+function migrate(){
+  const m = ל.migrate(data(), today(), nowIso());
+  if(!m) return false;
+  D.file.tasks = {v: 1, tasks: ל.mergeById(D.tasks, m.tasks), domains: D.domains}; persist('tasks', true);
+  D.file.config = ל.config(m.config); persist('config', true);
+  return true;
 }
 let syncTimer = null;
 function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); }
@@ -844,6 +845,7 @@ function renderTaskPage(){
       ${t.discreet ? `<div><span class="k">בהתראה מופיע</span><span class="v">${esc(t.notifyTitle || 'תזכורת')}</span></div>` : ''}
       ${t.kind === 'email' && t.email?.amount != null ? `<div><span class="k">סכום</span><span class="v">${esc(t.email.amount)} ₪</span></div>` : ''}
     </div>
+    ${t.calc ? `<button class="btn" id="tp-calc" type="button" style="width:100%;margin-top:14px">מחשבון לדייר</button>` : ''}
     ${subs}
     ${t.notes || links.length ? `<div class="sec"><h2>הערות וקישורים</h2><div class="card">${t.notes ? `<div style="white-space:pre-wrap">${esc(t.notes)}</div>` : ''}
       ${links.length ? `<div class="links" style="margin-top:${t.notes ? 10 : 0}px">${links.map(u => `<div><a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${esc(u === t.email?.threadUrl ? 'פתיחת המייל' : u)}</a></div>`).join('')}</div>` : ''}</div></div>` : ''}
@@ -853,6 +855,7 @@ function renderTaskPage(){
   $('tp-done').disabled = !open; $('tp-snooze').disabled = !open || t.kind === 'quota' && o.quota.done >= o.quota.count;
   $('tp-done').style.opacity = open ? '' : '.45';
   $('tp-body').querySelectorAll('[data-sub]').forEach(cb => cb.onchange = () => { if(o) saveRec(ל.toggleSub(o, cb.dataset.sub, nowIso())); });
+  if($('tp-calc')) $('tp-calc').onclick = () => openCalc(t.calc, t.email?.amount);
   const lastOk = $('tp-last-ok');
   if(lastOk) lastOk.onclick = () => {
     const v = $('tp-last').value; if(!v) return;
@@ -1161,7 +1164,9 @@ async function sync(){
   if(syncing){ again = true; return; }
   syncing = true; syncErr = ''; renderStatus('מסנכרן...');
   try{
-    await syncFile('config'); await syncFile('tasks'); await syncFile('occ');
+    await syncFile('config'); await syncFile('tasks');
+    if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
+    await syncFile('occ');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     applyTheme();
     await scheduleNotifications();
@@ -1232,68 +1237,79 @@ async function testNotification(){
   }catch(e){ toast('השליחה נכשלה', {err: true}); }
 }
 
-/* ---------- נעילה ---------- */
-const lockCfg = () => storeJson(K.lock, null);
-async function hashPin(pin, salt){
-  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
-  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+/* ---------- חשבונות הדייר ---------- */
+// החישוב עצמו בליבה.js (calcElec, calcWater, calcArnona). הסכומים נשמרים רק במאגר הפרטי, ולא יוצאים בהתראות.
+let calcKind = 'elec', calcAmount = null;
+function openCalc(kind, amount){
+  calcKind = kind || calcKind; calcAmount = amount ?? null;
+  renderCalc();
+  if(!$('dlg-calc').open) $('dlg-calc').showModal();
 }
-let pin = '', lockMode = null, lockDone = null, firstPin = '';
-function showLock(mode, done){
-  lockMode = mode; lockDone = done || null; pin = ''; firstPin = '';
-  $('lock-title').textContent = mode === 'set' ? 'בחר קוד של 4 ספרות' : 'קוד נעילה';
-  $('lock-msg').textContent = '';
-  if(!$('lock').open) $('lock').showModal();
-  renderPin();
+$('c-close').onclick = () => $('dlg-calc').close();
+const numField = (id, label, v, ph) => `<div class="field"><label for="${id}">${label}</label><input type="text" inputmode="decimal" id="${id}" value="${esc(v ?? '')}"${ph ? ` placeholder="${esc(ph)}"` : ''}></div>`;
+function renderCalc(){
+  const tc = ל.tenantCfg(D.config), amt = calcAmount ?? '';
+  const tabs = [['elec', 'חשמל'], ['water', 'מים'], ['arnona', 'ארנונה']];
+  let f = '';
+  if(calcKind === 'elec') f = `
+    <p class="note">החלק של הדייר מתוך כל הבית, כפול הסכום הכולל של החשבון (כולל מע"מ ותשלומים קבועים). הקריאות הן ממונה המשנה של הדייר.</p>
+    <div class="row">${numField('c-prev', 'קריאה קודמת', tc.lastSub)}${numField('c-cur', 'קריאה נוכחית')}</div>
+    <div class="row">${numField('c-house', 'כל הבית, קוט"ש', '', 'מהחשבון')}${numField('c-total', 'סכום החשבון, ₪', amt)}</div>
+    ${tc.lastSubDate ? `<div class="note">הקריאה הקודמת נשמרה ב־${esc(fullDate(tc.lastSubDate))}</div>` : ''}`;
+  else if(calcKind === 'water') f = `
+    <p class="note">החשבון מחושב לפי 2 נפשות, ולכן חצי לכל אחד.</p>
+    ${numField('c-total', 'סכום החשבון, ₪', amt)}`;
+  else f = `
+    <p class="note">סכום קבוע שסיכמנו לכל חודשיים. אם הדייר גר רק חלק מהתקופה, למלא ימים.</p>
+    ${numField('c-fixed', 'סכום קבוע, ₪', tc.arnona)}
+    <div class="row">${numField('c-days', 'ימים שגר (לא חובה)')}${numField('c-pdays', 'ימים בתקופה', 60)}</div>`;
+  const hist = (tc.bills || []).slice(-8).reverse();
+  $('c-body').innerHTML = `
+    <div class="opts" id="c-tabs">${tabs.map(([k, x]) => `<button type="button" data-k="${k}" class="${k === calcKind ? 'on' : ''}">${x}</button>`).join('')}</div>
+    <div class="field" style="margin-top:12px"><label for="c-period">תקופה (לא חובה)</label><input type="text" id="c-period" placeholder="למשל: ספטמבר–אוקטובר"></div>
+    ${f}
+    <div class="res" id="c-res" aria-live="polite"></div>
+    <div class="btns"><button class="btn" id="c-copy" type="button">העתקה</button>${navigator.share ? '<button class="btn" id="c-share" type="button">שליחה</button>' : ''}<button class="btn primary" id="c-save" type="button">שמירה</button></div>
+    ${hist.length ? `<div class="sec"><h2>חשבונות קודמים</h2><div class="rows">${hist.map(b => `<div><span class="k">${esc({elec: 'חשמל', water: 'מים', arnona: 'ארנונה'}[b.kind])}${b.period ? ', ' + esc(b.period) : ''} · ${esc(ל.shortDate(b.date))}</span><span class="v">${esc(ל.money(b.amount))}</span></div>`).join('')}</div></div>` : ''}`;
+  $('c-tabs').onclick = e => { const b = e.target.closest('[data-k]'); if(b){ calcKind = b.dataset.k; renderCalc(); } };
+  $('c-body').querySelectorAll('input').forEach(x => x.oninput = calcUpdate);
+  $('c-copy').onclick = async () => { const b = calcBill(); if(!b) return; try{ await navigator.clipboard.writeText(ל.tenantText(b)); toast('הועתק'); }catch(e){ toast('ההעתקה נכשלה', {err: true}); } };
+  if($('c-share')) $('c-share').onclick = () => { const b = calcBill(); if(b) navigator.share({text: ל.tenantText(b)}).catch(() => {}); };
+  $('c-save').onclick = () => {
+    const b = calcBill(); if(!b) return;
+    const t = ל.tenantCfg(D.config), bills = [...(t.bills || []), b].slice(-60);
+    const nt = Object.assign({}, t, {bills});
+    if(b.kind === 'elec'){ nt.lastSub = b.subCur; nt.lastSubDate = b.date; }
+    if(b.kind === 'arnona' && !b.partial) nt.arnona = +b.fixed;
+    saveConfig({tenant: nt});
+    toast('נשמר'); renderCalc();
+  };
+  calcUpdate();
 }
-function renderPin(){
-  [...$('pin-dots').children].forEach((x, k) => x.classList.toggle('on', k < pin.length));
-  $('pad').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}" aria-label="${n}">${n}</button>`).join('')
-    + (lockMode === 'set' ? '<button type="button" class="ghost" data-k="x">ביטול</button>' : '<span></span>')
-    + '<button type="button" data-k="0" aria-label="0">0</button><button type="button" class="ghost" data-k="b" aria-label="מחיקת ספרה">מחיקה</button>';
+function calcBill(){
+  const v = id => $(id) ? $(id).value.trim() : '';
+  let r, b = {id: 'b' + uid(), kind: calcKind, date: today(), period: v('c-period')};
+  if(calcKind === 'elec'){ Object.assign(b, {subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total')}); r = ל.calcElec(b); }
+  else if(calcKind === 'water'){ b.total = v('c-total'); r = ל.calcWater(b.total, ל.tenantCfg(D.config).waterShare); }
+  else{ Object.assign(b, {fixed: v('c-fixed'), days: v('c-days'), periodDays: v('c-pdays')}); r = ל.calcArnona(b.fixed, b.days, b.periodDays); }
+  if(!r.ok){ toast(r.err, {err: true}); return null; }
+  return Object.assign(b, r);
 }
-$('pad').addEventListener('click', async e => {
-  const b = e.target.closest('[data-k]'); if(!b) return;
-  const k = b.dataset.k;
-  if(k === 'x'){ $('lock').close(); lockDone?.(false); return; }
-  if(k === 'b'){ pin = pin.slice(0, -1); renderPin(); return; }
-  const tries = storeJson(K.tries, {n: 0, until: 0});
-  if(lockMode === 'unlock' && tries.until > Date.now()){
-    $('lock-msg').textContent = `יותר מדי ניסיונות. נסה שוב בעוד ${Math.ceil((tries.until - Date.now()) / 1000)} שניות`; return;
-  }
-  if(pin.length >= 4) return;
-  pin += k; renderPin();
-  if(pin.length < 4) return;
-  if(lockMode === 'set'){
-    if(!firstPin){ firstPin = pin; pin = ''; $('lock-title').textContent = 'שוב, לאישור'; renderPin(); return; }
-    if(firstPin !== pin){ firstPin = ''; pin = ''; $('lock-title').textContent = 'בחר קוד של 4 ספרות'; $('lock-msg').textContent = 'הקודים לא תאמו. נסה שוב'; renderPin(); return; }
-    const salt = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
-    store(K.lock, JSON.stringify({on: true, salt, hash: await hashPin(pin, salt)}));
-    $('lock').close(); lockDone?.(true); return;
-  }
-  const c = lockCfg();
-  if(c && await hashPin(pin, c.salt) === c.hash){
-    store(K.tries, null); $('lock').close(); lastHidden = 0; lockDone?.(true); return;
-  }
-  tries.n++;
-  if(tries.n >= 5){ tries.n = 0; tries.until = Date.now() + 60e3; $('lock-msg').textContent = '5 ניסיונות שגויים. המתנה של דקה'; }
-  else $('lock-msg').textContent = 'קוד שגוי';
-  store(K.tries, JSON.stringify(tries));
-  pin = ''; setTimeout(renderPin, 250);
-});
-// מקש חזרה לא סוגר את מסך הנעילה
-$('lock').addEventListener('cancel', e => { if(lockMode === 'unlock') e.preventDefault(); });
-let lastHidden = 0;
-function lockIfNeeded(done){
-  const c = lockCfg();
-  if(c?.on){ showLock('unlock', done); return true; }
-  done?.(true); return false;
+function calcUpdate(){
+  const v = id => $(id) ? $(id).value.trim() : '';
+  let r;
+  if(calcKind === 'elec') r = ל.calcElec({subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total')});
+  else if(calcKind === 'water') r = ל.calcWater(v('c-total'), ל.tenantCfg(D.config).waterShare);
+  else r = ל.calcArnona(v('c-fixed'), v('c-days'), v('c-pdays'));
+  const out = $('c-res');
+  if(!r.ok){ out.innerHTML = `<span class="note">${esc(r.err === 'חסר מספר' || r.err === 'חסר סכום' ? 'ממלאים את השדות, והסכום יופיע כאן' : r.err)}</span>`; return; }
+  const b = Object.assign({kind: calcKind, period: v('c-period'), subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total'), fixed: v('c-fixed'), days: v('c-days'), periodDays: v('c-pdays')}, r);
+  out.innerHTML = `<div>הדייר משלם: <b>${esc(ל.money(r.amount))}</b>${calcKind === 'elec' ? ` <span class="note">(${r.kwh} קוט"ש, ${r.pct}%)</span>` : ''}</div><pre>${esc(ל.tenantText(b))}</pre>`;
 }
 
 /* ---------- הגדרות ---------- */
 function openSettings(){
-  const c = D.config, topics = storeJson(K.topics, null), lk = lockCfg();
-  const rule = (c.mailRules || [])[0];
+  const c = D.config, topics = storeJson(K.topics, null);
   $('s-body').innerHTML = `
     <div class="group" style="border:0;margin:0"><h3>שעות</h3>
       <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
@@ -1309,16 +1325,16 @@ function openSettings(){
     <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
     <div class="group"><h3>כללי מייל</h3>
-      ${rule ? `<div class="note">${esc(rule.title)}. יעבוד עם המנוע, בשלב 3.</div>
-        <label class="check-row"><input type="checkbox" id="s-mail-on"${rule.enabled ? ' checked' : ''}> פעיל</label>
-        <div class="field"><label for="s-mail-from">כתובת השולח</label><input type="text" id="s-mail-from" dir="ltr" value="${esc(rule.from)}" placeholder="billing@example.co.il"></div>
-        <div class="field"><label for="s-mail-subj">מילים בנושא (לא חובה)</label><input type="text" id="s-mail-subj" value="${esc(rule.subject)}"></div>` : '<div class="note">אין כללים</div>'}
+      <div class="note">המיילים נקראים מתיבת הג'ימייל שלך. יעבוד עם המנוע, בשלב 3.</div>
+      ${(c.mailRules || []).map((r, k) => `<div class="card" style="margin-top:10px"><div style="font-weight:600">${esc(r.title)}</div>
+        <label class="check-row"><input type="checkbox" id="s-mail-on-${k}"${r.enabled ? ' checked' : ''}> פעיל</label>
+        <div class="field"><label for="s-mail-from-${k}">כתובת השולח</label><input type="text" id="s-mail-from-${k}" dir="ltr" value="${esc(r.from)}" placeholder="billing@example.co.il"></div>
+        <div class="field"><label for="s-mail-subj-${k}">מילים בנושא (לא חובה)</label><input type="text" id="s-mail-subj-${k}" value="${esc(r.subject)}"></div></div>`).join('') || '<div class="note">אין כללים</div>'}
     </div>
+    <div class="group"><h3>חשבונות הדייר</h3>
+      <div class="note">חשמל לפי מונה המשנה, ארנונה ${esc(ל.money(ל.tenantCfg(c).arnona))} לחודשיים, מים חצי.</div>
+      <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
     <div class="group"><h3>יומנים</h3><div class="note">היומן הראשי. בחירת יומנים נוספים תגיע בשלב 3.</div></div>
-    <div class="group"><h3>נעילה</h3>
-      <div class="note">${lk?.on ? 'הנעילה פעילה. האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע.' : 'הנעילה כבויה.'}</div>
-      <div class="btns"><button class="btn" id="s-pin" type="button">${lk?.on ? 'החלפת קוד' : 'הפעלת נעילה'}</button>${lk?.on ? '<button class="btn danger" id="s-pin-off" type="button">כיבוי</button>' : ''}</div>
-    </div>
     <div class="group"><h3>גיטהאב וסנכרון</h3>
       <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
       <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
@@ -1332,8 +1348,7 @@ function openSettings(){
     <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>`;
   renderDomRows(clone(D.domains.filter(x => !x.deleted)));
   $('s-dom-add').onclick = () => { const rows = readDomRows(); rows.push({id: 'd' + uid(), name: '', color: '#64748B', hidden: false, _new: true}); renderDomRows(rows); };
-  $('s-pin').onclick = () => showLock('set', ok => { if(ok){ toast('הקוד נשמר'); openSettings(); } });
-  $('s-pin-off') && ($('s-pin-off').onclick = () => { if(confirm('לכבות את הנעילה?')){ store(K.lock, null); openSettings(); } });
+  $('s-calc').onclick = () => openCalc();
   $('s-connect').onclick = () => connect($('s-token').value.trim()).then(ok => ok && openSettings());
   $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); openSettings(); };
   $('s-disc') && ($('s-disc').onclick = () => {
@@ -1365,8 +1380,9 @@ $('s-close').onclick = () => $('dlg-settings').close();
 $('s-save').onclick = () => {
   const c = D.config;
   const rules = clone(c.mailRules || []);
-  if(rules[0] && $('s-mail-from')) Object.assign(rules[0], {enabled: $('s-mail-on').checked, from: val('s-mail-from').trim(), subject: val('s-mail-subj').trim()});
-  if(rules[0]?.enabled && !rules[0].from){ return toast('כדי להפעיל את כלל המייל צריך כתובת שולח', {err: true}); }
+  rules.forEach((r, k) => { if($('s-mail-from-' + k)) Object.assign(r, {enabled: $('s-mail-on-' + k).checked, from: val('s-mail-from-' + k).trim(), subject: val('s-mail-subj-' + k).trim()}); });
+  const noFrom = rules.find(r => r.enabled && !r.from);
+  if(noFrom) return toast(`כדי להפעיל את "${noFrom.title}" צריך כתובת שולח`, {err: true});
   const from = val('s-from') || '07:00', to = val('s-to') || '21:00';
   if(from >= to) return toast('שעת הסיום צריכה להיות אחרי שעת ההתחלה', {err: true});
   saveConfig({activeFrom: from, activeTo: to, summaryTime: val('s-sum') || '07:30', defaultTime: val('s-def') || '10:00',
@@ -1396,7 +1412,10 @@ async function connect(value){
   try{
     await gh('GET', FILES.tasks.path, null, value);
     const probe = await gh('GET', KEYS_PATH, null, value);
+    const replaced = token && token !== value;
     token = value; store(K.token, value);
+    const tk = taskById('token');
+    if(replaced && tk && !tk.deleted) saveTask(Object.assign({}, tk, {afterDone: Object.assign({}, tk.afterDone, {lastDone: today()})}));
     if(probe){ store(K.topics, JSON.stringify(JSON.parse(from64(probe.content || '')))); }
     // מה שנעשה במכשיר לפני החיבור עולה
     Object.values(FILES).forEach(f => store(f.pending, '1'));
@@ -1419,19 +1438,14 @@ function onboard(step){
   const b = $('o-body');
   if(step === 1){
     b.innerHTML = `<h1 class="hello" style="margin-top:20px">ברוך הבא</h1>
-      <p class="rule">שלושה דברים קצרים, ואפשר להתחיל.</p>
+      <p class="rule">שני דברים קצרים, ואפשר להתחיל.</p>
       <div class="group" style="border:0"><h3>1. אסימון גיטהאב</h3>
       <p class="note">אסימון חדש ומוגבל (Fine-grained), רק למאגר cv, עם הרשאת Contents לקריאה וכתיבה. הוא נשמר רק במכשיר הזה.</p>
       <div class="field"><input type="password" id="o-token" dir="ltr" autocomplete="off" placeholder="github_pat_..." aria-label="אסימון גיטהאב"></div>
       <div class="btns"><button class="btn" id="o-skip1">אחר כך</button><button class="btn primary" id="o-next1">חיבור</button></div></div>`;
     $('o-skip1').onclick = () => onboard(2);
     $('o-next1').onclick = async e => { e.target.disabled = true; e.target.textContent = 'בודק...'; if(await connect(val('o-token').trim())) onboard(2); else{ e.target.disabled = false; e.target.textContent = 'חיבור'; } };
-  }else if(step === 2){
-    b.innerHTML = `<h1 class="hello" style="margin-top:20px">קוד נעילה</h1>
-      <p class="rule">4 ספרות. האפליקציה תינעל בפתיחה ואחרי 5 דקות ברקע. אפשר לשנות בהגדרות.</p>
-      <div class="btns"><button class="btn" id="o-skip2">בלי נעילה</button><button class="btn primary" id="o-next2">בחירת קוד</button></div>`;
-    $('o-skip2').onclick = () => onboard(3);
-    $('o-next2').onclick = () => showLock('set', () => onboard(3));
+  }else if(step === 2){ onboard(3); return;
   }else if(step === 3 && needsHaircut()){
     b.innerHTML = `<h1 class="hello" style="margin-top:20px">מתי הסתפרת לאחרונה?</h1>
       <p class="rule">מזה נספר החלון של 21 עד 30 ימים לתספורת הבאה.</p>
@@ -1472,17 +1486,16 @@ applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 renderAll();
 document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState === 'hidden'){ lastHidden = Date.now(); return; }
-  if(lastHidden && Date.now() - lastHidden > 5 * 60e3 && lockCfg()?.on && !$('lock').open) showLock('unlock');
-  lastHidden = 0;
+  if(document.visibilityState === 'hidden') return;
   renderAll(); sync();
 });
 setInterval(() => { if(!document.querySelector('dialog[open]')) renderAll(); }, 30e3);
 setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60e3);
-lockIfNeeded(() => {
-  if(!store(K.onboard)) onboard(1);
-  else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
-});
+// הנעילה בוטלה (17.11.2026). מנקים קוד שנשמר בגרסה הקודמת
+store('משימות.נעילה', null); store('משימות.נעילה.ניסיונות', null);
+if(migrate()) renderAll();
+if(!store(K.onboard)) onboard(1);
+else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
 sync();
 </script>
 </body>
