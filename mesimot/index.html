@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-theme="system">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F1F2F5">
+<meta name="robots" content="noindex,nofollow">
+<title>משימות</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#F1F2F5; --card:#FFFFFF; --text:#14161B; --muted:#5B6170; --line:#E6E8EC; --soft:#E9EBF0;
+    --event:#D5D9E2; --red:#C4281C; --red-soft:#FBE4E1; --accent:#5B5BF7; --on-accent:#fff;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="system"]{
+      --bg:#0F1115; --card:#1A1D23; --text:#F2F3F5; --muted:#A3A9B6; --line:#2A2E36; --soft:#262A32;
+      --event:#3A3F4A; --red:#FF7A6E; --red-soft:#3A1F1D; color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1115; --card:#1A1D23; --text:#F2F3F5; --muted:#A3A9B6; --line:#2A2E36; --soft:#262A32;
+    --event:#3A3F4A; --red:#FF7A6E; --red-soft:#3A1F1D; color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text)}
+  body{font:400 16px/1.45 Rubik,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;-webkit-tap-highlight-color:transparent;
+       min-height:100vh;overscroll-behavior-y:contain}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  [hidden]{display:none!important}
+  svg{display:block}
+  .screen{max-width:640px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 16px 150px}
+  h1,h2,h3{margin:0}
+
+  /* כותרת */
+  .top{display:flex;align-items:center;gap:12px}
+  .top .grow{flex:1;min-width:0}
+  .dateline{color:var(--muted);font-size:14px;font-weight:500}
+  .hello{font-size:32px;font-weight:700;line-height:1.15;margin-top:2px}
+  .ring{width:58px;height:58px;border-radius:50%;flex:none;display:grid;place-items:center;
+        background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--soft) 0)}
+  .ring span{width:46px;height:46px;border-radius:50%;background:var(--bg);display:grid;place-items:center;
+             font-size:13px;font-weight:600}
+  .icon-btn{width:44px;height:44px;border:0;background:transparent;border-radius:14px;display:grid;place-items:center;flex:none}
+  .icon-btn:active{background:var(--soft)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+  .chip{border-radius:999px;padding:6px 12px;font-size:14px;font-weight:500;background:var(--soft);color:var(--text);border:0}
+  .chip.red{background:var(--red-soft);color:var(--red)}
+  button.chip{min-height:44px;padding:8px 14px}
+  .chip.on{background:var(--accent);color:var(--on-accent)}
+
+  /* ציר היום */
+  .card{background:var(--card);border-radius:20px;padding:16px}
+  .timeline{margin-top:14px;padding:16px 16px 12px}
+  .track{position:relative;height:34px;margin:4px 6px 0}
+  .track .base{position:absolute;inset:15px 0 auto 0;height:4px;border-radius:999px;background:var(--soft)}
+  .track .past{position:absolute;top:15px;right:0;height:4px;border-radius:999px;background:var(--accent)}
+  .track .ev{position:absolute;top:7px;height:20px;border-radius:6px;background:var(--event)}
+  .track .tk{position:absolute;top:9px;width:16px;height:16px;margin-right:-8px;border-radius:50%;background:var(--card);
+             border:3px solid var(--c)}
+  .track .now{position:absolute;top:0;bottom:0;width:2px;margin-right:-1px;background:var(--text);border-radius:2px}
+  .hours{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:6px 0 0}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-left:5px}
+
+  /* קבוצות וכרטיסים */
+  .sec{margin-top:24px}
+  .sec>h2{font-size:17px;font-weight:600;margin:0 4px 10px}
+  .sec>h2.red{color:var(--red)}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:20px;padding:6px 8px 6px 14px;
+        touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative;transition:transform .15s}
+  .item.late{background:var(--red-soft)}
+  .item.dragging{transition:none}
+  .check{width:44px;height:44px;border:0;background:transparent;display:grid;place-items:center;flex:none;border-radius:50%}
+  .check i{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center}
+  .item.late .check i{border-color:var(--red)}
+  .check.done i{background:var(--accent);border-color:var(--accent)}
+  .item .body{flex:1;min-width:0;padding:8px 0;background:transparent;border:0;text-align:right}
+  .item .t{font-weight:500;overflow-wrap:anywhere}
+  .item .s{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:1px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
+  .side{font-size:13px;color:var(--muted);flex:none;white-space:nowrap}
+  .item.late .side{color:var(--red);font-weight:500}
+  .tag{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--soft);color:var(--muted)}
+  .steps{display:flex;gap:3px;margin-top:7px;max-width:180px}
+  .steps i{flex:1;height:4px;border-radius:999px;background:var(--soft)}
+  .steps i.on{background:var(--accent)}
+  .item.late .steps i{background:rgba(196,40,28,.18)} .item.late .steps i.on{background:var(--red)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mini{background:var(--card);border-radius:20px;padding:14px;border:0;text-align:right;min-height:112px;display:flex;
+        flex-direction:column;gap:8px}
+  .mini.late{background:var(--red-soft)}
+  .mini .t{font-weight:500}
+  .mini .s{font-size:13px;color:var(--muted)}
+  .mini.late .s{color:var(--red)}
+  .boxes{display:flex;gap:5px;flex-wrap:wrap}
+  .boxes i{width:20px;height:20px;border-radius:6px;background:var(--soft)}
+  .boxes i.on{background:var(--c)}
+  .win{position:relative;height:10px;border-radius:999px;background:var(--soft);margin:6px 0}
+  .win .zone{position:absolute;top:0;bottom:0;border-radius:999px;background:color-mix(in srgb, var(--c) 40%, transparent)}
+  .win .me{position:absolute;top:-4px;width:18px;height:18px;margin-right:-9px;border-radius:50%;background:var(--c);
+           border:3px solid var(--card)}
+  .win-lbl{position:relative;height:18px;font-size:12px;color:var(--muted);margin:0 8px}
+  .win-lbl span{position:absolute;transform:translateX(50%)}
+  .win.big{height:14px} .win.big .me{top:-5px;width:24px;height:24px;margin-right:-12px}
+  .pills{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{border:0;border-radius:999px;background:var(--card);padding:10px 14px;min-height:44px;display:flex;align-items:center;gap:8px}
+  .soon{background:var(--card);border-radius:20px;padding:4px 0}
+  .soon button{display:flex;width:100%;align-items:center;gap:10px;padding:12px 16px;border:0;background:transparent;text-align:right;min-height:48px}
+  .soon button+button{border-top:1px solid var(--line)}
+  .soon .t{flex:1;min-width:0}
+  .soon .d{font-size:13px;color:var(--muted);text-align:left}
+  .empty{color:var(--muted);font-size:14px;padding:6px 4px}
+  .status{color:var(--muted);font-size:13px;text-align:center;margin-top:26px}
+
+  /* כפתור צף וסרגל */
+  #fab{position:fixed;left:18px;bottom:calc(env(safe-area-inset-bottom) + 84px);width:60px;height:60px;border-radius:18px;
+       border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;z-index:5;
+       box-shadow:0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent)}
+  nav{position:fixed;right:0;left:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;
+      justify-content:space-around;padding:4px 6px calc(env(safe-area-inset-bottom) + 4px);z-index:4}
+  nav button{flex:1;max-width:120px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
+             gap:2px;padding:6px 0;font-size:12px;color:var(--muted);min-height:56px;border-radius:14px}
+  nav button.on{color:var(--accent);font-weight:600}
+
+  /* מסך משימה */
+  .page{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:8}
+  .page .screen{padding-bottom:130px}
+  .page .bar{display:flex;justify-content:space-between;align-items:center;margin:-4px -8px 10px}
+  .txt-btn{border:0;background:transparent;color:var(--accent);font-weight:600;min-height:44px;padding:0 12px;border-radius:14px}
+  .big-title{font-size:36px;font-weight:700;line-height:1.15;margin:10px 0 6px;overflow-wrap:anywhere}
+  .rule{color:var(--muted);font-size:16px}
+  .rows{background:var(--card);border-radius:20px;margin-top:12px}
+  .rows>div{display:flex;justify-content:space-between;gap:12px;padding:14px 16px;font-size:15px}
+  .rows>div+div{border-top:1px solid var(--line)}
+  .rows .k{color:var(--muted)}
+  .rows .v{text-align:left}
+  .subs label{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px}
+  .subs label+label{border-top:1px solid var(--line)}
+  .subs input{width:22px;height:22px;accent-color:var(--accent)}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:70px;margin:8px 0}
+  .bars i{flex:1;max-width:26px;border-radius:6px 6px 3px 3px;background:var(--accent);min-height:4px}
+  .action{position:fixed;right:0;left:0;bottom:0;padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+          background:linear-gradient(transparent, var(--bg) 30%);display:flex;gap:10px;max-width:640px;margin:0 auto}
+  .btn{border:0;border-radius:16px;min-height:52px;padding:0 18px;font-weight:600;background:var(--soft)}
+  .btn.primary{background:var(--accent);color:var(--on-accent);flex:1;font-size:17px}
+  .btn.danger{color:var(--red)}
+  .note{font-size:14px;color:var(--muted);margin-top:6px}
+  .links a{color:var(--accent);word-break:break-all}
+
+  /* חלוניות */
+  dialog{border:0;padding:0;background:var(--card);color:var(--text);width:min(560px,100vw);max-height:92vh;
+         border-radius:22px 22px 0 0;margin:auto auto 0;overflow:auto}
+  dialog.full{height:100%;max-height:100%;border-radius:0;margin:0 auto;width:min(640px,100vw)}
+  dialog::backdrop{background:rgba(0,0,0,.4)}
+  .dlg{padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
+  .dlg h2{font-size:20px;font-weight:700;margin-bottom:12px}
+  .dlg-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);
+            padding:8px 8px;z-index:2;border-bottom:1px solid var(--line)}
+  .dlg-head h2{font-size:18px;margin:0}
+  .field{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+  .field>label,.lbl{font-size:14px;color:var(--muted);font-weight:500}
+  input[type=text],input[type=number],input[type=date],input[type=time],input[type=password],select,textarea{
+    width:100%;min-height:48px;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:10px 12px}
+  textarea{min-height:84px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+  .row{display:flex;gap:10px} .row>*{flex:1;min-width:0}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opts button{border:0;border-radius:999px;background:var(--soft);min-height:44px;padding:8px 14px}
+  .opts button.on{background:var(--accent);color:var(--on-accent)}
+  .check-row{display:flex;align-items:center;gap:12px;min-height:48px}
+  .check-row input{width:22px;height:22px;accent-color:var(--accent)}
+  .group{border-top:1px solid var(--line);margin-top:18px;padding-top:6px}
+  .group>h3{font-size:16px;font-weight:600;margin:10px 0 4px}
+  .btns{display:flex;gap:10px;margin-top:18px} .btns .btn{flex:1}
+  .sheet-list{display:flex;flex-direction:column;gap:8px}
+  .sheet-list .btn{text-align:right}
+  .warn{background:var(--red-soft);color:var(--red);border-radius:14px;padding:10px 12px;font-size:14px}
+  .mono{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all;
+        background:var(--bg);border-radius:12px;padding:10px 12px}
+
+  /* הודעה קטנה */
+  .toast{position:fixed;right:16px;left:16px;bottom:calc(env(safe-area-inset-bottom) + 90px);max-width:480px;margin:0 auto;
+         background:var(--text);color:var(--bg);border-radius:16px;padding:6px 6px 6px 16px;display:flex;align-items:center;
+         justify-content:space-between;gap:8px;z-index:50;min-height:52px;padding-right:16px}
+  .toast button{border:0;background:transparent;color:inherit;font-weight:700;min-height:44px;padding:0 12px;text-decoration:underline}
+  .toast.err{background:var(--red);color:#fff}
+
+  /* לוח שנה */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px}
+  .cal-head h2{font-size:20px}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal .wd{text-align:center;font-size:12px;color:var(--muted);padding:4px 0}
+  .cal button{border:0;background:var(--card);border-radius:12px;min-height:52px;padding:4px 2px;display:flex;flex-direction:column;
+              align-items:center;gap:3px}
+  .cal button.today{outline:2px solid var(--accent)}
+  .cal button.sel{background:var(--accent);color:var(--on-accent)}
+  .cal button.out{opacity:.35}
+  .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
+  .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+
+  /* נעילה */
+  #lock{border:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border-radius:0;background:var(--bg);padding:20px}
+  #lock[open]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+  #lock::backdrop{background:var(--bg)}
+  #lock h2{font-size:22px}
+  .pin-dots{display:flex;gap:14px;direction:ltr}
+  .pin-dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted)}
+  .pin-dots i.on{background:var(--text);border-color:var(--text)}
+  .pad{display:grid;grid-template-columns:repeat(3,76px);gap:12px;direction:ltr}
+  .pad button{height:76px;border-radius:50%;border:0;background:var(--card);font-size:26px;font-weight:500}
+  .pad button.ghost{background:transparent;font-size:15px}
+  .lock-msg{min-height:22px;color:var(--red);font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- ===== מסך היום ===== -->
+<main class="screen" id="scr-today">
+  <div class="top">
+    <div class="grow">
+      <div class="dateline" id="dateline"></div>
+      <h1 class="hello" id="hello"></h1>
+    </div>
+    <div class="ring" id="ring" role="img" aria-label=""><span id="ring-txt"></span></div>
+    <button class="icon-btn" id="btn-menu" aria-label="הגדרות">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="card timeline" id="timeline"></div>
+  <div id="today-body"></div>
+  <div class="status" id="sync-status"></div>
+</main>
+
+<!-- ===== תחומים ===== -->
+<main class="screen" id="scr-domains" hidden>
+  <h1 class="hello">תחומים</h1>
+  <div class="chips" id="dom-filter"></div>
+  <div id="dom-body"></div>
+</main>
+
+<!-- ===== לוח שנה ===== -->
+<main class="screen" id="scr-calendar" hidden>
+  <h1 class="hello">לוח שנה</h1>
+  <div class="cal-head">
+    <button class="icon-btn" id="cal-prev" aria-label="החודש הקודם"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    <h2 id="cal-title"></h2>
+    <button class="icon-btn" id="cal-next" aria-label="החודש הבא"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+  </div>
+  <div class="cal" id="cal"></div>
+  <div class="sec"><h2 id="cal-day-title"></h2><div id="cal-day"></div></div>
+</main>
+
+<!-- ===== היסטוריה ===== -->
+<main class="screen" id="scr-history" hidden>
+  <h1 class="hello">היסטוריה</h1>
+  <div class="row" style="margin-top:14px">
+    <select id="hist-task" aria-label="סינון לפי משימה"></select>
+    <select id="hist-domain" aria-label="סינון לפי תחום"></select>
+  </div>
+  <div id="hist-body"></div>
+</main>
+
+<button id="fab" aria-label="משימה חדשה"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<nav id="nav">
+  <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
+  <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>תחומים</button>
+  <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>לוח שנה</button>
+  <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>היסטוריה</button>
+</nav>
+
+<!-- ===== מסך משימה ===== -->
+<section class="page" id="task-page" hidden aria-label="משימה">
+  <div class="screen">
+    <div class="bar">
+      <button class="icon-btn" id="tp-back" aria-label="חזרה"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="txt-btn" id="tp-edit">עריכה</button>
+    </div>
+    <div id="tp-body"></div>
+  </div>
+  <div class="action">
+    <button class="btn primary" id="tp-done">✓ בוצע</button>
+    <button class="btn" id="tp-snooze">דחייה</button>
+  </div>
+</section>
+
+<!-- ===== חלוניות ===== -->
+<dialog id="dlg-quick" aria-label="משימה חדשה"><div class="dlg">
+  <h2>משימה חדשה</h2>
+  <input type="text" id="q-title" placeholder="מה צריך לעשות?" aria-label="שם המשימה" enterkeyhint="done">
+  <div class="field"><span class="lbl">מתי</span><div class="opts" id="q-when"></div></div>
+  <div class="field"><span class="lbl">תחום</span><div class="opts" id="q-domain"></div></div>
+  <div class="btns">
+    <button class="btn" id="q-more">עוד אפשרויות</button>
+    <button class="btn primary" id="q-save">הוספה</button>
+  </div>
+</div></dialog>
+
+<dialog id="dlg-done" aria-label="סימון בוצע"><div class="dlg">
+  <h2 id="d-title">בוצע</h2>
+  <div class="row">
+    <div class="field"><label for="d-date">תאריך</label><input type="date" id="d-date"></div>
+    <div class="field"><label for="d-time">שעה</label><input type="time" id="d-time"></div>
+  </div>
+  <div class="field"><label for="d-note">הערה (לא חובה)</label><input type="text" id="d-note"></div>
+  <div class="btns"><button class="btn" id="d-cancel">ביטול</button><button class="btn primary" id="d-ok">✓ אישור</button></div>
+</div></dialog>
+
+<dialog id="dlg-snooze" aria-label="דחייה"><div class="dlg">
+  <h2 id="z-title">דחייה</h2>
+  <div class="sheet-list">
+    <button class="btn" data-z="1h">עוד שעה</button>
+    <button class="btn" data-z="tomorrow">מחר</button>
+    <button class="btn" data-z="week">בעוד שבוע</button>
+    <div class="row">
+      <input type="date" id="z-date" aria-label="תאריך">
+      <input type="time" id="z-time" aria-label="שעה">
+      <button class="btn" data-z="date" style="flex:none">לתאריך</button>
+    </div>
+    <button class="btn" data-z="skip">דילוג: לא רלוונטי הפעם</button>
+    <button class="btn" id="z-cancel">ביטול</button>
+  </div>
+</div></dialog>
+
+<dialog id="dlg-editor" class="full" aria-label="עריכת משימה">
+  <div class="dlg-head">
+    <button class="txt-btn" id="e-cancel">ביטול</button>
+    <h2 id="e-head">משימה</h2>
+    <button class="txt-btn" id="e-save">שמירה</button>
+  </div>
+  <div class="dlg" id="e-body"></div>
+</dialog>
+
+<dialog id="dlg-settings" class="full" aria-label="הגדרות">
+  <div class="dlg-head">
+    <button class="txt-btn" id="s-close">סגירה</button>
+    <h2>הגדרות</h2>
+    <button class="txt-btn" id="s-save">שמירה</button>
+  </div>
+  <div class="dlg" id="s-body"></div>
+</dialog>
+
+<dialog id="dlg-onboard" class="full" aria-label="התחלה"><div class="dlg" id="o-body"></div></dialog>
+
+<dialog id="lock" aria-label="נעילה">
+  <h2 id="lock-title">קוד נעילה</h2>
+  <div class="pin-dots" id="pin-dots"><i></i><i></i><i></i><i></i></div>
+  <div class="lock-msg" id="lock-msg"></div>
+  <div class="pad" id="pad"></div>
+</dialog>
+
+<script src="ליבה.js"></script>
+<script>
+'use strict';
+const ל = window.ליבה;
+const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
+const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
+const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', lock: 'משימות.נעילה',
+           tries: 'משימות.נעילה.ניסיונות', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה'};
+
+/* ---------- עזר ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowIso = () => new Date().toISOString();
+const today = () => ל.localDate(Date.now());
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const clone = o => JSON.parse(JSON.stringify(o));
+function store(k, v){
+  try{
+    if(v === undefined) return localStorage.getItem(k);
+    if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+  }catch(e){ return null; }
+}
+const storeJson = (k, def) => { try{ return JSON.parse(store(k) || '') ?? def; }catch(e){ return def; } };
+
+let toastTimer = null;
+function toast(text, opts){
+  opts = opts || {};
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  clearTimeout(toastTimer);
+  const t = document.createElement('div');
+  t.className = 'toast' + (opts.err ? ' err' : '');
+  t.setAttribute('role', 'status');
+  t.innerHTML = `<span>${esc(text)}</span>` + (opts.undo ? '<button type="button">ביטול</button>' : '');
+  if(opts.undo) t.querySelector('button').onclick = () => { t.remove(); opts.undo(); };
+  document.body.appendChild(t);
+  toastTimer = setTimeout(() => t.remove(), opts.ms || (opts.undo ? 5000 : 2600));
+}
+
+/* ---------- נתונים במכשיר ---------- */
+// שלושה קבצים במאגר, ולכל אחד עותק מלא במכשיר. כל שינוי נשמר מיד במכשיר ומסומן "ממתין".
+const FILES = {
+  tasks:  {path: 'משימות/משימות.json', cache: 'משימות.משימות', pending: 'משימות.משימות.ממתין', sha: null,
+           merge: (a, b) => ל.mergeTasksFile(a, b), msg: 'עדכון משימות'},
+  occ:    {path: 'משימות/פעמים.json', cache: 'משימות.פעמים', pending: 'משימות.פעמים.ממתין', sha: null,
+           merge: (a, b) => ל.mergeOccFile(a, b), msg: 'עדכון ביצועים'},
+  config: {path: 'משימות/תצורה.json', cache: 'משימות.תצורה', pending: 'משימות.תצורה.ממתין', sha: null,
+           merge: (a, b) => ל.mergeConfig(a, b), msg: 'עדכון הגדרות משימות'},
+};
+const seed = ל.initialData(today());
+const D = {
+  file: {
+    tasks: FILES.tasks.merge(storeJson(FILES.tasks.cache, null) || {tasks: seed.tasks, domains: seed.domains}, null),
+    occ: FILES.occ.merge(storeJson(FILES.occ.cache, null) || {occ: []}, null),
+    config: ל.mergeConfig(storeJson(FILES.config.cache, null) || seed.config),
+  },
+  get tasks(){ return this.file.tasks.tasks; },
+  get domains(){ return this.file.tasks.domains; },
+  get occ(){ return this.file.occ.occ; },
+  get config(){ return this.file.config; },
+};
+let inbox = storeJson(K.inbox, {calendar: [], mail: []});
+const data = () => ({tasks: D.tasks, occ: D.occ, domains: D.domains, config: D.config});
+function persist(name, pending){
+  store(FILES[name].cache, JSON.stringify(D.file[name]));
+  if(pending) store(FILES[name].pending, '1');
+}
+function saveTask(t){
+  t = Object.assign({}, t, {updatedAt: nowIso()});
+  D.file.tasks = {v: 1, tasks: ל.mergeById(D.tasks, [t]), domains: D.domains};
+  persist('tasks', true); changed();
+  return t;
+}
+function saveDomains(list){
+  D.file.tasks = {v: 1, tasks: D.tasks, domains: ל.mergeById(D.domains, list)};
+  persist('tasks', true); changed();
+}
+function saveRec(r){
+  D.file.occ = {v: 1, occ: ל.mergeById(D.occ, [r])};
+  persist('occ', true); changed();
+}
+function saveConfig(c){
+  D.file.config = ל.config(Object.assign({}, D.config, c, {updatedAt: nowIso()}));
+  persist('config', true); applyTheme(); changed();
+}
+let syncTimer = null;
+function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); }
+
+const taskById = id => D.tasks.find(t => t.id === id);
+const domainOf = t => D.domains.find(d => d.id === t.domain) || {name: 'כללי', color: '#64748B'};
+const visibleDomains = () => D.domains.filter(d => !d.deleted && !d.hidden);
+const activeTasks = () => D.tasks.filter(ל.isActiveTask).map(t => ל.normTask(t, D.config));
+
+/* ---------- ערכת צבעים ---------- */
+function applyTheme(){
+  document.documentElement.dataset.theme = D.config.theme || 'system';
+  document.documentElement.style.setProperty('--accent', D.config.accent || '#5B5BF7');
+  const dark = D.config.theme === 'dark' || (D.config.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]').content = dark ? '#0F1115' : '#F1F2F5';
+}
+
+/* ---------- טקסטים ---------- */
+function agoText(n){ return n <= 0 ? 'היום' : n === 1 ? 'אתמול' : n === 2 ? 'לפני יומיים' : `לפני ${n} ימים`; }
+function inDaysText(n){ return n === 0 ? 'היום' : n === 1 ? 'מחר' : n === 2 ? 'בעוד יומיים' : `בעוד ${n} ימים`; }
+function greeting(){
+  const h = ל.parts(Date.now()).h;
+  return h >= 5 && h < 12 ? 'בוקר טוב' : h >= 12 && h < 17 ? 'צהריים טובים' : h >= 17 && h < 21 ? 'ערב טוב' : 'לילה טוב';
+}
+const dayName = d => 'יום ' + ל.DAY_NAMES[ל.weekday(d)];
+const fullDate = d => `${ל.shortDate(d)}.${d.slice(0, 4)}`;
+const doneLabel = t => t.doneLabel || 'בוצע';
+
+/* ---------- כרטיסים ---------- */
+function itemHtml(i, mode){
+  const t = i.task, o = i.occ, dom = domainOf(t), late = mode === 'late';
+  const subs = t.subtasks || [], doneSubs = subs.filter(s => (o.subDone || []).includes(s.id)).length;
+  let side = '';
+  if(late) side = agoText(i.late);
+  else if(i.status === 'snoozed') side = 'נדחה עד ' + ל.localTime(ל.toMs(o.snoozeUntil));
+  else if(t.time && mode === 'today') side = t.time;
+  const sub = [`<span class="dot" style="--c:${esc(dom.color)}"></span>${esc(dom.name)}`];
+  if(late || t.priority !== 'normal') sub.push(esc(ל.PRIORITY_NAME[t.priority]));
+  else if(mode === 'today' && t.time) sub.push(esc(t.time));
+  if(t.kind === 'email') sub.push('<span class="tag">מהמייל</span>');
+  if(t.kind === 'schedule' && t.schedule?.rule && late) sub.push(esc(ל.shortDate(o.due)));
+  return `<div class="item${late ? ' late' : ''}" data-occ="${esc(o.id)}" data-task="${esc(t.id)}">
+    <button class="check" data-act="done" aria-label="סימון ${esc(doneLabel(t))}: ${esc(t.title)}"><i></i></button>
+    <button class="body" data-act="open"><div class="t">${esc(t.title)}</div><div class="s">${sub.join(' · ')}</div>
+    ${subs.length ? `<div class="steps" aria-label="${doneSubs} מתוך ${subs.length} צעדים">${subs.map((s, k) => `<i class="${k < doneSubs ? 'on' : ''}"></i>`).join('')}</div><div class="s" style="margin-top:3px">${doneSubs} מתוך ${subs.length} צעדים</div>` : ''}
+    </button>
+    ${side ? `<div class="side">${esc(side)}</div>` : ''}
+  </div>`;
+}
+function windowBar(w, color, big){
+  const span = Math.max(w.max, w.day, 1);
+  const pos = x => Math.min(100, Math.max(0, x / span * 100));
+  return `<div class="win${big ? ' big' : ''}" style="--c:${esc(color)}"><div class="zone" style="right:${pos(w.min)}%;width:${pos(w.max) - pos(w.min)}%"></div>
+    <div class="me" style="right:${pos(w.day)}%"></div></div>`;
+}
+function miniHtml(i){
+  const t = i.task, o = i.occ, dom = domainOf(t);
+  if(t.kind === 'quota'){
+    const q = o.quota;
+    const boxes = Array.from({length: q.count}, (_, k) => `<i class="${k < q.done ? 'on' : ''}"></i>`).join('');
+    const left = q.done >= q.count ? 'הושלם השבוע' : `נשארו ${q.daysLeft === 1 ? 'היום' : q.daysLeft + ' ימים'}`;
+    return `<button class="mini${q.behind ? ' late' : ''}" data-act="open" data-occ="${esc(o.id)}" data-task="${esc(t.id)}">
+      <div class="t">${esc(t.title)}</div><div class="boxes" style="--c:${esc(dom.color)}">${boxes}</div>
+      <div class="s">${q.done} מתוך ${q.count} · ${left}</div></button>`;
+  }
+  const w = o.window;
+  const txt = w.needsLast ? 'מתי בוצע לאחרונה?' : `יום ${w.day} מתוך ${w.min}–${w.max}`;
+  return `<button class="mini" data-act="open" data-occ="${esc(o.id)}" data-task="${esc(t.id)}">
+    <div class="t">${esc(t.title)}</div>${windowBar(w, dom.color)}<div class="s">${esc(txt)}</div></button>`;
+}
+
+/* ---------- מסך היום ---------- */
+function todayEvents(){
+  const d = today();
+  return (inbox.calendar || []).filter(e => e.start && ל.localDate(ל.toMs(e.start)) === d);
+}
+function renderToday(){
+  const now = Date.now(), d = today(), v = ל.buildView(data(), now);
+  $('dateline').textContent = `${dayName(d)} · ${ל.longDate(d)}`;
+  $('hello').textContent = `${greeting()}, נדב`;
+  const p = v.total ? Math.round(v.doneToday / v.total * 100) : 0;
+  $('ring').style.setProperty('--p', p);
+  $('ring-txt').textContent = `${v.doneToday}/${v.total}`;
+  $('ring').setAttribute('aria-label', `בוצעו ${v.doneToday} מתוך ${v.total} להיום`);
+  const ev = todayEvents();
+  $('chips').innerHTML = (v.overdue.length ? `<span class="chip red">${v.overdue.length} באיחור</span>` : '')
+    + `<span class="chip">${v.todays.length} להיום</span>` + (ev.length ? `<span class="chip">${ev.length} ביומן</span>` : '');
+
+  // ציר היום: 07:00 מימין עד 21:00 משמאל
+  const from = 7 * 60, to = 21 * 60, pos = m => Math.min(100, Math.max(0, (m - from) / (to - from) * 100));
+  const mins = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+  const nowM = mins(ל.localTime(now));
+  let tl = `<div class="track"><div class="base"></div><div class="past" style="width:${pos(nowM)}%"></div>`;
+  for(const e of ev){
+    if(e.allDay) continue;
+    const a = mins(ל.localTime(ל.toMs(e.start))), b = e.end ? mins(ל.localTime(ל.toMs(e.end))) : a + 60;
+    tl += `<div class="ev" style="right:${pos(a)}%;width:${Math.max(1.5, pos(b) - pos(a))}%" title="${esc(e.title)}"></div>`;
+  }
+  for(const i of v.todays){
+    const tm = i.status === 'snoozed' ? ל.localTime(ל.toMs(i.occ.snoozeUntil)) : i.task.time;
+    if(tm) tl += `<div class="tk" style="right:${pos(mins(tm))}%;--c:${esc(domainOf(i.task).color)}" title="${esc(i.task.title)} ${tm}"></div>`;
+  }
+  if(nowM >= from && nowM <= to) tl += `<div class="now" style="right:${pos(nowM)}%"></div>`;
+  tl += `</div><div class="hours"><span>07:00</span><span>10:00</span><span>13:00</span><span>16:00</span><span>19:00</span><span>21:00</span></div>
+    <div class="legend"><span><i style="background:var(--event)"></i>ביומן</span><span><i style="border:2px solid var(--accent);border-radius:50%"></i>משימה עם שעה</span><span><i style="background:var(--accent);height:4px"></i>עבר</span></div>`;
+  $('timeline').innerHTML = tl;
+
+  let h = '';
+  if(v.overdue.length) h += `<div class="sec"><h2 class="red">באיחור</h2><div class="list">${v.overdue.map(i => itemHtml(i, 'late')).join('')}</div></div>`;
+  h += `<div class="sec"><h2>היום</h2><div class="list">${v.todays.length ? v.todays.map(i => itemHtml(i, 'today')).join('') : '<div class="empty">אין משימות להיום</div>'}</div></div>`;
+  if(v.week.length) h += `<div class="sec"><h2>השבוע</h2><div class="grid2">${v.week.map(miniHtml).join('')}</div></div>`;
+  if(v.waiting.length) h += `<div class="sec"><h2>ממתינות</h2><div class="pills">${v.waiting.map(i =>
+    `<button class="pill" data-act="open" data-occ="${esc(i.occ.id)}" data-task="${esc(i.task.id)}"><span class="dot" style="--c:${esc(domainOf(i.task).color)}"></span>${esc(i.task.title)}</button>`).join('')}</div></div>`;
+  if(v.upcoming.length) h += `<div class="sec"><h2>בקרוב</h2><div class="soon">${v.upcoming.map(i =>
+    `<button data-act="open" data-occ="${esc(i.occ.id)}" data-task="${esc(i.task.id)}"><span class="dot" style="--c:${esc(domainOf(i.task).color)}"></span>
+     <span class="t">${esc(i.task.title)}${i.task.kind === 'afterDone' ? ' <span class="tag">אפשר מ־' + esc(ל.shortDate(i.date)) + '</span>' : ''}</span>
+     <span class="d">${esc(ל.shortDate(i.date))}<br>${esc(inDaysText(ל.diffDays(i.date, d)))}</span></button>`).join('')}</div></div>`;
+  $('today-body').innerHTML = h;
+}
+
+/* ---------- תחומים ---------- */
+let domFilter = '';
+function nextText(t){
+  const idx = ל.indexOcc(D.occ), d = today();
+  const occs = ל.occurrencesOf(t, idx, d, ל.addDays(d, 400)).filter(o => ל.isOpen(o, Date.now()));
+  if(t.kind === 'quota'){ const q = occs[0]?.quota || ל.quotaInfo(t, idx, d); return `${q.done} מתוך ${q.count} השבוע`; }
+  if(t.kind === 'inbox') return occs.length ? 'ממתינה' : 'בוצעה';
+  if(t.kind === 'afterDone'){ const w = occs[0]?.window; return w ? (w.needsLast ? 'מתי בוצע לאחרונה?' : `יום ${w.day} מתוך ${w.min}–${w.max}`) : ''; }
+  const o = occs[0];
+  if(!o) return 'אין מופע פתוח';
+  const ed = ל.effDate(o), n = ל.diffDays(ed, d);
+  return n < 0 ? `באיחור, ${ל.shortDate(o.due)}` : `${ל.shortDate(ed)} · ${inDaysText(n)}`;
+}
+function renderDomains(){
+  const doms = D.domains.filter(x => !x.deleted && !x.hidden);
+  $('dom-filter').innerHTML = `<button class="chip${domFilter ? '' : ' on'}" data-dom="">הכול</button>`
+    + doms.map(x => `<button class="chip${domFilter === x.id ? ' on' : ''}" data-dom="${esc(x.id)}">${esc(x.name)}</button>`).join('');
+  const all = D.tasks.filter(t => !t.deleted).map(t => ל.normTask(t, D.config));
+  let h = '';
+  for(const dm of doms){
+    if(domFilter && dm.id !== domFilter) continue;
+    const ts = all.filter(t => t.domain === dm.id && !t.archived)
+      .sort((a, b) => (ל.PRIORITY[a.priority] - ל.PRIORITY[b.priority]) || a.title.localeCompare(b.title, 'he'));
+    h += `<div class="sec"><h2><span class="dot" style="--c:${esc(dm.color)}"></span> ${esc(dm.name)}</h2>
+      ${ts.length ? `<div class="soon">${ts.map(t => `<button data-act="open" data-task="${esc(t.id)}"><span class="t">${esc(t.title)}<br><span class="note" style="margin:0">${esc(ל.describeRule(t))}</span></span><span class="d">${esc(nextText(t))}</span></button>`).join('')}</div>` : '<div class="empty">אין משימות</div>'}</div>`;
+  }
+  const arch = all.filter(t => t.archived && (!domFilter || t.domain === domFilter));
+  if(arch.length) h += `<div class="sec"><h2>בארכיון</h2><div class="soon">${arch.map(t => `<button data-act="open" data-task="${esc(t.id)}"><span class="t">${esc(t.title)}</span><span class="d">${esc(domainOf(t).name)}</span></button>`).join('')}</div></div>`;
+  $('dom-body').innerHTML = h;
+}
+
+/* ---------- לוח שנה ---------- */
+let calMonth = today().slice(0, 7), calDay = today();
+function dayEntries(d){
+  // מה היה (ביצועים) ומה יהיה (מועדים פתוחים), ואירועי יומן
+  const out = [], idx = ל.indexOcc(D.occ), t0 = today();
+  for(const r of D.occ){
+    if(r.deleted || r.status !== 'done' || !r.doneAt || ל.localDate(ל.toMs(r.doneAt)) !== d) continue;
+    const t = taskById(r.taskId); if(t) out.push({t, txt: 'בוצע ' + ל.localTime(ל.toMs(r.doneAt)), done: true, occ: r.id});
+  }
+  if(d >= ל.addDays(t0, -400))
+    for(const t of activeTasks()){
+      if(t.kind === 'quota' || t.kind === 'inbox') continue;
+      for(const o of ל.occurrencesOf(t, idx, t0, d > t0 ? d : t0)){
+        if(ל.effDate(o) !== d || !ל.isOpen(o, Date.now())) continue;
+        out.push({t, txt: d < t0 ? 'באיחור' : t.kind === 'afterDone' ? 'הופך לאדום' : (t.time || ''), occ: o.id});
+      }
+      if(t.kind === 'afterDone'){
+        const w = ל.afterDoneInfo(t, idx, t0);
+        if(w.minDate === d && d >= t0) out.push({t, txt: 'החלון נפתח', occ: w.id});
+      }
+    }
+  for(const e of inbox.calendar || [])
+    if(e.start && ל.localDate(ל.toMs(e.start)) === d) out.push({ev: e, txt: e.allDay ? 'כל היום' : ל.localTime(ל.toMs(e.start))});
+  return out;
+}
+function renderCalendar(){
+  const [y, m] = calMonth.split('-').map(Number), first = `${calMonth}-01`, n = ל.daysInMonth(y, m), t0 = today();
+  $('cal-title').textContent = `${ל.MONTH_NAMES[m - 1]} ${y}`;
+  let h = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'].map(x => `<div class="wd">${x}</div>`).join('');
+  for(let k = 0; k < ל.weekday(first); k++) h += '<div></div>';
+  for(let k = 1; k <= n; k++){
+    const d = `${calMonth}-${ל.pad(k)}`, es = dayEntries(d);
+    const dots = es.slice(0, 6).map(e => `<i style="--c:${e.ev ? 'var(--muted)' : esc(domainOf(e.t).color)}"></i>`).join('');
+    h += `<button data-day="${d}" class="${d === t0 ? 'today' : ''}${d === calDay ? ' sel' : ''}" aria-label="${k} ב${ל.MONTH_NAMES[m - 1]}, ${es.length} פריטים">${k}<span class="ds">${dots}</span></button>`;
+  }
+  $('cal').innerHTML = h;
+  const es = dayEntries(calDay);
+  $('cal-day-title').textContent = `${dayName(calDay)} · ${ל.longDate(calDay)}`;
+  $('cal-day').innerHTML = es.length ? `<div class="soon">${es.map(e => e.ev
+    ? `<button disabled><span class="dot" style="--c:var(--muted)"></span><span class="t">${esc(e.ev.title)}</span><span class="d">${esc(e.txt)}</span></button>`
+    : `<button data-act="open" data-task="${esc(e.t.id)}" data-occ="${esc(e.occ)}"><span class="dot" style="--c:${esc(domainOf(e.t).color)}"></span><span class="t">${esc(e.t.title)}</span><span class="d">${esc(e.done ? '✓ ' + e.txt : e.txt)}</span></button>`).join('')}</div>`
+    : '<div class="empty">אין כלום ביום הזה</div>';
+}
+
+/* ---------- היסטוריה ---------- */
+function statsOf(t){
+  const recs = D.occ.filter(r => !r.deleted && r.taskId === t.id && r.status === 'done' && r.doneAt)
+    .map(r => Object.assign({}, r, {dd: ל.localDate(ל.toMs(r.doneAt))})).sort((a, b) => a.dd.localeCompare(b.dd));
+  const withDue = recs.filter(r => r.due && t.kind !== 'quota');
+  const lateDays = withDue.map(r => Math.max(0, ל.diffDays(r.dd, r.due)));
+  const onTime = withDue.length ? Math.round(lateDays.filter(x => x === 0).length / withDue.length * 100) : null;
+  let streak = 0; for(let k = lateDays.length - 1; k >= 0 && lateDays[k] === 0; k--) streak++;
+  const gaps = recs.slice(1).map((r, k) => ל.diffDays(r.dd, recs[k].dd));
+  return {recs, onTime, avgLate: lateDays.length ? +(lateDays.reduce((a, b) => a + b, 0) / lateDays.length).toFixed(1) : null,
+    streak, gaps, avgGap: gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null, last: recs[recs.length - 1]};
+}
+function renderHistory(){
+  const ft = $('hist-task').value, fd = $('hist-domain').value;
+  const tasks = D.tasks.filter(t => !t.deleted);
+  $('hist-task').innerHTML = '<option value="">כל המשימות</option>' + tasks.map(t => `<option value="${esc(t.id)}"${t.id === ft ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
+  $('hist-domain').innerHTML = '<option value="">כל התחומים</option>' + D.domains.filter(x => !x.deleted).map(x => `<option value="${esc(x.id)}"${x.id === fd ? ' selected' : ''}>${esc(x.name)}</option>`).join('');
+  const sel = tasks.filter(t => (!ft || t.id === ft) && (!fd || t.domain === fd)).map(t => ל.normTask(t, D.config));
+  let h = '<div class="sec"><h2>לפי משימה</h2><div class="rows">';
+  for(const t of sel){
+    const s = statsOf(t);
+    if(!s.recs.length) continue;
+    h += `<div><span>${esc(t.title)}</span><span class="v k">${[s.onTime != null ? `${s.onTime}% בזמן` : '', s.avgLate ? `איחור ממוצע ${s.avgLate} ימים` : '', s.streak ? `רצף ${s.streak}` : '', `${s.recs.length} ביצועים`].filter(Boolean).join(' · ')}</span></div>`;
+  }
+  h += '</div></div>';
+  if(!sel.some(t => statsOf(t).recs.length)) h = '';
+  const ids = new Set(sel.map(t => t.id));
+  const recs = D.occ.filter(r => !r.deleted && r.status === 'done' && r.doneAt && ids.has(r.taskId))
+    .sort((a, b) => b.doneAt.localeCompare(a.doneAt)).slice(0, 300);
+  h += `<div class="sec"><h2>כל הביצועים</h2>${recs.length ? `<div class="soon">${recs.map(r => {
+    const t = taskById(r.taskId), dd = ל.localDate(ל.toMs(r.doneAt)), late = r.due && t.kind !== 'quota' ? ל.diffDays(dd, r.due) : 0;
+    return `<button data-act="open" data-task="${esc(t.id)}"><span class="dot" style="--c:${esc(domainOf(t).color)}"></span><span class="t">${esc(t.title)}${r.note ? `<br><span class="note" style="margin:0">${esc(r.note)}</span>` : ''}</span><span class="d">${esc(fullDate(dd))} ${esc(ל.localTime(ל.toMs(r.doneAt)))}${late > 0 ? `<br><span style="color:var(--red)">באיחור ${late}</span>` : ''}</span></button>`;
+  }).join('')}</div>` : '<div class="empty">עוד אין ביצועים</div>'}</div>`;
+  $('hist-body').innerHTML = h;
+}
+
+/* ---------- ניווט ---------- */
+let screen = 'today';
+function show(s){
+  screen = s;
+  for(const x of ['today', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
+  renderAll(); scrollTo(0, 0);
+}
+function renderAll(){
+  if(screen === 'today') renderToday();
+  else if(screen === 'domains') renderDomains();
+  else if(screen === 'calendar') renderCalendar();
+  else renderHistory();
+  if(!$('task-page').hidden) renderTaskPage();
+  renderStatus();
+}
+$('nav').addEventListener('click', e => { const b = e.target.closest('button[data-scr]'); if(b) show(b.dataset.scr); });
+$('dom-filter').addEventListener('click', e => { const b = e.target.closest('[data-dom]'); if(b){ domFilter = b.dataset.dom; renderDomains(); } });
+$('cal').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if(b){ calDay = b.dataset.day; renderCalendar(); } });
+$('cal-prev').onclick = () => { const [y, m] = calMonth.split('-').map(Number); calMonth = m === 1 ? `${y - 1}-12` : `${y}-${ל.pad(m - 1)}`; renderCalendar(); };
+$('cal-next').onclick = () => { const [y, m] = calMonth.split('-').map(Number); calMonth = m === 12 ? `${y + 1}-01` : `${y}-${ל.pad(m + 1)}`; renderCalendar(); };
+$('hist-task').onchange = $('hist-domain').onchange = renderHistory;
+
+/* ---------- פעולות על מופע ---------- */
+function resolve(occId, taskId){
+  if(occId){ const f = ל.findOcc(data(), occId, Date.now()); if(f) return f; }
+  const t = taskById(taskId);
+  if(!t) return null;
+  const task = ל.normTask(t, D.config);
+  return {task, occ: currentOcc(task)};
+}
+/** המופע שהמסך מטפל בו: הפתוח הוותיק ביותר, ואם אין, הבא בתור. */
+function currentOcc(task){
+  const d = today(), now = Date.now(), list = ל.occurrencesOf(task, ל.indexOcc(D.occ), d, ל.addDays(d, 400));
+  return list.find(o => ל.isOpen(o, now)) || list[list.length - 1] || null;
+}
+function doDone(task, occ, opts){
+  opts = opts || {};
+  if(!occ) return;
+  const prev = occ.kind === 'quota' ? null : (D.occ.find(r => r.id === occ.id && !r.deleted) || null);
+  const rec = ל.markDone(data(), occ, {nowIso: nowIso(), when: opts.when, note: opts.note});
+  saveRec(rec);
+  toast(`${doneLabel(task)} · ${task.title}`, {undo: () => { saveRec(ל.undo(prev, rec.id, nowIso())); toast('בוטל'); }});
+}
+function doSnooze(task, occ, kind){
+  if(!occ) return;
+  const prev = D.occ.find(r => r.id === occ.id && !r.deleted) || null;
+  if(kind === 'skip'){
+    saveRec(ל.skip(occ, nowIso()));
+    return toast('דולג', {undo: () => saveRec(ל.undo(prev, occ.id, nowIso()))});
+  }
+  const until = ל.snoozeTarget(kind, Date.now(), task, D.config);
+  saveRec(ל.snooze(occ, until, nowIso()));
+  const d = ל.localDate(until);
+  toast(`נדחה ל${d === today() ? '' : '־' + ל.shortDate(d) + ' ב'}־${ל.localTime(until)}`, {undo: () => saveRec(ל.undo(prev, occ.id, nowIso()))});
+}
+
+// לחיצה, לחיצה ארוכה והחלקה על כרטיסים
+let press = null, suppressClick = false;
+document.addEventListener('pointerdown', e => {
+  const card = e.target.closest('.item, .mini, .pill, .soon button[data-task]');
+  if(!card || e.button > 0) return;
+  press = {card, x: e.clientX, y: e.clientY, dx: 0, long: false, id: e.pointerId,
+    timer: setTimeout(() => { press.long = true; suppressClick = true; navigator.vibrate?.(15); openEditor(card.dataset.task); }, 550)};
+});
+document.addEventListener('pointermove', e => {
+  if(!press || e.pointerId !== press.id) return;
+  const dx = e.clientX - press.x, dy = e.clientY - press.y;
+  if(Math.abs(dx) > 8 || Math.abs(dy) > 8) clearTimeout(press.timer);
+  if(press.card.classList.contains('item') && Math.abs(dx) > Math.abs(dy) && dx < -6){
+    press.dx = dx; press.card.classList.add('dragging');
+    press.card.style.transform = `translateX(${Math.max(dx, -110)}px)`;
+  }
+});
+function endPress(){
+  if(!press) return;
+  clearTimeout(press.timer);
+  const p = press; press = null;
+  p.card.classList.remove('dragging'); p.card.style.transform = '';
+  if(p.dx < -70){ suppressClick = true; openSnooze(p.card.dataset.occ, p.card.dataset.task); }
+  if(suppressClick) setTimeout(() => { suppressClick = false; }, 400);
+}
+document.addEventListener('pointerup', endPress);
+document.addEventListener('pointercancel', endPress);
+document.addEventListener('contextmenu', e => { if(e.target.closest('.item, .mini, .pill, .soon button')) e.preventDefault(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]');
+  if(!a) return;
+  if(suppressClick){ suppressClick = false; e.preventDefault(); return; }
+  const card = a.closest('[data-task]') || a;
+  const occId = card.dataset.occ, taskId = card.dataset.task;
+  if(a.dataset.act === 'done'){
+    const f = resolve(occId, taskId);
+    if(f){ a.classList.add('done'); doDone(f.task, f.occ); }
+  }else if(a.dataset.act === 'open') openTask(taskId, occId);
+}, true);
+
+/* ---------- מסך משימה ---------- */
+let tp = null;   // {taskId, occId}
+function openTask(taskId, occId){
+  tp = {taskId, occId: occId || null};
+  $('task-page').hidden = false; $('task-page').scrollTop = 0;
+  renderTaskPage();
+  if(location.hash !== '#t') history.pushState({tp: 1}, '', '#t');
+}
+function closeTask(){ tp = null; $('task-page').hidden = true; renderAll(); }
+$('tp-back').onclick = () => history.state?.tp ? history.back() : closeTask();
+addEventListener('popstate', () => { if(!$('task-page').hidden) closeTask(); });
+$('tp-edit').onclick = () => tp && openEditor(tp.taskId);
+$('tp-done').onclick = () => { const f = tp && resolve(tp.occId, tp.taskId); if(f?.occ) openDoneSheet(f.task, f.occ); };
+$('tp-snooze').onclick = () => tp && openSnooze(tp.occId, tp.taskId);
+
+function nagText(t){
+  const n = t.nag || {mode: 'daily'};
+  return {daily: 'פעם ביום, בשעת המשימה', weekly: 'פעם בשבוע', everyNDays: `כל ${n.n || 2} ימים`,
+    times: `בשעות ${(n.times || []).join(', ')}`, none: 'בלי. רק בסיכום הבוקר'}[n.mode] || '';
+}
+function renderTaskPage(){
+  const raw = taskById(tp.taskId);
+  if(!raw || raw.deleted){ closeTask(); return; }
+  const t = ל.normTask(raw, D.config), dom = domainOf(t), now = Date.now(), d = today();
+  let f = tp.occId ? ל.findOcc(data(), tp.occId, now) : null;
+  // מופע שנסגר (או מופע מכסה של יום אחר): עוברים למופע הנוכחי
+  if(!f || (f.occ.kind !== 'quota' && !ל.isOpen(f.occ, now))) f = {task: t, occ: currentOcc(t)};
+  const o = f.occ;
+  if(o && tp.occId !== o.id) tp.occId = o.id;
+  let status = '';
+  if(t.kind === 'afterDone'){
+    const w = o.window;
+    if(w.needsLast) status = `<div class="card" style="margin-top:14px"><div style="font-weight:600">מתי בוצע לאחרונה?</div>
+      <div class="row" style="margin-top:10px"><input type="date" id="tp-last" max="${d}" value="${d}" aria-label="תאריך הביצוע האחרון"><button class="btn primary" id="tp-last-ok" style="flex:none">שמירה</button></div></div>`;
+    else{
+      const red = w.max + 1 - w.day;
+      status = `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-weight:600"><span>יום ${w.day}</span><span class="k" style="color:var(--muted);font-weight:400">חלון ${w.min}–${w.max}</span></div>
+        ${windowBar(w, dom.color, true)}<div class="win-lbl">${[0, w.min, w.max].map(x => `<span style="right:${Math.min(100, x / Math.max(w.max, w.day, 1) * 100)}%">${x}</span>`).join('')}</div>
+        <div class="note">${w.day < w.min ? `החלון נפתח בעוד ${w.min - w.day} ימים (${ל.shortDate(w.minDate)})` : red > 0 ? `בעוד ${red === 1 ? 'יום' : red + ' ימים'} המשימה תהפוך לאדומה` : 'המשימה באיחור'}. ביצוע אחרון: ${fullDate(w.lastDone)}</div></div>`;
+    }
+  }else if(t.kind === 'quota'){
+    const q = ל.quotaInfo(t, ל.indexOcc(D.occ), d);
+    status = `<div class="card" style="margin-top:14px"><div class="boxes" style="--c:${esc(dom.color)}">${Array.from({length: q.count}, (_, k) => `<i class="${k < q.done ? 'on' : ''}" style="width:34px;height:34px;border-radius:10px"></i>`).join('')}</div>
+      <div class="note">${q.done} מתוך ${q.count} ${t.quota?.period === 'month' ? 'החודש' : 'השבוע'} · ${q.done >= q.count ? 'הושלם' : `נשארו ${q.daysLeft} ימים`}${q.behind ? ' · <b style="color:var(--red)">מפגר</b>' : ''}</div></div>`;
+  }else if(o && o.due){
+    const opens = ל.occurrencesOf(t, ל.indexOcc(D.occ), d, d).filter(x => ל.isOpen(x, now) && x.due < d);
+    const ed = ל.effDate(o), n = ל.diffDays(ed, d);
+    status = `<div class="card" style="margin-top:14px"><div style="font-weight:600">${n < 0 ? `באיחור מ־${fullDate(o.due)}` : `המועד: ${dayName(ed)}, ${fullDate(ed)}`}</div>
+      <div class="note">${n < 0 ? agoText(-n) : inDaysText(n)}${o.status === 'snoozed' && ל.isOpen(o, now) && ל.effStatus(o, now) === 'snoozed' ? ` · נדחה עד ${ל.shortDate(ל.localDate(ל.toMs(o.snoozeUntil)))} ${ל.localTime(ל.toMs(o.snoozeUntil))}` : ''}${t.time ? ' · ' + t.time : ''}</div>
+      ${opens.length > 1 ? `<div class="warn" style="margin-top:10px">${opens.length} פעמים פתוחות: ${opens.map(x => ל.shortDate(x.due)).join(', ')}</div>` : ''}</div>`;
+  }else if(o && t.kind === 'inbox') status = `<div class="card note" style="margin-top:14px">${ל.isOpen(o, now) ? 'ממתינה. בלי תאריך' : 'בוצעה'}</div>`;
+  const pre = t.pre.length ? t.pre.slice().sort((a, b) => b - a).map(x => x === 1 ? 'יום לפני' : `${x} ימים לפני`).join(', ') : 'בלי';
+  const subs = t.subtasks.length ? `<div class="sec"><h2>צעדים</h2><div class="rows subs">${t.subtasks.map(s =>
+    `<label><input type="checkbox" data-sub="${esc(s.id)}"${(o?.subDone || []).includes(s.id) ? ' checked' : ''}> ${esc(s.text)}</label>`).join('')}</div></div>` : '';
+  const links = [...(t.links || [])];
+  if(t.kind === 'email' && t.email?.threadUrl) links.unshift(t.email.threadUrl);
+  const st = statsOf(t);
+  const hist = st.recs.length ? `<div class="sec"><h2>היסטוריה</h2><div class="card">
+    ${st.gaps.length ? `<div class="bars" aria-label="ימים בין ביצועים">${st.gaps.slice(-12).map(g => `<i style="height:${Math.max(6, g / Math.max(...st.gaps) * 100)}%" title="${g} ימים"></i>`).join('')}</div>` : ''}
+    <div class="note">ביצוע אחרון: ${fullDate(ל.localDate(ל.toMs(st.last.doneAt)))}${st.avgGap ? ` · ממוצע ${st.avgGap} ימים בין ביצועים` : ''} · ${st.recs.length} ביצועים</div></div></div>` : '';
+  $('tp-body').innerHTML = `
+    <span class="chip"><span class="dot" style="--c:${esc(dom.color)}"></span> ${esc(dom.name)}</span>
+    ${t.priority !== 'normal' ? `<span class="chip">${esc(ל.PRIORITY_NAME[t.priority])}</span>` : ''}
+    ${t.archived ? '<span class="chip">בארכיון</span>' : ''}
+    <h1 class="big-title">${esc(t.title)}</h1>
+    <div class="rule">${esc(ל.describeRule(t))}</div>
+    ${status}
+    <div class="rows">
+      <div><span class="k">תזכורת מראש</span><span class="v">${esc(pre)}</span></div>
+      <div><span class="k">נודניק</span><span class="v">${esc(nagText(t))}</span></div>
+      <div><span class="k">שעה</span><span class="v">${esc(t.time)}</span></div>
+      <div><span class="k">שעות שקטות</span><span class="v">מ־${esc(D.config.activeTo)} עד ${esc(D.config.activeFrom)}</span></div>
+      ${t.discreet ? `<div><span class="k">בהתראה מופיע</span><span class="v">${esc(t.notifyTitle || 'תזכורת')}</span></div>` : ''}
+      ${t.kind === 'email' && t.email?.amount != null ? `<div><span class="k">סכום</span><span class="v">${esc(t.email.amount)} ₪</span></div>` : ''}
+    </div>
+    ${subs}
+    ${t.notes || links.length ? `<div class="sec"><h2>הערות וקישורים</h2><div class="card">${t.notes ? `<div style="white-space:pre-wrap">${esc(t.notes)}</div>` : ''}
+      ${links.length ? `<div class="links" style="margin-top:${t.notes ? 10 : 0}px">${links.map(u => `<div><a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${esc(u === t.email?.threadUrl ? 'פתיחת המייל' : u)}</a></div>`).join('')}</div>` : ''}</div></div>` : ''}
+    ${hist}`;
+  const open = o && (t.kind === 'quota' ? true : ל.isOpen(o, now)) && !t.archived && !(t.kind === 'afterDone' && o.window.needsLast);
+  $('tp-done').textContent = '✓ ' + doneLabel(t);
+  $('tp-done').disabled = !open; $('tp-snooze').disabled = !open || t.kind === 'quota' && o.quota.done >= o.quota.count;
+  $('tp-done').style.opacity = open ? '' : '.45';
+  $('tp-body').querySelectorAll('[data-sub]').forEach(cb => cb.onchange = () => { if(o) saveRec(ל.toggleSub(o, cb.dataset.sub, nowIso())); });
+  const lastOk = $('tp-last-ok');
+  if(lastOk) lastOk.onclick = () => {
+    const v = $('tp-last').value; if(!v) return;
+    saveTask(Object.assign({}, raw, {afterDone: Object.assign({}, raw.afterDone, {lastDone: v})}));
+    toast('נשמר');
+  };
+}
+
+/* ---------- סימון בוצע עם תאריך והערה ---------- */
+let doneCtx = null;
+function openDoneSheet(task, occ){
+  doneCtx = {task, occ};
+  $('d-title').textContent = `${doneLabel(task)}: ${task.title}`;
+  $('d-date').value = today(); $('d-date').max = today();
+  $('d-time').value = ל.localTime(Date.now()); $('d-note').value = '';
+  $('dlg-done').showModal();
+}
+$('d-cancel').onclick = () => $('dlg-done').close();
+$('d-ok').onclick = () => {
+  const {task, occ} = doneCtx, dd = $('d-date').value || today(), tt = $('d-time').value || ל.localTime(Date.now());
+  $('dlg-done').close();
+  doDone(task, occ, {when: Math.min(Date.now(), ל.at(dd, tt)), note: $('d-note').value.trim()});
+};
+
+/* ---------- דחייה ---------- */
+let snzCtx = null;
+function openSnooze(occId, taskId){
+  const f = resolve(occId, taskId);
+  if(!f?.occ) return;
+  snzCtx = f;
+  $('z-title').textContent = `דחייה: ${f.task.title}`;
+  $('z-date').value = ל.addDays(today(), 1); $('z-date').min = today(); $('z-time').value = f.task.time;
+  $('dlg-snooze').querySelector('[data-z="skip"]').hidden = f.task.kind === 'quota' || f.task.kind === 'inbox';
+  $('dlg-snooze').showModal();
+}
+$('dlg-snooze').addEventListener('click', e => {
+  const b = e.target.closest('[data-z]'); if(!b) return;
+  const z = b.dataset.z;
+  $('dlg-snooze').close();
+  doSnooze(snzCtx.task, snzCtx.occ, z === 'date' ? {date: $('z-date').value || ל.addDays(today(), 1), time: $('z-time').value} : z);
+});
+$('z-cancel').onclick = () => $('dlg-snooze').close();
+
+/* ---------- הוספה מהירה ---------- */
+const WHEN = [['today', 'היום'], ['tomorrow', 'מחר'], ['week', 'השבוע'], ['none', 'בלי תאריך']];
+let quick = {when: 'today', domain: 'personal'};
+function openQuick(){
+  quick = {when: 'today', domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal')};
+  $('q-title').value = '';
+  renderQuick();
+  $('dlg-quick').showModal();
+  setTimeout(() => $('q-title').focus(), 50);
+}
+function renderQuick(){
+  $('q-when').innerHTML = WHEN.map(([k, v]) => `<button type="button" data-w="${k}" class="${quick.when === k ? 'on' : ''}">${v}</button>`).join('');
+  $('q-domain').innerHTML = visibleDomains().map(x => `<button type="button" data-d="${esc(x.id)}" class="${quick.domain === x.id ? 'on' : ''}"><span class="dot" style="--c:${esc(x.color)}"></span> ${esc(x.name)}</button>`).join('');
+}
+$('q-when').onclick = e => { const b = e.target.closest('[data-w]'); if(b){ quick.when = b.dataset.w; renderQuick(); } };
+$('q-domain').onclick = e => { const b = e.target.closest('[data-d]'); if(b){ quick.domain = b.dataset.d; renderQuick(); } };
+function quickTask(){
+  const title = $('q-title').value.trim(), d = today();
+  const t = {id: 't' + uid(), title, domain: quick.domain, priority: 'normal', time: null, pre: [], nag: {mode: 'daily'},
+    subtasks: [], notes: '', links: [], start: d, archived: false, deleted: false};
+  if(quick.when === 'none') t.kind = 'inbox';
+  else{
+    t.kind = 'once';
+    t.once = {date: quick.when === 'today' ? d : quick.when === 'tomorrow' ? ל.addDays(d, 1) : ל.addDays(d, 6 - ל.weekday(d))};
+  }
+  return t;
+}
+$('q-save').onclick = () => {
+  if(!$('q-title').value.trim()) return toast('כתוב מה צריך לעשות', {err: true});
+  const t = saveTask(quickTask());
+  $('dlg-quick').close();
+  toast(`נוספה: ${t.title}`);
+};
+$('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
+$('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
+$('fab').onclick = openQuick;
+
+/* ---------- עורך משימה ---------- */
+const KINDS = [['schedule', 'לפי לוח'], ['afterDone', 'ממועד הביצוע'], ['quota', 'מכסה בתקופה'], ['once', 'חד־פעמית עם תאריך'], ['inbox', 'בלי תאריך'], ['email', 'ממייל']];
+const RULES = [['daily', 'כל יום'], ['weekly', 'ימים בשבוע'], ['monthly', 'יום בחודש'], ['last', 'יום אחרון בחודש'], ['everyNMonths', 'כל כמה חודשים'], ['yearly', 'כל שנה']];
+let ed = null;   // {t, isNew}
+function openEditor(taskId, draft){
+  const raw = draft || taskById(taskId);
+  if(!raw) return;
+  ed = {t: clone(raw), isNew: !!draft || !taskById(raw.id)};
+  if(!ed.t.time) ed.t.time = ed.t.kind === 'quota' ? D.config.quotaTime : D.config.defaultTime;
+  $('e-head').textContent = ed.isNew ? 'משימה חדשה' : 'עריכת משימה';
+  renderEditor();
+  $('dlg-editor').showModal();
+}
+function sel(id, opts, v){ return `<select id="${id}">${opts.map(([k, x]) => `<option value="${esc(k)}"${String(k) === String(v) ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>`; }
+function renderEditor(){
+  const t = ed.t, r = t.schedule?.rule || {type: 'monthly', day: 1};
+  const ruleSel = r.type === 'monthly' && r.day === 'last' ? 'last' : r.type;
+  const nag = t.nag || {mode: 'daily'};
+  const pre = new Set((t.pre || []).map(Number));
+  let kindFields = '';
+  if(t.kind === 'schedule'){
+    kindFields = `<div class="field"><label for="e-rule">חזרה</label>${sel('e-rule', RULES, ruleSel)}</div>`;
+    if(ruleSel === 'weekly') kindFields += `<div class="field"><span class="lbl">ימים</span><div class="opts" id="e-days">${ל.DAY_NAMES.map((x, k) => `<button type="button" data-day="${k}" class="${(r.days || []).includes(k) ? 'on' : ''}">${x}</button>`).join('')}</div></div>`;
+    if(ruleSel === 'monthly' || ruleSel === 'everyNMonths' || ruleSel === 'yearly')
+      kindFields += `<div class="row">${ruleSel === 'yearly' ? `<div class="field"><label for="e-month">חודש</label>${sel('e-month', ל.MONTH_NAMES.map((x, k) => [k + 1, x]), r.month || 1)}</div>` : ''}
+        <div class="field"><label for="e-day">יום בחודש</label><input type="number" id="e-day" min="1" max="31" value="${esc(r.day === 'last' ? 31 : r.day || 1)}"></div>
+        ${ruleSel === 'everyNMonths' ? `<div class="field"><label for="e-n">כל כמה חודשים</label><input type="number" id="e-n" min="1" max="24" value="${esc(r.n || 2)}"></div>` : ''}</div>
+        ${ruleSel === 'everyNMonths' ? `<div class="field"><label for="e-anchor">חודש שבו יש תשלום (עוגן)</label><input type="date" id="e-anchor" value="${esc(r.anchor || today())}"></div>` : ''}
+        <div class="note">יום שלא קיים בחודש (למשל 31 בפברואר) = היום האחרון בחודש.</div>`;
+    kindFields += `<div class="field"><label for="e-miss">כשמפספסים</label>${sel('e-miss', [['accumulate', 'כל פעם נשארת פתוחה עד שמסמנים'], ['replace', 'פעם חדשה מחליפה את הקודמת']], t.missPolicy || 'accumulate')}</div>`;
+  }else if(t.kind === 'afterDone'){
+    const a = t.afterDone || {};
+    kindFields = `<div class="row"><div class="field"><label for="e-min">מינימום ימים</label><input type="number" id="e-min" min="0" value="${esc(a.minDays ?? 21)}"></div>
+      <div class="field"><label for="e-max">מקסימום ימים</label><input type="number" id="e-max" min="1" value="${esc(a.maxDays ?? 30)}"></div></div>
+      <div class="field"><label for="e-last">ביצוע אחרון</label><input type="date" id="e-last" max="${today()}" value="${esc(a.lastDone || '')}"></div>
+      <label class="check-row"><input type="checkbox" id="e-soft"${t.soft ? ' checked' : ''}> תזכורת רכה כשהחלון נפתח</label>`;
+  }else if(t.kind === 'quota'){
+    kindFields = `<div class="row"><div class="field"><label for="e-count">כמה פעמים</label><input type="number" id="e-count" min="1" max="31" value="${esc(t.quota?.count || 3)}"></div>
+      <div class="field"><label for="e-period">בתקופה</label>${sel('e-period', [['week', 'בשבוע (מיום ראשון)'], ['month', 'בחודש']], t.quota?.period || 'week')}</div></div>`;
+  }else if(t.kind === 'once'){
+    kindFields = `<div class="field"><label for="e-date">תאריך</label><input type="date" id="e-date" value="${esc(t.once?.date || today())}"></div>`;
+  }else if(t.kind === 'email'){
+    kindFields = `<div class="field"><label for="e-duedays">יעד: ימים מהגעת המייל</label><input type="number" id="e-duedays" min="0" value="${esc(t.email?.dueDays ?? 3)}"></div>`;
+  }
+  const custom = [...pre].filter(x => ![1, 3, 7, 14].includes(x));
+  $('e-body').innerHTML = `
+    <div class="field"><label for="e-title">שם</label><input type="text" id="e-title" value="${esc(t.title)}"></div>
+    <div class="row"><div class="field"><label for="e-domain">תחום</label>${sel('e-domain', D.domains.filter(x => !x.deleted).map(x => [x.id, x.name]), t.domain)}</div>
+      <div class="field"><label for="e-priority">עדיפות</label>${sel('e-priority', [['high', 'גבוהה'], ['normal', 'רגילה'], ['low', 'נמוכה']], t.priority || 'normal')}</div></div>
+    <div class="field"><label for="e-kind">סוג</label>${sel('e-kind', t.kind === 'email' ? KINDS : KINDS.filter(k => k[0] !== 'email'), t.kind)}</div>
+    ${kindFields}
+    <div class="group"><h3>תזכורות</h3>
+      <div class="field"><label for="e-time">שעה</label><input type="time" id="e-time" value="${esc(t.time)}"></div>
+      ${t.kind !== 'quota' && t.kind !== 'inbox' ? `<div class="field"><span class="lbl">תזכורת מראש</span><div class="opts" id="e-pre">${[1, 3, 7, 14].map(x => `<button type="button" data-pre="${x}" class="${pre.has(x) ? 'on' : ''}">${x === 1 ? 'יום' : x + ' ימים'}</button>`).join('')}</div>
+        <input type="text" id="e-pre-custom" inputmode="numeric" placeholder="מותאם: ימים מופרדים בפסיק, למשל 2, 30" value="${esc(custom.join(', '))}" aria-label="תזכורת מראש מותאמת"></div>` : ''}
+      ${t.kind !== 'quota' ? `<div class="field"><label for="e-nag">נודניק (כשבאיחור)</label>${sel('e-nag', [['daily', 'פעם ביום'], ['weekly', 'פעם בשבוע'], ['everyNDays', 'כל כמה ימים'], ['times', 'בשעות קבועות'], ['none', 'בלי. רק בסיכום הבוקר']], nag.mode)}</div>
+      ${nag.mode === 'everyNDays' ? `<div class="field"><label for="e-nag-n">כל כמה ימים</label><input type="number" id="e-nag-n" min="2" value="${esc(nag.n || 2)}"></div>` : ''}
+      ${nag.mode === 'times' ? `<div class="field"><label for="e-nag-times">שעות (מופרדות בפסיק)</label><input type="text" id="e-nag-times" dir="ltr" value="${esc((nag.times || ['10:00', '18:00']).join(', '))}"></div>` : ''}` : '<div class="note">במכסה: התראה בשעה הזו רק בימים שבהם מפגרים.</div>'}
+      <label class="check-row"><input type="checkbox" id="e-discreet"${t.discreet ? ' checked' : ''}> דיסקרטי: שם אחר בהתראות</label>
+      ${t.discreet ? `<div class="field"><label for="e-ntitle">השם בהתראות</label><input type="text" id="e-ntitle" value="${esc(t.notifyTitle || '')}" placeholder="תזכורת"></div>` : ''}
+    </div>
+    <div class="group"><h3>פרטים</h3>
+      <div class="field"><label for="e-donelabel">טקסט לכפתור הביצוע</label><input type="text" id="e-donelabel" value="${esc(t.doneLabel || '')}" placeholder="בוצע"></div>
+      <div class="field"><label for="e-subs">צעדים (שורה לכל צעד)</label><textarea id="e-subs">${esc((t.subtasks || []).map(s => s.text).join('\n'))}</textarea></div>
+      <div class="field"><label for="e-notes">הערות</label><textarea id="e-notes">${esc(t.notes || '')}</textarea></div>
+      <div class="field"><label for="e-links">קישורים (שורה לכל קישור)</label><textarea id="e-links" dir="ltr">${esc((t.links || []).join('\n'))}</textarea></div>
+      ${t.kind !== 'once' && t.kind !== 'inbox' && t.kind !== 'email' ? `<div class="field"><label for="e-start">תאריך התחלה</label><input type="date" id="e-start" value="${esc(t.start || today())}"></div>` : ''}
+      ${ed.isNew ? '' : `<label class="check-row"><input type="checkbox" id="e-archived"${t.archived ? ' checked' : ''}> בארכיון</label>`}
+    </div>
+    ${ed.isNew ? '' : `<div class="btns"><button class="btn danger" id="e-delete">${isRecurring(t) ? 'העברה לארכיון' : 'מחיקה'}</button></div>`}`;
+  // שינויים שמשנים את מבנה הטופס
+  for(const id of ['e-kind', 'e-rule', 'e-nag']) $(id) && ($(id).onchange = () => { readEditor(); renderEditor(); });
+  $('e-discreet').onchange = () => { readEditor(); renderEditor(); };
+  $('e-days')?.addEventListener('click', e => { const b = e.target.closest('[data-day]'); if(b) b.classList.toggle('on'); });
+  $('e-pre')?.addEventListener('click', e => { const b = e.target.closest('[data-pre]'); if(b) b.classList.toggle('on'); });
+  $('e-delete') && ($('e-delete').onclick = deleteTask);
+}
+const isRecurring = t => ['schedule', 'afterDone', 'quota'].includes(t.kind);
+const val = id => $(id) ? $(id).value : undefined;
+function readEditor(){
+  const t = ed.t;
+  t.title = val('e-title').trim(); t.domain = val('e-domain'); t.priority = val('e-priority');
+  const newKind = val('e-kind');
+  if(t.kind === 'schedule' && $('e-rule')){
+    const rs = val('e-rule'), day = Math.min(31, Math.max(1, +val('e-day') || 1));
+    const old = t.schedule?.rule || {};
+    const rule = rs === 'daily' ? {type: 'daily'}
+      : rs === 'weekly' ? {type: 'weekly', days: $('e-days') ? [...$('e-days').querySelectorAll('.on')].map(b => +b.dataset.day) : (old.days || [weekdayOfToday()])}
+      : rs === 'last' ? {type: 'monthly', day: 'last'}
+      : rs === 'monthly' ? {type: 'monthly', day: $('e-day') ? day : (old.day === 'last' ? 31 : old.day || 1)}
+      : rs === 'everyNMonths' ? {type: 'everyNMonths', n: Math.max(1, +val('e-n') || old.n || 2), day: $('e-day') ? day : (old.day || 1), anchor: val('e-anchor') || old.anchor || today()}
+      : {type: 'yearly', month: +val('e-month') || old.month || 1, day: $('e-day') ? day : (old.day || 1)};
+    if(rule.type === 'everyNMonths') rule.anchor = rule.anchor.slice(0, 8) + ל.pad(Math.min(day, 28));
+    t.schedule = {rule};
+    t.missPolicy = val('e-miss') || t.missPolicy || 'accumulate';
+  }
+  if(t.kind === 'afterDone' && $('e-min')){
+    t.afterDone = {minDays: Math.max(0, +val('e-min') || 0), maxDays: Math.max(1, +val('e-max') || 1), lastDone: val('e-last') || null};
+    t.soft = $('e-soft').checked;
+  }
+  if(t.kind === 'quota' && $('e-count')) t.quota = {count: Math.max(1, +val('e-count') || 1), period: val('e-period')};
+  if(t.kind === 'once' && $('e-date')) t.once = {date: val('e-date') || today()};
+  if(t.kind === 'email' && $('e-duedays')) t.email = Object.assign({}, t.email, {dueDays: Math.max(0, +val('e-duedays') || 0)});
+  t.time = val('e-time') || null;
+  if($('e-pre')){
+    const p = [...$('e-pre').querySelectorAll('.on')].map(b => +b.dataset.pre)
+      .concat(val('e-pre-custom').split(/[,\s]+/).map(Number).filter(x => x > 0 && x < 60));
+    t.pre = [...new Set(p)].sort((a, b) => b - a);
+  }
+  if($('e-nag')){
+    const mode = val('e-nag');
+    t.nag = Object.assign({mode}, t.nag?.from ? {from: t.nag.from} : {});
+    if(mode === 'everyNDays') t.nag.n = Math.max(2, +val('e-nag-n') || 2);
+    if(mode === 'times') t.nag.times = (val('e-nag-times') || '10:00, 18:00').split(/[,\s]+/).filter(x => /^\d{1,2}:\d{2}$/.test(x)).map(x => x.padStart(5, '0')).sort();
+  }
+  t.discreet = $('e-discreet').checked;
+  if($('e-ntitle')) t.notifyTitle = val('e-ntitle').trim() || 'תזכורת';
+  t.doneLabel = val('e-donelabel').trim() || null;
+  const lines = val('e-subs').split('\n').map(s => s.trim()).filter(Boolean), old = t.subtasks || [];
+  const used = new Set();
+  t.subtasks = lines.map(text => {
+    const m = old.find(s => s.text === text && !used.has(s.id));
+    const id = m ? m.id : 's' + uid();
+    used.add(id); return {id, text};
+  });
+  t.notes = val('e-notes');
+  t.links = val('e-links').split('\n').map(s => s.trim()).filter(Boolean);
+  if($('e-start')) t.start = val('e-start') || t.start;
+  if($('e-archived')) t.archived = $('e-archived').checked;
+  if(newKind !== t.kind){
+    t.kind = newKind;
+    if(newKind === 'schedule' && !t.schedule) t.schedule = {rule: {type: 'monthly', day: +today().slice(8)}};
+    if(newKind === 'afterDone' && !t.afterDone) t.afterDone = {minDays: 21, maxDays: 30, lastDone: null};
+    if(newKind === 'quota'){ if(!t.quota) t.quota = {count: 3, period: 'week'}; t.time = D.config.quotaTime; }
+    if(newKind === 'once' && !t.once) t.once = {date: today()};
+    if(!t.start) t.start = today();
+  }
+}
+const weekdayOfToday = () => ל.weekday(today());
+$('e-cancel').onclick = () => $('dlg-editor').close();
+$('e-save').onclick = () => {
+  readEditor();
+  const t = ed.t;
+  if(!t.title) return toast('חסר שם', {err: true});
+  if(t.kind === 'schedule' && t.schedule.rule.type === 'weekly' && !t.schedule.rule.days.length) return toast('בחר לפחות יום אחד', {err: true});
+  if(t.kind === 'afterDone' && t.afterDone.maxDays < t.afterDone.minDays) return toast('המקסימום קטן מהמינימום', {err: true});
+  saveTask(t);
+  $('dlg-editor').close();
+  toast(ed.isNew ? `נוספה: ${t.title}` : 'נשמר');
+};
+function deleteTask(){
+  const t = ed.t;
+  if(isRecurring(t)){
+    if(!confirm('להעביר לארכיון? ההיסטוריה נשמרת, ואפשר להחזיר מהעריכה.')) return;
+    saveTask(Object.assign({}, taskById(t.id), {archived: true}));
+    toast('הועברה לארכיון');
+  }else{
+    if(!confirm(`למחוק את "${t.title}"?`)) return;
+    saveTask(Object.assign({}, taskById(t.id), {deleted: true}));
+    toast('נמחקה');
+  }
+  $('dlg-editor').close();
+  if(!$('task-page').hidden) closeTask();
+}
+
+/* ---------- גיטהאב ---------- */
+let token = store(K.token) || '';
+let syncing = false, again = false, syncErr = '';
+const api = p => `https://api.github.com/repos/${OWNER}/${REPO}/contents/` + p.split('/').map(encodeURIComponent).join('/');
+const to64 = s => { const b = new TextEncoder().encode(s); let x = ''; for(const c of b) x += String.fromCharCode(c); return btoa(x); };
+const from64 = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, '')), c => c.charCodeAt(0)));
+async function gh(method, path, body, tok){
+  const r = await fetch(api(path) + (method === 'GET' ? `?ref=${BRANCH}&t=${Date.now()}` : ''), {
+    method, cache: 'no-store',
+    headers: {Authorization: 'Bearer ' + (tok || token), Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if(r.status === 404 && method === 'GET') return null;
+  if(r.status === 401) throw Object.assign(new Error('האסימון אינו תקף'), {code: 401});
+  if(r.status === 403) throw Object.assign(new Error('לאסימון אין הרשאה למאגר cv'), {code: 403});
+  if(r.status === 409 || r.status === 422) throw Object.assign(new Error('התנגשות'), {code: 409});
+  if(!r.ok) throw new Error('גיטהאב החזיר שגיאה ' + r.status);
+  return r.json();
+}
+async function readFile(f){
+  const g = await gh('GET', f.path);
+  if(!g){ f.sha = null; return null; }
+  f.sha = g.sha;
+  const s = from64(g.content || '').trim();
+  return s ? JSON.parse(s) : null;
+}
+/** מושך, ממזג, ודוחף אם יש שינוי מקומי (או שהקובץ עוד לא קיים). עד 3 ניסיונות בהתנגשות. */
+async function syncFile(name){
+  const f = FILES[name];
+  for(let n = 0; n < 3; n++){
+    const remote = await readFile(f);
+    const merged = f.merge(remote, D.file[name]);
+    D.file[name] = merged; persist(name, false);
+    const same = remote !== null && JSON.stringify(f.merge(remote, null)) === JSON.stringify(merged);
+    if(same || (!store(f.pending) && remote !== null)){ store(f.pending, null); return; }
+    try{
+      const body = {message: f.msg, branch: BRANCH, content: to64(JSON.stringify(merged, null, 1))};
+      if(f.sha) body.sha = f.sha;
+      const r = await gh('PUT', f.path, body);
+      f.sha = r.content?.sha ?? null;
+      store(f.pending, null);
+      return;
+    }catch(err){
+      if(err.code === 409 && n < 2) continue;
+      throw err;
+    }
+  }
+}
+async function loadTopics(){
+  const t = storeJson(K.topics, null);
+  if(t?.ntfy) return t;
+  if(D.config.ntfy) return {ntfy: D.config.ntfy, ntfy_cmd: D.config.ntfyCmd};
+  try{
+    const g = await gh('GET', KEYS_PATH);
+    if(g){ const x = JSON.parse(from64(g.content || '')); store(K.topics, JSON.stringify(x)); return x; }
+  }catch(e){}
+  return null;
+}
+async function sync(){
+  if(!token){ renderStatus(); return; }
+  if(syncing){ again = true; return; }
+  syncing = true; syncErr = ''; renderStatus('מסנכרן...');
+  try{
+    await syncFile('config'); await syncFile('tasks'); await syncFile('occ');
+    try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
+    applyTheme();
+    await scheduleNotifications();
+  }catch(err){
+    syncErr = err.code === 401 ? 'האסימון פג או אינו תקף. נשמר במכשיר בלבד' : err.code === 403 ? err.message : 'אין חיבור. נשמר במכשיר ויעלה אחר כך';
+    if(err.code === 401) toast('האסימון אינו תקף. אפשר לחבר מחדש בהגדרות', {err: true});
+  }finally{
+    syncing = false; renderAll();
+    if(again){ again = false; sync(); }
+  }
+}
+function renderStatus(text){
+  const pending = Object.values(FILES).some(f => store(f.pending));
+  $('sync-status').textContent = text || syncErr || (token ? (pending ? 'יש שינויים שעוד לא עלו' : '✓ מסונכרן') : 'נשמר במכשיר הזה בלבד. אפשר לחבר לגיטהאב בהגדרות');
+}
+
+/* ---------- התראות (שלב 1: האפליקציה מתזמנת בעצמה) ---------- */
+// planNotifications מליבה.js נותן את מה שצריך לצאת ב-70 השעות הקרובות, עם מזהים קבועים.
+// ntfy לא מחליף הודעה מתוזמנת עם אותו מזהה (נבדק: נשארות שתיים), ולכן תמיד מוחקים לפני שקובעים.
+// מחיקה של הודעה שכבר הגיעה מעלימה אותה גם מהנייד, וכך "בוצע" מנקה גם נודניק שכבר הגיע.
+// מה שתוזמן נשמר במכשיר (משימות.מתוזמן). בשלב 2 המנוע יחליף את כל זה.
+const ntfyBase = 'https://ntfy.sh/';
+async function ntfyDelete(topic, id){
+  const r = await fetch(`${ntfyBase}${encodeURIComponent(topic)}/${encodeURIComponent(id)}`, {method: 'DELETE'});
+  if(!r.ok && r.status !== 404) throw new Error('ntfy ' + r.status);
+}
+async function ntfyPublish(topic, n, delaySec){
+  const body = {topic, title: n.title, message: n.message || ' ', click: n.click, tags: ['white_check_mark'], priority: 4};
+  if(n.id) body.sequence_id = n.id;
+  if(delaySec) body.delay = String(delaySec);
+  const r = await fetch(ntfyBase, {method: 'POST', body: JSON.stringify(body)});
+  if(!r.ok) throw new Error('ntfy ' + r.status);
+}
+async function scheduleNotifications(){
+  const topics = await loadTopics();
+  if(!topics?.ntfy) return;
+  const topic = topics.ntfy, now = Date.now();
+  const plan = ל.planNotifications(data(), now);
+  const want = new Map(plan.map(n => [n.id, n]));
+  const sched = storeJson(K.sched, {});
+  const sig = n => `${topic}|${n.at}|${n.title}|${n.message}`;
+  for(const [id, s] of Object.entries(sched)){
+    if(want.has(id)) continue;
+    // עתידית שלא רצויה עוד: מוחקים. שכבר יצאה: מוחקים רק אם המופע נסגר (מנקה מהנייד)
+    let del = s.at > now;
+    if(!del && s.occId){ const f = ל.findOcc(data(), s.occId, now); del = !f || (f.occ.kind !== 'quota' && !ל.isOpen(f.occ, now)); }
+    try{
+      if(del && s.at > now - 3 * 864e5) await ntfyDelete(s.topic || topic, id);
+      if(del || s.at < now - 3 * 864e5) delete sched[id];
+    }catch(e){}
+  }
+  for(const n of plan){
+    if(sched[n.id]?.sig === sig(n)) continue;
+    try{
+      await ntfyDelete(topic, n.id);
+      await ntfyPublish(topic, n, Math.round(n.at / 1000));
+      sched[n.id] = {sig: sig(n), at: n.at, occId: n.occId, topic};
+    }catch(e){ /* ננסה שוב בסנכרון הבא */ }
+  }
+  store(K.sched, JSON.stringify(sched));
+}
+async function testNotification(){
+  const topics = await loadTopics();
+  if(!topics?.ntfy) return toast('אין ערוץ התראות. צריך קודם לחבר לגיטהאב', {err: true});
+  try{
+    await ntfyPublish(topics.ntfy, {title: 'בדיקה: משימות', message: 'אם זה הגיע לנייד, ההתראות עובדות', click: ל.APP});
+    toast('נשלחה התראת בדיקה');
+  }catch(e){ toast('השליחה נכשלה', {err: true}); }
+}
+
+/* ---------- נעילה ---------- */
+const lockCfg = () => storeJson(K.lock, null);
+async function hashPin(pin, salt){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+let pin = '', lockMode = null, lockDone = null, firstPin = '';
+function showLock(mode, done){
+  lockMode = mode; lockDone = done || null; pin = ''; firstPin = '';
+  $('lock-title').textContent = mode === 'set' ? 'בחר קוד של 4 ספרות' : 'קוד נעילה';
+  $('lock-msg').textContent = '';
+  if(!$('lock').open) $('lock').showModal();
+  renderPin();
+}
+function renderPin(){
+  [...$('pin-dots').children].forEach((x, k) => x.classList.toggle('on', k < pin.length));
+  $('pad').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}" aria-label="${n}">${n}</button>`).join('')
+    + (lockMode === 'set' ? '<button type="button" class="ghost" data-k="x">ביטול</button>' : '<span></span>')
+    + '<button type="button" data-k="0" aria-label="0">0</button><button type="button" class="ghost" data-k="b" aria-label="מחיקת ספרה">מחיקה</button>';
+}
+$('pad').addEventListener('click', async e => {
+  const b = e.target.closest('[data-k]'); if(!b) return;
+  const k = b.dataset.k;
+  if(k === 'x'){ $('lock').close(); lockDone?.(false); return; }
+  if(k === 'b'){ pin = pin.slice(0, -1); renderPin(); return; }
+  const tries = storeJson(K.tries, {n: 0, until: 0});
+  if(lockMode === 'unlock' && tries.until > Date.now()){
+    $('lock-msg').textContent = `יותר מדי ניסיונות. נסה שוב בעוד ${Math.ceil((tries.until - Date.now()) / 1000)} שניות`; return;
+  }
+  if(pin.length >= 4) return;
+  pin += k; renderPin();
+  if(pin.length < 4) return;
+  if(lockMode === 'set'){
+    if(!firstPin){ firstPin = pin; pin = ''; $('lock-title').textContent = 'שוב, לאישור'; renderPin(); return; }
+    if(firstPin !== pin){ firstPin = ''; pin = ''; $('lock-title').textContent = 'בחר קוד של 4 ספרות'; $('lock-msg').textContent = 'הקודים לא תאמו. נסה שוב'; renderPin(); return; }
+    const salt = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
+    store(K.lock, JSON.stringify({on: true, salt, hash: await hashPin(pin, salt)}));
+    $('lock').close(); lockDone?.(true); return;
+  }
+  const c = lockCfg();
+  if(c && await hashPin(pin, c.salt) === c.hash){
+    store(K.tries, null); $('lock').close(); lastHidden = 0; lockDone?.(true); return;
+  }
+  tries.n++;
+  if(tries.n >= 5){ tries.n = 0; tries.until = Date.now() + 60e3; $('lock-msg').textContent = '5 ניסיונות שגויים. המתנה של דקה'; }
+  else $('lock-msg').textContent = 'קוד שגוי';
+  store(K.tries, JSON.stringify(tries));
+  pin = ''; setTimeout(renderPin, 250);
+});
+// מקש חזרה לא סוגר את מסך הנעילה
+$('lock').addEventListener('cancel', e => { if(lockMode === 'unlock') e.preventDefault(); });
+let lastHidden = 0;
+function lockIfNeeded(done){
+  const c = lockCfg();
+  if(c?.on){ showLock('unlock', done); return true; }
+  done?.(true); return false;
+}
+
+/* ---------- הגדרות ---------- */
+function openSettings(){
+  const c = D.config, topics = storeJson(K.topics, null), lk = lockCfg();
+  const rule = (c.mailRules || [])[0];
+  $('s-body').innerHTML = `
+    <div class="group" style="border:0;margin:0"><h3>שעות</h3>
+      <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
+        <div class="field"><label for="s-to">עד</label><input type="time" id="s-to" value="${esc(c.activeTo)}"></div></div>
+      <div class="row"><div class="field"><label for="s-sum">שעת סיכום בוקר</label><input type="time" id="s-sum" value="${esc(c.summaryTime)}"></div>
+        <div class="field"><label for="s-def">שעת ברירת מחדל</label><input type="time" id="s-def" value="${esc(c.defaultTime)}"></div></div>
+      <div class="note">התראה שנופלת מחוץ לשעות לא נשלחת. דחייה שנופלת אחרי השעה האחרונה עוברת ל־08:00 בבוקר. סיכום הבוקר יגיע עם המנוע (שלב 2).</div>
+    </div>
+    <div class="group"><h3>מראה</h3>
+      <div class="row"><div class="field"><label for="s-theme">מצב כהה</label>${sel('s-theme', [['system', 'לפי המערכת'], ['light', 'בהיר'], ['dark', 'כהה']], c.theme)}</div>
+        <div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" value="${esc(c.accent)}" style="width:100%;min-height:48px;border:0;background:transparent"></div></div>
+    </div>
+    <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
+      <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
+    <div class="group"><h3>כללי מייל</h3>
+      ${rule ? `<div class="note">${esc(rule.title)}. יעבוד עם המנוע, בשלב 3.</div>
+        <label class="check-row"><input type="checkbox" id="s-mail-on"${rule.enabled ? ' checked' : ''}> פעיל</label>
+        <div class="field"><label for="s-mail-from">כתובת השולח</label><input type="text" id="s-mail-from" dir="ltr" value="${esc(rule.from)}" placeholder="billing@example.co.il"></div>
+        <div class="field"><label for="s-mail-subj">מילים בנושא (לא חובה)</label><input type="text" id="s-mail-subj" value="${esc(rule.subject)}"></div>` : '<div class="note">אין כללים</div>'}
+    </div>
+    <div class="group"><h3>יומנים</h3><div class="note">היומן הראשי. בחירת יומנים נוספים תגיע בשלב 3.</div></div>
+    <div class="group"><h3>נעילה</h3>
+      <div class="note">${lk?.on ? 'הנעילה פעילה. האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע.' : 'הנעילה כבויה.'}</div>
+      <div class="btns"><button class="btn" id="s-pin" type="button">${lk?.on ? 'החלפת קוד' : 'הפעלת נעילה'}</button>${lk?.on ? '<button class="btn danger" id="s-pin-off" type="button">כיבוי</button>' : ''}</div>
+    </div>
+    <div class="group"><h3>גיטהאב וסנכרון</h3>
+      <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
+      <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
+      <div class="btns"><button class="btn" id="s-connect" type="button">${token ? 'החלפה' : 'חיבור'}</button><button class="btn" id="s-sync" type="button"${token ? '' : ' disabled'}>סנכרון עכשיו</button>${token ? '<button class="btn danger" id="s-disc" type="button">ניתוק</button>' : ''}</div>
+    </div>
+    <div class="group"><h3>התראות</h3>
+      ${topics?.ntfy ? `<div class="note">באפליקציית ntfy בנייד, להירשם לערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
+        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button><button class="btn" id="s-test" type="button">שלח התראת בדיקה</button></div>`
+        : '<div class="note">שם הערוץ יופיע כאן אחרי החיבור לגיטהאב.</div>'}
+    </div>
+    <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>`;
+  renderDomRows(clone(D.domains.filter(x => !x.deleted)));
+  $('s-dom-add').onclick = () => { const rows = readDomRows(); rows.push({id: 'd' + uid(), name: '', color: '#64748B', hidden: false, _new: true}); renderDomRows(rows); };
+  $('s-pin').onclick = () => showLock('set', ok => { if(ok){ toast('הקוד נשמר'); openSettings(); } });
+  $('s-pin-off') && ($('s-pin-off').onclick = () => { if(confirm('לכבות את הנעילה?')){ store(K.lock, null); openSettings(); } });
+  $('s-connect').onclick = () => connect($('s-token').value.trim()).then(ok => ok && openSettings());
+  $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); openSettings(); };
+  $('s-disc') && ($('s-disc').onclick = () => {
+    if(!confirm('לנתק את המכשיר מגיטהאב? הנתונים נשארים במאגר ובמכשיר.')) return;
+    store(K.token, null); token = ''; Object.values(FILES).forEach(f => f.sha = null); openSettings(); renderStatus();
+  });
+  $('s-copy') && ($('s-copy').onclick = () => navigator.clipboard?.writeText(topics.ntfy).then(() => toast('הועתק'), () => toast('ההעתקה נכשלה', {err: true})));
+  $('s-test') && ($('s-test').onclick = testNotification);
+  $('s-export').onclick = exportAll;
+  if(!$('dlg-settings').open) $('dlg-settings').showModal();
+}
+function renderDomRows(rows){
+  const used = new Set(D.tasks.filter(t => !t.deleted).map(t => t.domain));
+  $('s-doms').innerHTML = rows.map(x => `<div class="row dom-row" data-id="${esc(x.id)}" style="align-items:center;margin:6px 0">
+    <input type="color" value="${esc(x.color)}" aria-label="צבע" style="flex:none;width:48px;height:48px;border:0;background:transparent">
+    <input type="text" value="${esc(x.name)}" aria-label="שם התחום" placeholder="שם">
+    <label class="check-row" style="flex:none;font-size:14px"><input type="checkbox"${x.hidden ? ' checked' : ''}> מוסתר</label>
+    ${used.has(x.id) ? '' : `<button type="button" class="icon-btn" data-del aria-label="מחיקת תחום"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`}
+  </div>`).join('');
+  $('s-doms').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { b.closest('.dom-row').dataset.deleted = '1'; b.closest('.dom-row').hidden = true; });
+}
+function readDomRows(){
+  return [...document.querySelectorAll('.dom-row')].map(r => {
+    const [c, n] = r.querySelectorAll('input');
+    return {id: r.dataset.id, color: c.value, name: n.value.trim(), hidden: r.querySelector('[type=checkbox]').checked, deleted: r.dataset.deleted === '1'};
+  });
+}
+$('s-close').onclick = () => $('dlg-settings').close();
+$('s-save').onclick = () => {
+  const c = D.config;
+  const rules = clone(c.mailRules || []);
+  if(rules[0] && $('s-mail-from')) Object.assign(rules[0], {enabled: $('s-mail-on').checked, from: val('s-mail-from').trim(), subject: val('s-mail-subj').trim()});
+  if(rules[0]?.enabled && !rules[0].from){ return toast('כדי להפעיל את כלל המייל צריך כתובת שולח', {err: true}); }
+  const from = val('s-from') || '07:00', to = val('s-to') || '21:00';
+  if(from >= to) return toast('שעת הסיום צריכה להיות אחרי שעת ההתחלה', {err: true});
+  saveConfig({activeFrom: from, activeTo: to, summaryTime: val('s-sum') || '07:30', defaultTime: val('s-def') || '10:00',
+    theme: val('s-theme'), accent: val('s-accent'), mailRules: rules});
+  const now = nowIso(), changedDoms = [];
+  for(const r of readDomRows()){
+    const old = D.domains.find(x => x.id === r.id);
+    if(r.deleted){ if(old) changedDoms.push({id: r.id, deleted: true, updatedAt: now}); continue; }
+    if(!r.name) continue;
+    if(!old || old.name !== r.name || old.color !== r.color || !!old.hidden !== r.hidden)
+      changedDoms.push({id: r.id, name: r.name, color: r.color, hidden: r.hidden, updatedAt: now});
+  }
+  if(changedDoms.length) saveDomains(changedDoms);
+  $('dlg-settings').close();
+  toast('ההגדרות נשמרו');
+};
+$('btn-menu').onclick = openSettings;
+function exportAll(){
+  const blob = new Blob([JSON.stringify({exportedAt: nowIso(), ...data(), inbox}, null, 1)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `משימות-${today()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function connect(value){
+  if(!value){ toast('הדבק אסימון', {err: true}); return false; }
+  try{
+    await gh('GET', FILES.tasks.path, null, value);
+    const probe = await gh('GET', KEYS_PATH, null, value);
+    token = value; store(K.token, value);
+    if(probe){ store(K.topics, JSON.stringify(JSON.parse(from64(probe.content || '')))); }
+    // מה שנעשה במכשיר לפני החיבור עולה
+    Object.values(FILES).forEach(f => store(f.pending, '1'));
+    toast('מחובר. מסנכרן');
+    await sync();
+    return true;
+  }catch(err){
+    toast(err.code === 401 ? 'האסימון אינו תקף' : err.code === 403 ? 'לאסימון אין הרשאה למאגר cv' : 'החיבור נכשל. בדוק את הרשת', {err: true});
+    return false;
+  }
+}
+
+/* ---------- פתיחה ראשונה ---------- */
+function needsHaircut(){
+  const h = taskById('haircut');
+  return h && !h.deleted && !h.archived && h.kind === 'afterDone' && !h.afterDone?.lastDone
+    && !D.occ.some(r => r.taskId === 'haircut' && r.status === 'done' && !r.deleted);
+}
+function onboard(step){
+  const b = $('o-body');
+  if(step === 1){
+    b.innerHTML = `<h1 class="hello" style="margin-top:20px">ברוך הבא</h1>
+      <p class="rule">שלושה דברים קצרים, ואפשר להתחיל.</p>
+      <div class="group" style="border:0"><h3>1. אסימון גיטהאב</h3>
+      <p class="note">אסימון חדש ומוגבל (Fine-grained), רק למאגר cv, עם הרשאת Contents לקריאה וכתיבה. הוא נשמר רק במכשיר הזה.</p>
+      <div class="field"><input type="password" id="o-token" dir="ltr" autocomplete="off" placeholder="github_pat_..." aria-label="אסימון גיטהאב"></div>
+      <div class="btns"><button class="btn" id="o-skip1">אחר כך</button><button class="btn primary" id="o-next1">חיבור</button></div></div>`;
+    $('o-skip1').onclick = () => onboard(2);
+    $('o-next1').onclick = async e => { e.target.disabled = true; e.target.textContent = 'בודק...'; if(await connect(val('o-token').trim())) onboard(2); else{ e.target.disabled = false; e.target.textContent = 'חיבור'; } };
+  }else if(step === 2){
+    b.innerHTML = `<h1 class="hello" style="margin-top:20px">קוד נעילה</h1>
+      <p class="rule">4 ספרות. האפליקציה תינעל בפתיחה ואחרי 5 דקות ברקע. אפשר לשנות בהגדרות.</p>
+      <div class="btns"><button class="btn" id="o-skip2">בלי נעילה</button><button class="btn primary" id="o-next2">בחירת קוד</button></div>`;
+    $('o-skip2').onclick = () => onboard(3);
+    $('o-next2').onclick = () => showLock('set', () => onboard(3));
+  }else if(step === 3 && needsHaircut()){
+    b.innerHTML = `<h1 class="hello" style="margin-top:20px">מתי הסתפרת לאחרונה?</h1>
+      <p class="rule">מזה נספר החלון של 21 עד 30 ימים לתספורת הבאה.</p>
+      <div class="field"><input type="date" id="o-hair" max="${today()}" value="${today()}" aria-label="תאריך התספורת האחרונה"></div>
+      <div class="btns"><button class="btn" id="o-skip3">לא זוכר</button><button class="btn primary" id="o-next3">שמירה</button></div>`;
+    $('o-skip3').onclick = () => onboard(4);
+    $('o-next3').onclick = () => {
+      const v = val('o-hair'); const h = taskById('haircut');
+      if(v) saveTask(Object.assign({}, h, {afterDone: Object.assign({}, h.afterDone, {lastDone: v})}));
+      onboard(4);
+    };
+  }else{
+    store(K.onboard, '1');
+    $('dlg-onboard').close();
+    renderAll(); handleHash();
+    return;
+  }
+  if(!$('dlg-onboard').open) $('dlg-onboard').showModal();
+}
+
+/* ---------- כתובת: #o=<מופע> או #new ---------- */
+function handleHash(){
+  const h = location.hash;
+  if(h.startsWith('#o=')){
+    const occId = decodeURIComponent(h.slice(3)), f = ל.findOcc(data(), occId, Date.now());
+    history.replaceState(null, '', location.pathname);
+    if(f) openTask(f.task.id, occId); else toast('המשימה לא נמצאה', {err: true});
+  }else if(h === '#new'){
+    history.replaceState(null, '', location.pathname);
+    openQuick();
+  }
+}
+addEventListener('hashchange', () => { if(location.hash !== '#t') handleHash(); });
+
+/* ---------- אתחול ---------- */
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+renderAll();
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'hidden'){ lastHidden = Date.now(); return; }
+  if(lastHidden && Date.now() - lastHidden > 5 * 60e3 && lockCfg()?.on && !$('lock').open) showLock('unlock');
+  lastHidden = 0;
+  renderAll(); sync();
+});
+setInterval(() => { if(!document.querySelector('dialog[open]')) renderAll(); }, 30e3);
+setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60e3);
+lockIfNeeded(() => {
+  if(!store(K.onboard)) onboard(1);
+  else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
+});
+sync();
+</script>
+</body>
+</html>
