@@ -1491,7 +1491,7 @@ document.addEventListener('visibilitychange', () => {
 });
 setInterval(() => { if(!document.querySelector('dialog[open]')) renderAll(); }, 30e3);
 setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60e3);
-// הנעילה בוטלה (17.11.2026). מנקים קוד שנשמר בגרסה הקודמת
+// הנעילה בוטלה (16.11.2026). מנקים קוד שנשמר בגרסה הקודמת
 store('משימות.נעילה', null); store('משימות.נעילה.ניסיונות', null);
 if(migrate()) renderAll();
 if(!store(K.onboard)) onboard(1);
