@@ -77,7 +77,7 @@ const DEFAULT_CONFIG = {
   v: 1, updatedAt: '',
   activeFrom: '07:00', activeTo: '21:00', summaryTime: '07:30', defaultTime: '10:00', quotaTime: '17:00',
   snoozeMorning: '08:00', accent: '#5B5BF7', theme: 'system',
-  mailRules: [], calendars: [], ntfy: '', ntfyCmd: '',
+  mailRules: [], calendars: [], ntfy: '', ntfyCmd: '', seedV: 1, tenant: null,
 };
 const PRIORITY = {high: 0, normal: 1, low: 2};
 const PRIORITY_NAME = {high: 'עדיפות גבוהה', normal: 'עדיפות רגילה', low: 'עדיפות נמוכה'};
@@ -514,7 +514,7 @@ function taskFromMail(rule, mail, nowIso){
     kind: 'email', email: {ruleId: rule.id, messageId: mail.messageId, threadUrl: mail.threadUrl || '',
       receivedAt: mail.receivedAt, amount: mail.amount ?? null, dueDays: +rule.dueDays || 0},
     time: rule.time || null, pre: [], nag: rule.nag || {mode: 'daily'}, discreet: !!rule.discreet,
-    notifyTitle: rule.notifyTitle || null, subtasks: (rule.subtasks || []).map(x => Object.assign({}, x)),
+    notifyTitle: rule.notifyTitle || null, calc: rule.calc || null, subtasks: (rule.subtasks || []).map(x => Object.assign({}, x)),
     notes: '', links: [], start: localDate(toMs(mail.receivedAt)), archived: false, updatedAt: nowIso, deleted: false,
   };
 }
@@ -568,6 +568,60 @@ function describeRule(task){
   return '';
 }
 
+/* ---------- חשבונות הדייר ---------- */
+// חשמל: חלק יחסי לפי מונה המשנה, מתוך הסכום הכולל של החשבון (כולל מע"מ, תשלום קבוע והספק).
+// ארנונה: סכום קבוע לתקופה של חודשיים (אפשר יחסי לימים). מים: חצי מהסכום.
+const TENANT_DEFAULT = {arnona: 285, waterShare: 0.5, lastSub: null, lastSubDate: null, bills: []};
+function tenantCfg(cfg){ return Object.assign({}, TENANT_DEFAULT, config(cfg).tenant || {}); }
+const num = x => x === '' || x == null ? NaN : +String(x).replace(/[,\s₪]/g, '');
+const agorot = x => Math.round(x * 100) / 100;
+function calcElec(i){
+  const prev = num(i.subPrev), cur = num(i.subCur), house = num(i.houseKwh), total = num(i.total);
+  if([prev, cur, house, total].some(x => !isFinite(x))) return {ok: false, err: 'חסר מספר'};
+  const kwh = agorot(cur - prev);
+  if(kwh < 0) return {ok: false, err: 'הקריאה הנוכחית קטנה מהקודמת'};
+  if(house <= 0) return {ok: false, err: 'צריכת הבית חייבת להיות גדולה מאפס'};
+  if(kwh > house) return {ok: false, err: 'הדייר לא יכול לצרוך יותר מכל הבית'};
+  const ratio = kwh / house;
+  return {ok: true, kwh, ratio, pct: Math.round(ratio * 1000) / 10, amount: agorot(ratio * total)};
+}
+function calcWater(total, share){
+  const t = num(total);
+  if(!isFinite(t) || t < 0) return {ok: false, err: 'חסר סכום'};
+  return {ok: true, amount: agorot(t * (share ?? 0.5))};
+}
+function calcArnona(fixed, days, periodDays){
+  const f = num(fixed); if(!isFinite(f)) return {ok: false, err: 'חסר סכום'};
+  const d = num(days), p = num(periodDays);
+  if(isFinite(d) && isFinite(p) && p > 0 && d < p) return {ok: true, amount: agorot(f * Math.max(0, d) / p), partial: true};
+  return {ok: true, amount: agorot(f), partial: false};
+}
+const money = x => (Math.round(x * 100) % 100 ? x.toFixed(2) : String(Math.round(x))) + ' ₪';
+/** הודעה לדייר. */
+function tenantText(b){
+  if(b.kind === 'elec') return `חשמל, ${b.period || 'החשבון האחרון'}:\nהמונה שלך: מ־${b.subPrev} עד ${b.subCur}, כלומר ${b.kwh} קוט"ש.\nכל הבית: ${b.houseKwh} קוט"ש, אז החלק שלך ${b.pct}%.\nהחשבון כולו ${money(num(b.total))}, ולכן לתשלום: ${money(b.amount)}.`;
+  if(b.kind === 'water') return `מים, ${b.period || 'החשבון האחרון'}:\nהחשבון כולו ${money(num(b.total))}, חצי לכל אחד.\nלתשלום: ${money(b.amount)}.`;
+  if(b.kind === 'arnona') return `ארנונה, ${b.period || 'התקופה האחרונה'}:\n${b.partial ? `${b.days} ימים מתוך ${b.periodDays}, מתוך ${money(num(b.fixed))}` : 'הסכום הקבוע שסיכמנו'}.\nלתשלום: ${money(b.amount)}.`;
+  return '';
+}
+
+/* ---------- עדכוני נתונים (למי שכבר התקין) ---------- */
+/** מחזיר משימות לעדכן ותצורה חדשה, או null כשאין מה לעשות. */
+function migrate(data, today, nowIso){
+  const cfg = config(data.config), tasks = data.tasks || [];
+  if(+cfg.seedV >= 2) return null;
+  const seed = initialData(today), byId = id => tasks.find(t => t.id === id);
+  const out = [];
+  const old = byId('arnona');
+  if(old && !old.deleted) out.push(Object.assign({}, old, {deleted: true, updatedAt: nowIso}));
+  for(const id of ['arnona-hk', 'token'])
+    if(!byId(id)) out.push(Object.assign({}, seed.tasks.find(t => t.id === id), {updatedAt: nowIso}));
+  const rules = (cfg.mailRules || []).map(r => r.id === 'elec'
+    ? Object.assign({}, seed.config.mailRules[0], {enabled: true, from: r.from || seed.config.mailRules[0].from}) : r);
+  if(!rules.some(r => r.id === 'water')) rules.push(seed.config.mailRules[1]);
+  return {tasks: out, config: Object.assign({}, cfg, {seedV: 2, mailRules: rules, updatedAt: nowIso})};
+}
+
 /* ---------- נתונים התחלתיים (סעיף 5 באפיון) ---------- */
 const DOMAINS = [
   {id: 'money', name: 'כספים', color: '#0E9F8E'},
@@ -587,9 +641,10 @@ function initialData(today){
       T({id: 'psych', title: 'תשלום לפסיכולוג', domain: 'money', priority: 'high', kind: 'schedule',
         schedule: {rule: {type: 'monthly', day: 'last'}}, missPolicy: 'accumulate', pre: [1],
         discreet: true, notifyTitle: 'תשלום חודשי'}),
-      T({id: 'arnona', title: 'תשלום ארנונה', domain: 'money', priority: 'high', kind: 'schedule',
-        schedule: {rule: {type: 'everyNMonths', n: 2, day: 14, anchor: '2026-01-14'}}, missPolicy: 'accumulate', pre: [3],
-        notes: 'לאמת את היום בחודש מול השובר. ההנחה: 14 בחודשים האי־זוגיים, לפי תאריך היעד 14.1.2026. באתר העירייה כתוב רק שהתשלומים דו־חודשיים.'}),
+      T({id: 'arnona-hk', title: 'הוראת קבע לארנונה', domain: 'money', priority: 'high', kind: 'once',
+        once: {date: addDays(today, 14)}, pre: [3, 1], doneLabel: 'נקבעה',
+        subtasks: [{id: 's1', text: 'למלא בקשה להוראת קבע בעיריית גבעתיים'}, {id: 's2', text: 'לוודא שהחיוב הראשון ירד'}],
+        notes: 'במקום לזכור לשלם כל חודשיים. עד שהוראת הקבע פעילה, לשלם את השובר כרגיל.'}),
       T({id: 'gym', title: 'פעילות גופנית', domain: 'health', kind: 'quota', quota: {count: 3, period: 'week'},
         time: '17:00', nag: {mode: 'none'}}),
       T({id: 'haircut', title: 'תספורת', domain: 'personal', kind: 'afterDone',
@@ -597,12 +652,21 @@ function initialData(today){
         doneLabel: 'הסתפרתי', subtasks: [{id: 's1', text: 'לקבוע תור'}]}),
       T({id: 'rent', title: 'חידוש שכר דירה', domain: 'home', priority: 'high', kind: 'once',
         once: {date: '2026-11-30'}, pre: [14, 7, 3, 1], notes: 'החוזה שלי כשוכר.'}),
+      T({id: 'token', title: 'חידוש אסימון גיטהאב', domain: 'personal', priority: 'high', kind: 'afterDone',
+        afterDone: {minDays: 82, maxDays: 89, lastDone: today}, soft: true, nag: {mode: 'daily', from: 'max'},
+        doneLabel: 'חידשתי', notes: 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה. להדביק באפליקציה: ⋮ ← הגדרות ← החלפת אסימון. ההחלפה מסמנת את המשימה כבוצעה.'}),
     ],
     domains: DOMAINS.map(d => Object.assign({hidden: false, updatedAt: ''}, d)),
     config: Object.assign({}, DEFAULT_CONFIG, {
-      mailRules: [{id: 'elec', enabled: false, from: '', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
-        priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'},
-        subtasks: [{id: 's1', text: 'לחשב חלוקה'}, {id: 's2', text: 'לשלוח לדייר'}, {id: 's3', text: 'לקבל תשלום'}]}],
+      seedV: 2,
+      mailRules: [
+        {id: 'elec', enabled: true, from: 'noreplys@iec.co.il', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
+          priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'elec',
+          subtasks: [{id: 's1', text: 'לקרוא את מונה המשנה של הדייר'}, {id: 's2', text: 'לחשב במחשבון'}, {id: 's3', text: 'לשלוח לדייר'}, {id: 's4', text: 'לקבל תשלום'}]},
+        {id: 'water', enabled: false, from: '', subject: '', title: 'חלוקת מים עם הדייר', domain: 'rental',
+          priority: 'normal', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'water',
+          subtasks: [{id: 's1', text: 'לחשב במחשבון'}, {id: 's2', text: 'לשלוח לדייר'}, {id: 's3', text: 'לקבל תשלום'}]},
+      ],
     }),
   };
 }
@@ -618,5 +682,6 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
+  TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, tenantText, money, migrate,
 };
 });
