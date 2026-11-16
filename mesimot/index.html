@@ -1252,9 +1252,10 @@ function renderCalc(){
   const tabs = [['elec', 'חשמל'], ['water', 'מים'], ['arnona', 'ארנונה']];
   let f = '';
   if(calcKind === 'elec') f = `
-    <p class="note">החלק של הדייר מתוך כל הבית, כפול הסכום הכולל של החשבון (כולל מע"מ ותשלומים קבועים). הקריאות הן ממונה המשנה של הדייר.</p>
+    <p class="note">חיוב אחד בכל חשבון חשמל: החשמל, הארנונה, ומים אם הגיע חשבון. חשמל = החלק של הדייר מתוך כל הבית, כפול הסכום הכולל של החשבון. הקריאות הן ממונה המשנה של הדייר.</p>
     <div class="row">${numField('c-prev', 'קריאה קודמת', tc.lastSub)}${numField('c-cur', 'קריאה נוכחית')}</div>
     <div class="row">${numField('c-house', 'כל הבית, קוט"ש', '', 'מהחשבון')}${numField('c-total', 'סכום החשבון, ₪', amt)}</div>
+    <div class="row">${numField('c-arn', 'ארנונה, ₪', tc.arnona, 'ריק = בלי')}${numField('c-wtotal', 'חשבון מים, ₪', '', 'ריק = בלי')}</div>
     ${tc.lastSubDate ? `<div class="note">הקריאה הקודמת נשמרה ב־${esc(fullDate(tc.lastSubDate))}</div>` : ''}`;
   else if(calcKind === 'water') f = `
     <p class="note">החשבון מחושב לפי 2 נפשות, ולכן חצי לכל אחד.</p>
@@ -1279,7 +1280,7 @@ function renderCalc(){
     const b = calcBill(); if(!b) return;
     const t = ל.tenantCfg(D.config), bills = [...(t.bills || []), b].slice(-60);
     const nt = Object.assign({}, t, {bills});
-    if(b.kind === 'elec'){ nt.lastSub = b.subCur; nt.lastSubDate = b.date; }
+    if(b.kind === 'elec'){ nt.lastSub = b.subCur; nt.lastSubDate = b.date; if(b.arnona) nt.arnona = +b.arnona; }
     if(b.kind === 'arnona' && !b.partial) nt.arnona = +b.fixed;
     saveConfig({tenant: nt});
     toast('נשמר'); renderCalc();
@@ -1289,7 +1290,7 @@ function renderCalc(){
 function calcBill(){
   const v = id => $(id) ? $(id).value.trim() : '';
   let r, b = {id: 'b' + uid(), kind: calcKind, date: today(), period: v('c-period')};
-  if(calcKind === 'elec'){ Object.assign(b, {subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total')}); r = ל.calcElec(b); }
+  if(calcKind === 'elec'){ Object.assign(b, {subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total'), arnona: v('c-arn'), waterTotal: v('c-wtotal'), waterShare: ל.tenantCfg(D.config).waterShare}); r = ל.calcCharge(b); }
   else if(calcKind === 'water'){ b.total = v('c-total'); r = ל.calcWater(b.total, ל.tenantCfg(D.config).waterShare); }
   else{ Object.assign(b, {fixed: v('c-fixed'), days: v('c-days'), periodDays: v('c-pdays')}); r = ל.calcArnona(b.fixed, b.days, b.periodDays); }
   if(!r.ok){ toast(r.err, {err: true}); return null; }
@@ -1298,13 +1299,13 @@ function calcBill(){
 function calcUpdate(){
   const v = id => $(id) ? $(id).value.trim() : '';
   let r;
-  if(calcKind === 'elec') r = ל.calcElec({subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total')});
+  if(calcKind === 'elec') r = ל.calcCharge({subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total'), arnona: v('c-arn'), waterTotal: v('c-wtotal'), waterShare: ל.tenantCfg(D.config).waterShare});
   else if(calcKind === 'water') r = ל.calcWater(v('c-total'), ל.tenantCfg(D.config).waterShare);
   else r = ל.calcArnona(v('c-fixed'), v('c-days'), v('c-pdays'));
   const out = $('c-res');
   if(!r.ok){ out.innerHTML = `<span class="note">${esc(r.err === 'חסר מספר' || r.err === 'חסר סכום' ? 'ממלאים את השדות, והסכום יופיע כאן' : r.err)}</span>`; return; }
-  const b = Object.assign({kind: calcKind, period: v('c-period'), subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total'), fixed: v('c-fixed'), days: v('c-days'), periodDays: v('c-pdays')}, r);
-  out.innerHTML = `<div>הדייר משלם: <b>${esc(ל.money(r.amount))}</b>${calcKind === 'elec' ? ` <span class="note">(${r.kwh} קוט"ש, ${r.pct}%)</span>` : ''}</div><pre>${esc(ל.tenantText(b))}</pre>`;
+  const b = Object.assign({kind: calcKind, period: v('c-period'), subPrev: v('c-prev'), subCur: v('c-cur'), houseKwh: v('c-house'), total: v('c-total'), waterTotal: v('c-wtotal'), fixed: v('c-fixed'), days: v('c-days'), periodDays: v('c-pdays')}, r);
+  out.innerHTML = `<div>הדייר משלם: <b>${esc(ל.money(r.amount))}</b>${calcKind === 'elec' ? ` <span class="note">(חשמל ${esc(ל.money(r.elecAmount))}, ${r.kwh} קוט"ש, ${r.pct}%)</span>` : ''}</div><pre>${esc(ל.tenantText(b))}</pre>`;
 }
 
 /* ---------- הגדרות ---------- */
@@ -1332,7 +1333,7 @@ function openSettings(){
         <div class="field"><label for="s-mail-subj-${k}">מילים בנושא (לא חובה)</label><input type="text" id="s-mail-subj-${k}" value="${esc(r.subject)}"></div></div>`).join('') || '<div class="note">אין כללים</div>'}
     </div>
     <div class="group"><h3>חשבונות הדייר</h3>
-      <div class="note">חשמל לפי מונה המשנה, ארנונה ${esc(ל.money(ל.tenantCfg(c).arnona))} לחודשיים, מים חצי.</div>
+      <div class="note">חיוב אחד בכל חשבון חשמל: חשמל לפי מונה המשנה, ארנונה ${esc(ל.money(ל.tenantCfg(c).arnona))}, ומים חצי.</div>
       <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
     <div class="group"><h3>יומנים</h3><div class="note">היומן הראשי. בחירת יומנים נוספים תגיע בשלב 3.</div></div>
     <div class="group"><h3>גיטהאב וסנכרון</h3>
