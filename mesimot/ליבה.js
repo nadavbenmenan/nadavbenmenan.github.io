@@ -573,6 +573,43 @@ function calendarFor(task, occ){
     details: 'ממשימות: ' + APP + '#o=' + encodeURIComponent(occ.id)});
 }
 
+/* ---------- יומן גוגל דרך המנוע ---------- */
+// משימה עם calendar: true נכנסת ליומן גוגל של נדב. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
+// מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
+/** מה צריך להיות ביומן למשימה, או null. date: התאריך הראשון; time: רק אם נבחרה שעה; rule: למשימה קבועה (אירוע חוזר). */
+function calendarSpec(raw, data, now){
+  if(!raw || raw.deleted || raw.archived || !raw.calendar) return null;
+  const cfg = config(data.config), task = normTask(raw, cfg), today = localDate(now), idx = indexOcc(data.occ);
+  let date = null, rule = null;
+  if(task.kind === 'once') date = task.once?.date;
+  else if(task.kind === 'schedule'){
+    rule = task.schedule?.rule || {type: 'daily'};
+    date = ruleDates(rule, maxStr(task.start, today), addDays(today, 800))[0] || null;
+  }else if(task.kind === 'afterDone'){
+    const o = occurrencesOf(task, idx, today, addDays(today, 800)).find(x => x.due && isOpen(x, now));
+    date = o ? o.due : null;
+  }
+  if(!date) return null;
+  const time = task.exact ? task.time : null, title = displayTitle(task);
+  const occId = task.kind === 'afterDone' ? null : `${task.id}-${compact(date)}`;
+  const spec = {title, date, time, rule, link: APP + (occId ? '#o=' + encodeURIComponent(occId) : '')};
+  spec.sig = sha256(JSON.stringify([title, task.kind === 'schedule' ? task.start : date, time, rule])).slice(0, 12);
+  return spec;
+}
+/** מה המנוע צריך לעשות: create = [{task, spec, old}], remove = [רשומות לאירועים שכבר לא רצויים]. */
+function calendarDiff(data, calFile, now){
+  const have = new Map((calFile?.events || []).filter(e => !e.deleted).map(e => [e.id, e])), create = [], remove = [];
+  for(const t of data.tasks || []){
+    const spec = calendarSpec(t, data, now), old = have.get(t.id);
+    if(spec && (!old || old.sig !== spec.sig)) create.push({task: t, spec, old: old || null});
+    else if(!spec && old) remove.push(old);
+    have.delete(t.id);
+  }
+  for(const e of have.values()) remove.push(e);   // משימה שנמחקה לגמרי
+  return {create, remove};
+}
+function mergeCalFile(a, b, now){ return {v: 1, events: mergeById(a?.events, b?.events, now)}; }
+
 /* ---------- התראות ישירות לאפליקציה (Web Push, מהמנוע) ---------- */
 // אין תזמון מראש: המנוע רץ כל דקה, ושולח רק מה שהגיע זמנו. לכן "בוצע" עוצר מיד את כל התזכורות הבאות.
 const PUSH_BACK = 20 * 60e3, PUSH_LEAD = 30e3;
@@ -1184,7 +1221,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
