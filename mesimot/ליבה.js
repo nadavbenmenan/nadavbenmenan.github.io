@@ -895,14 +895,27 @@ function timersDue(file, now, sent){
 }
 const timerPayload = t => JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: t.body ? `עבר ${t.body}` : 'הזמן עבר', u: APP, tag: 'timer-' + t.id, ri: true, vib: true});
 
+/** ערך ריק בפועל: "", "—", "-", "אין", "לא צוין"... */
+const blank = v => !String(v ?? '').replace(/[\s\-–—_.:*]/g, '') || /^(אין|לא צוין|לא ידוע|ללא|n\/?a|none)$/i.test(String(v).trim());
+/** כותרות משנה שאין אחריהן כלום יורדות. */
+const dropEmptySubs = list => (list || []).map(x => String(x).trim()).filter(x => !blank(x))
+  .filter((x, i, a) => !/[:：]\s*$/.test(x) || (a[i + 1] !== undefined && !/[:：]\s*$/.test(a[i + 1])));
+/** המתכון בלי חלקים ריקים: מה שריק לא מוצג, לא באפליקציה ולא בשיתוף. */
+function cleanRecipe(r){
+  const out = Object.assign({}, r);
+  for(const k of ['desc', 'notes', 'prep', 'cook', 'total', 'level', 'servings', 'source']) out[k] = blank(r[k]) ? '' : String(r[k]).trim();
+  out.ingredients = dropEmptySubs(r.ingredients); out.steps = dropEmptySubs(r.steps);
+  return out;
+}
 /** המתכון כהודעה (וואטסאפ): אמוג'י לפי התמונה שנבחרה, וליד כל מצרך האמוג'י שלו מרשימת הסופר. */
 function recipeText(rc, img){
+  rc = cleanRecipe(rc);
   const e = recipeEmojiOf(rc, img), L = [`${e} *${rc.title}* ${e}`];
   if(rc.desc) L.push(rc.desc);
   const meta = [rc.prep && `⏱ הכנה: ${rc.prep}`, rc.cook && `🔥 בישול/אפייה: ${rc.cook}`, rc.total && `⌛ סה״כ: ${rc.total}`, rc.servings && `👥 מנות: ${rc.servings}`, rc.level && `📊 ${rc.level}`].filter(Boolean);
   if(meta.length) L.push(meta.join(' · '));
   const ing = rc.ingredients || [];
-  if(ing.length) L.push('', '🛒 *מצרכים:*', ...ing.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${(ingredientProduct(x) && shopInfo(ingredientProduct(x)).cat !== 'other') ? shopInfo(ingredientProduct(x)).emoji : '▫️'} ${x}`));
+  if(ing.length) L.push('', '🛒 *מצרכים:*', ...ing.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${(ingredientProduct(x) && shopInfo(ingredientProduct(x)).emoji) || '▫️'} ${x}`));
   if((rc.steps || []).length){ let n = 0; L.push('', '👩‍🍳 *אופן ההכנה:*', ...rc.steps.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${++n}. ${x}`)); }
   if(rc.notes) L.push('', '💡 *הערות:*', rc.notes);
   if(rc.source) L.push('', '🔗 ' + rc.source);
@@ -913,12 +926,23 @@ function recipeText(rc, img){
 // שניהם משימות רגילות (כך שההתראות, לוח השנה וההיסטוריה עובדים בלי שינוי), עם special לזיהוי.
 // יום הולדת: כל שנה באותו יום, תזכורת שבוע ויום לפני. מסמך: חד-פעמית בתאריך פקיעת התוקף, תזכורת מראש, ונודניק שבועי אם פג.
 const DOC_TYPES = ['דרכון', 'תעודת זהות', 'רישיון נהיגה', 'טסט לרכב', 'ביטוח רכב', 'ביטוח דירה', 'ביטוח בריאות', 'כרטיס אשראי', 'ויזה', 'מנוי', 'אחריות למוצר'];
+// ימים מיוחדים: יום הולדת, יום נישואין, אזכרה, או שם חופשי ("יום השנה לדירה")
+const OCCASIONS = {birthday: {emoji: '🎂', name: 'יום הולדת'}, anniversary: {emoji: '💍', name: 'יום נישואין'},
+  memorial: {emoji: '🕯️', name: 'אזכרה'}, custom: {emoji: '✨', name: 'אחר'}};
+function occasionTitle(o){
+  const k = o.occasion || 'birthday', who = (o.name || '').trim(), lbl = (o.label || '').trim();
+  if(k === 'birthday') return `יום הולדת ל${who}`;
+  if(k === 'anniversary') return who ? `יום נישואין: ${who}` : 'יום נישואין';
+  if(k === 'memorial') return `אזכרה: ${who}`;
+  return lbl && who ? `${lbl}: ${who}` : lbl || who || 'יום מיוחד';
+}
 function birthdayTask(o, nowIso){
-  const [y, m, d] = o.date.split('-').map(Number);
-  return {id: o.id || 'bd' + sha256(o.name + o.date + nowIso).slice(0, 10), title: `יום הולדת ל${o.name}`, special: 'birthday', person: o.name,
+  const [y, m, d] = o.date.split('-').map(Number), k = OCCASIONS[o.occasion] ? o.occasion : 'birthday';
+  return {id: o.id || 'bd' + sha256((o.name || '') + o.date + nowIso).slice(0, 10), title: occasionTitle(o), special: 'birthday', occasion: k,
+    occasionLabel: k === 'custom' ? (o.label || '').trim() : '', person: (o.name || '').trim(),
     birthYear: o.knowYear === false ? null : y, domain: 'personal', priority: 'normal', kind: 'schedule',
     schedule: {rule: {type: 'yearly', month: m, day: d}}, start: `2000-${pad(m)}-${pad(d)}`, missPolicy: 'dayOnly', time: o.time || '09:00',
-    pre: [7, 1], nag: {mode: 'none'}, doneLabel: 'בירכתי', subtasks: [], notes: o.notes || '', links: [], archived: false, deleted: false, updatedAt: nowIso};
+    pre: [7, 1], nag: {mode: 'none'}, doneLabel: k === 'birthday' ? 'בירכתי' : 'סמן כבוצע', subtasks: [], notes: o.notes || '', links: [], archived: false, deleted: false, updatedAt: nowIso};
 }
 function docTask(o, nowIso){
   const before = +o.remindDays || 30;
@@ -933,8 +957,10 @@ function birthdaysView(tasks, today){
     const r = t.schedule.rule, y = +today.slice(0, 4);
     let next = `${y}-${pad(r.month)}-${pad(Math.min(r.day, daysInMonth(y, r.month)))}`;
     if(next < today) next = `${y + 1}-${pad(r.month)}-${pad(Math.min(r.day, daysInMonth(y + 1, r.month)))}`;
-    return {task: t, next, inDays: diffDays(next, today), age: t.birthYear ? +next.slice(0, 4) - t.birthYear : null};
-  }).sort((a, b) => a.inDays - b.inDays || a.task.person.localeCompare(b.task.person, 'he'));
+    const k = t.occasion || 'birthday';
+    return {task: t, next, inDays: diffDays(next, today), age: t.birthYear ? +next.slice(0, 4) - t.birthYear : null,
+      occasion: k, emoji: OCCASIONS[k].emoji, label: k === 'custom' ? (t.occasionLabel || 'יום מיוחד') : OCCASIONS[k].name};
+  }).sort((a, b) => a.inDays - b.inDays || (a.task.person || '').localeCompare(b.task.person || '', 'he'));
 }
 /** מסמכים לפי פקיעת התוקף: {task, expiry, inDays, state: 'ok' | 'soon' | 'expired' | 'renewed'} */
 function docsView(tasks, occ, today){
@@ -1218,11 +1244,11 @@ const SHOP_POPULAR = {
 };
 // שאר המוצרים בסופר (כ-700), אחרי הנפוצים. מוצעים כשמקלידים, ולא ברשימת ההצעות הראשונה.
 const SHOP_MORE = {
- "veg": "דלעת|🎃 דלורית|🎃 צנון| צנונית| קולורבי| שומר| כרישה| אספרגוס| נבטים|🌱 נבטי חמנייה|🌱 עלי בייבי|🥬 חסה אייסברג|🥬 חסה רומית|🥬 כרוב סגול|🥬 כרוב ניצנים|🥬 פלפל צהוב|🫑 פלפל ירוק|🫑 פלפל כתום|🫑 צ׳ילי|🌶️ תפוחי אדמה אדומים|🥔 בצל סגול|🧅 בצל לבן|🧅 שאלוט|🧅 שום טרי|🧄 כורכום טרי| בזיליקום|🌿 רוזמרין|🌿 טימין|🌿 מרווה|🌿 אורגנו טרי|🌿 עירית|🌿 מנגולד|🥬 ענבים ירוקים|🍇 ענבים אדומים|🍇 תפוח ירוק|🍏 תפוחי פינק ליידי|🍎 תפוחי גרני סמית|🍏 נקטרינות|🍑 משמש|🍑 שסק| תאנים| ליצ׳י| פסיפלורה| גויאבה| פפאיה| אוכמניות|🫐 פטל| ליים|🍋 אשכולית|🍊 פומלית|🍊 מנדרינות|🍊 פטריות שמפיניון|🍄 פטריות פורטובלו|🍄 פטריות שיטאקי|🍄 פטריות יער|🍄 עגבניות תמר|🍅 שעועית ירוקה|🫛 אפונה טרייה|🫛 לוביה| במיה| ארוגולה|🥬 כוסברה טרייה|🌿 נענע טרייה|🌿 קייל|🥬 סלרי ענפים|🥬 פלפל חריף ירוק|🌶️ בטטה לבנה|🍠 תפוחי אדמה לאפייה|🥔 מלפפון בייבי|🥒 עגבניות לבישול|🍅 חציל בלאדי|🍆 אבוקדו האס|🥑 קלמנטינות אור|🍊 פרי הדר|🍊 תות שדה|🍓 מלון כתום|🍈 אבטיח ללא גרעינים|🍉 תפוח עץ|🍎 בננות מיובשות|🍌 שום קלוף|🧄 בצל קלוף|🧅 ירקות חתוכים|🥗 סלט ירקות ארוז|🥗",
+ "veg": "לפת| דלעת|🎃 דלורית|🎃 צנון| צנונית| קולורבי| שומר| כרישה| אספרגוס| נבטים|🌱 נבטי חמנייה|🌱 עלי בייבי|🥬 חסה אייסברג|🥬 חסה רומית|🥬 כרוב סגול|🥬 כרוב ניצנים|🥬 פלפל צהוב|🫑 פלפל ירוק|🫑 פלפל כתום|🫑 צ׳ילי|🌶️ תפוחי אדמה אדומים|🥔 בצל סגול|🧅 בצל לבן|🧅 שאלוט|🧅 שום טרי|🧄 כורכום טרי| בזיליקום|🌿 רוזמרין|🌿 טימין|🌿 מרווה|🌿 אורגנו טרי|🌿 עירית|🌿 מנגולד|🥬 ענבים ירוקים|🍇 ענבים אדומים|🍇 תפוח ירוק|🍏 תפוחי פינק ליידי|🍎 תפוחי גרני סמית|🍏 נקטרינות|🍑 משמש|🍑 שסק| תאנים| ליצ׳י| פסיפלורה| גויאבה| פפאיה| אוכמניות|🫐 פטל| ליים|🍋 אשכולית|🍊 פומלית|🍊 מנדרינות|🍊 פטריות שמפיניון|🍄 פטריות פורטובלו|🍄 פטריות שיטאקי|🍄 פטריות יער|🍄 עגבניות תמר|🍅 שעועית ירוקה|🫛 אפונה טרייה|🫛 לוביה| במיה| ארוגולה|🥬 כוסברה טרייה|🌿 נענע טרייה|🌿 קייל|🥬 סלרי ענפים|🥬 פלפל חריף ירוק|🌶️ בטטה לבנה|🍠 תפוחי אדמה לאפייה|🥔 מלפפון בייבי|🥒 עגבניות לבישול|🍅 חציל בלאדי|🍆 אבוקדו האס|🥑 קלמנטינות אור|🍊 פרי הדר|🍊 תות שדה|🍓 מלון כתום|🍈 אבטיח ללא גרעינים|🍉 תפוח עץ|🍎 בננות מיובשות|🍌 שום קלוף|🧄 בצל קלוף|🧅 ירקות חתוכים|🥗 סלט ירקות ארוז|🥗",
  "bread": "לחם אחיד|🍞 לחם שיפון|🍞 לחם כוסמין|🍞 לחם דגנים|🍞 לחם לבן|🍞 לחם פרוס|🍞 לחם ללא גלוטן|🍞 לחם מחמצת|🍞 לחמניות מתוקות|🥖 לחמניות נקניקיה|🌭 פיתות מלאות|🫓 לאפה|🫓 חלה מתוקה|🍞 בייגל|🥯 בייגלה ירושלמי|🥯 מצות|🫓 בורקס גבינה|🥐 בורקס תפוחי אדמה|🥐 רוגלך|🥐 מאפינס|🧁 עוגת שמרים|🍰 עוגת שוקולד|🍰 עוגת גבינה|🍰 עוגת דבש|🍰 עוגת תפוזים|🍰 קרואסון שוקולד|🥐 קרואסון שקדים|🥐 דונאטס|🍩 סופגניות|🍩 פוקאצ׳ה|🍞 ג׳בטה|🥖 פרנה|🫓 קרוטונים|🍞 לחם קלוי|🍞 פיתה ללא גלוטן|🫓 עוגיות מאפייה|🍪 שטרודל|🥐 קרמבו|🍫",
  "dry": "אורז בסמטי|🍚 אורז יסמין|🍚 אורז פרסי|🍚 אורז מלא|🍚 אורז לסושי|🍙 אורז עגול|🍚 פסטה פנה|🍝 פסטה פוזילי|🍝 לזניה|🍝 פטוצ׳יני|🍝 טורטליני|🍝 ניוקי|🍝 פסטה מלאה|🍝 פסטה ללא גלוטן|🍝 קוסקוס מלא|🍚 עדשים כתומות|🫘 עדשים ירוקות|🫘 עדשים שחורות|🫘 שעועית לבנה|🫘 שעועית אדומה|🫘 שעועית שחורה|🫘 אפונה יבשה|🫘 פול|🫘 גריסי פנינה|🌾 כוסמת|🌾 דוחן|🌾 סולת|🌾 אטריות אורז|🍜 אטריות ביצים|🍜 ראמן|🍜 פתיתים אפויים|🍚 פירה מוכן|🥔 פסטה קונכיות|🍝 ספגטי מלא|🍝 אורז פרא|🍚 פריקה|🌾 בורגול דק|🌾 בורגול גס|🌾 קמח חומוס|🌾",
- "cans": "אפונה בקופסה|🥫 ארטישוק בקופסה|🥫 לבבות דקל|🥫 עגבניות מרוסקות|🥫 עגבניות קלופות|🥫 פסטו|🌿 רוטב פסטה|🥫 רוטב צ׳ילי מתוק|🌶️ רוטב ברביקיו|🥫 סחוג|🌶️ הריסה|🌶️ עמבה|🥭 רוטב טריאקי|🥫 רוטב אלף האיים|🥫 רוטב לסלט|🥫 זיתים ירוקים|🫒 זיתים שחורים|🫒 זיתי קלמטה|🫒 כרוב כבוש|🥫 לימון כבוש|🍋 פלפלים קלויים|🫑 חלפיניו|🌶️ צלפים|🥫 טונה בשמן|🐟 טונה במים|🐟 סרדינים|🐟 אנשובי|🐟 ריבת תות|🍓 ריבת משמש|🍑 ריבת חלב|🥛 חלב קוקוס|🥥 קרם קוקוס|🥥 אננס בקופסה|🍍 אפרסקים בקופסה|🍑 תירס גמדי|🌽 שעועית אפויה|🥫 ממרח זיתים|🫒 חרדל דיז׳ון|🥫 מיונז לייט|🥫 טחינה גולמית|🥫 מרק בקופסה|🥫 גרגרי חומוס בקופסה|🥫 שעועית לבנה ברוטב|🥫 קטשופ חריף|🍅 רוטב שום|🧄 רוטב חמוץ מתוק|🥫 רוטב צ׳ילי|🌶️ ממרח לוטוס|🍪 ממרח פיסטוק|🥜 חמאת שקדים|🥜 דבש טבעי|🍯 סירופ מייפל|🍁 סירופ תמרים|🌴",
- "bake": "שמן קנולה|🫒 שמן חמניות|🌻 שמן קוקוס|🥥 שמן סויה|🫒 תרסיס שמן|🫒 חומץ בלסמי|🧂 חומץ תפוחים|🍎 מיץ לימון|🍋 מלח גס|🧂 מלח לימון|🧂 מלח ים|🧂 סוכר חום|🧂 אבקת סוכר|🧂 סוכר וניל|🧂 סטיביה|🧂 סוכרזית|🧂 קמח לבן|🌾 קמח מלא|🌾 קמח תופח|🌾 קמח כוסמין|🌾 קמח תירס|🌽 קורנפלור|🌾 שמרים יבשים|🧂 ג׳לטין|🧂 שוקולד צ׳יפס|🍫 סוכריות לקישוט|🍬 תמצית וניל|🧂 פפריקה מתוקה|🌶️ פפריקה חריפה|🌶️ פלפל אנגלי|🧂 קינמון|🧂 הל|🧂 ציפורן|🧂 זעתר|🌿 סומק|🧂 בהרט|🧂 חוואיג׳|🧂 ג׳ינג׳ר טחון|🧂 אגוז מוסקט|🧂 אורגנו|🌿 בזיליקום יבש|🌿 פטרוזיליה יבשה|🌿 עלי דפנה|🌿 צ׳ילי גרוס|🌶️ שום גבישי|🧄 בצל מטוגן|🧅 אבקת שום|🧄 אבקת בצל|🧅 תבלין לעוף|🧂 אבקת מרק עוף|🍲 אבקת מרק בצל|🍲 שומשום|🌰 אגוזי מלך|🌰 אגוזי לוז|🌰 קשיו|🥜 פקאן|🌰 פיסטוקים|🥜 בוטנים|🥜 צנוברים|🌰 שקדים טחונים|🌰 קוקוס טחון|🥥 חמוציות| משמש מיובש|🍑 שזיפים מיובשים|🍑 תאנים מיובשות| זרעי צ׳יה|🌱 זרעי פשתן|🌱 גרעיני דלעת|🎃 פרג|🌰 שמן שומשום|🫒 מלח עם יוד|🧂 תערובת לעוגה|🍰 פודינג אינסטנט|🍮 קצפת אבקה|🧂 שוקולד לבן לבישול|🍫 אבקת קקאו|🍫 פירורי פנקו|🍞 קמח שקדים|🌰 סוכר קנים|🧂 דבש תמרים|🌴",
+ "cans": "חלב מרוכז| אפונה בקופסה|🥫 ארטישוק בקופסה|🥫 לבבות דקל|🥫 עגבניות מרוסקות|🥫 עגבניות קלופות|🥫 פסטו|🌿 רוטב פסטה|🥫 רוטב צ׳ילי מתוק|🌶️ רוטב ברביקיו|🥫 סחוג|🌶️ הריסה|🌶️ עמבה|🥭 רוטב טריאקי|🥫 רוטב אלף האיים|🥫 רוטב לסלט|🥫 זיתים ירוקים|🫒 זיתים שחורים|🫒 זיתי קלמטה|🫒 כרוב כבוש|🥫 לימון כבוש|🍋 פלפלים קלויים|🫑 חלפיניו|🌶️ צלפים|🥫 טונה בשמן|🐟 טונה במים|🐟 סרדינים|🐟 אנשובי|🐟 ריבת תות|🍓 ריבת משמש|🍑 ריבת חלב|🥛 חלב קוקוס|🥥 קרם קוקוס|🥥 אננס בקופסה|🍍 אפרסקים בקופסה|🍑 תירס גמדי|🌽 שעועית אפויה|🥫 ממרח זיתים|🫒 חרדל דיז׳ון|🥫 מיונז לייט|🥫 טחינה גולמית|🥫 מרק בקופסה|🥫 גרגרי חומוס בקופסה|🥫 שעועית לבנה ברוטב|🥫 קטשופ חריף|🍅 רוטב שום|🧄 רוטב חמוץ מתוק|🥫 רוטב צ׳ילי|🌶️ ממרח לוטוס|🍪 ממרח פיסטוק|🥜 חמאת שקדים|🥜 דבש טבעי|🍯 סירופ מייפל|🍁 סירופ תמרים|🌴",
+ "bake": "פלפל לבן| ראס אל חנות| קוביות מרק| כמון טחון| שמן קנולה|🫒 שמן חמניות|🌻 שמן קוקוס|🥥 שמן סויה|🫒 תרסיס שמן|🫒 חומץ בלסמי|🧂 חומץ תפוחים|🍎 מיץ לימון|🍋 מלח גס|🧂 מלח לימון|🧂 מלח ים|🧂 סוכר חום|🧂 אבקת סוכר|🧂 סוכר וניל|🧂 סטיביה|🧂 סוכרזית|🧂 קמח לבן|🌾 קמח מלא|🌾 קמח תופח|🌾 קמח כוסמין|🌾 קמח תירס|🌽 קורנפלור|🌾 שמרים יבשים|🧂 ג׳לטין|🧂 שוקולד צ׳יפס|🍫 סוכריות לקישוט|🍬 תמצית וניל|🧂 פפריקה מתוקה|🌶️ פפריקה חריפה|🌶️ פלפל אנגלי|🧂 קינמון|🧂 הל|🧂 ציפורן|🧂 זעתר|🌿 סומק|🧂 בהרט|🧂 חוואיג׳|🧂 ג׳ינג׳ר טחון|🧂 אגוז מוסקט|🧂 אורגנו|🌿 בזיליקום יבש|🌿 פטרוזיליה יבשה|🌿 עלי דפנה|🌿 צ׳ילי גרוס|🌶️ שום גבישי|🧄 בצל מטוגן|🧅 אבקת שום|🧄 אבקת בצל|🧅 תבלין לעוף|🧂 אבקת מרק עוף|🍲 אבקת מרק בצל|🍲 שומשום|🌰 אגוזי מלך|🌰 אגוזי לוז|🌰 קשיו|🥜 פקאן|🌰 פיסטוקים|🥜 בוטנים|🥜 צנוברים|🌰 שקדים טחונים|🌰 קוקוס טחון|🥥 חמוציות| משמש מיובש|🍑 שזיפים מיובשים|🍑 תאנים מיובשות| זרעי צ׳יה|🌱 זרעי פשתן|🌱 גרעיני דלעת|🎃 פרג|🌰 שמן שומשום|🫒 מלח עם יוד|🧂 תערובת לעוגה|🍰 פודינג אינסטנט|🍮 קצפת אבקה|🧂 שוקולד לבן לבישול|🍫 אבקת קקאו|🍫 פירורי פנקו|🍞 קמח שקדים|🌰 סוכר קנים|🧂 דבש תמרים|🌴",
  "morning": "קפה טחון|☕ פולי קפה|☕ קפה פילטר|☕ קפה נטול קפאין|☕ תה ירוק|🍵 תה צמחים|🍵 תה נענע|🍵 תה קמומיל|🍵 תה ארל גריי|🍵 תה שחור|🍵 אבקת שוקו|🍫 כריות|🥣 מוזלי|🥣 ממרח תמרים|🌴 קפסולות נספרסו|☕ מחליב לקפה|🥛 קפה בוץ|☕ קפה הל|☕ דגני בוקר מלאים|🥣 פצפוצי אורז|🥣 פתיתי תירס|🥣 תה לימונית|🍵 תה פירות|🍵 קפה קלוי|☕",
  "snack": "אפרופו|🌽 דוריטוס|🌽 תפוצ׳יפס|🥔 צ׳יטוס|🧀 קליק|🍫 פסק זמן|🍫 טעמי|🍫 כיף כף|🍫 קינדר|🍫 מקופלת|🍫 שוקולד חלב|🍫 שוקולד לבן|🍫 עוגיות שוקולד צ׳יפס|🍪 אוראו|🍪 חטיף חלבון|🍫 חטיף דגנים|🍫 חטיף פירות|🍓 גרעינים לבנים|🌻 גרעינים שחורים|🌻 פיצוחים|🥜 בוטנים אמריקאים|🥜 סוכריות גומי|🍬 מרשמלו|🍬 חלבה|🍬 טופי|🍬 סוכריה על מקל|🍭 במבה נוגט|🥜 חטיף אורז|🍘 כעכים|🥨 פרינגלס|🥔 ביסקוויטים|🍪 פתי בר|🍪 עוגיות גבינה|🍪 בייגלה מלוח|🥨 צ׳יפס בטטה|🍠 שוקולד מריר 70|🍫 פסק זמן לבן|🍫 מנטוס|🍬 שוקולד עם אגוזים|🍫 עוגיות חמאה|🍪 גלידה בגביע|🍦",
  "drink": "שישיית מים|💧 מים בטעמים|💧 קולה זירו|🥤 ספרייט|🥤 פאנטה|🥤 שוופס|🥤 פריגת|🧃 ספרינג|🧃 תפוזינה|🧃 מיץ תפוחים|🧃 מיץ ענבים|🧃 מיץ אשכוליות|🧃 לימונדה|🍋 תה קר|🧋 משקה אנרגיה|🥤 רד בול|🥤 בירה ללא אלכוהול|🍺 יין אדום|🍷 יין לבן|🍷 יין רוזה|🍷 יין קידוש|🍷 וודקה|🍸 ערק|🥃 וויסקי|🥃 ליקר|🍸 סיידר|🍎 שוקו בשקית|🥛 קפה קר|☕ משקה שיבולת שועל|🥛 מי קוקוס|🥥 טוניק|🥤 מיץ גזר|🥕 מיץ רימונים|🧃 מיץ מנגו|🧃 נביעות|💧 מים מוגזים|💧 קוקה קולה|🥤 פפסי|🥤 ספרייט זירו|🥤 ג׳ין|🍸 רום|🥃 שמפניה|🍾 בירה שחורה|🍺",
@@ -1236,6 +1262,10 @@ const SHOP_MORE = {
 };
 
 const SHOP_CATALOG = [];
+// מוצרים שהאמוג'י של המחלקה באמת מראה אותם (שאר מוצרים בלי אמוג'י משלהם לא יקבלו את של המחלקה)
+const EMOJI_OK = new Set(['חסה', 'כרוב', 'עלי בייבי', 'כרוב סגול', 'מנגולד', 'תרד', 'קייל', 'לחם', 'חלה', 'לחם מלא', 'לחם שיפון', 'לחם כוסמין', 'לחם דגנים',
+  'לחם לבן', 'לחם פרוס', 'לחם מחמצת', 'לחם ללא גלוטן', 'לחם קלוי', 'שעועית', 'עדשים', 'עדשים כתומות', 'עדשים ירוקות', 'עדשים שחורות', 'שעועית לבנה', 'שעועית אדומה',
+  'שעועית שחורה', 'אפונה יבשה', 'פול', 'רסק עגבניות', 'מלח', 'סוכר', 'קפה', 'חלב', 'קרח', 'שוקולד', 'משקה סויה', 'שימורי פטריות']);
 for(const [list, base] of [[SHOP_POPULAR, 0], [SHOP_MORE, 1000]])
   for(const [cat, s] of Object.entries(list))
     [...s.matchAll(/\s*([^|]+?)\|(\S*)/g)].forEach(([, name, emoji], i) => {
@@ -1276,6 +1306,15 @@ for(const part of SHOP_ALIASES.split(';')){
 // שם נרדף שהופיע ברשימה כמוצר נפרד יוצא ממנה, ועובר לשמות של המוצר הראשי
 for(let i = SHOP_CATALOG.length - 1; i >= 0; i--) if(ALIAS_OF[SHOP_CATALOG[i].name]) SHOP_CATALOG.splice(i, 1);
 for(const x of SHOP_CATALOG) x.aliases = Object.keys(ALIAS_OF).filter(al => ALIAS_OF[al] === x.name);
+// תמונות אמיתיות של מצרכים (TheMealDB, נבחרו ונבדקו אחת-אחת: רק תמונה שמראה את המוצר עצמו)
+const SHOP_PHOTOS = {"עגבניות": "Tomatoes", "מלפפונים": "Cucumber", "בצל": "Onions", "תפוחי אדמה": "Potatoes", "גזר": "Carrots", "לימון": "Lemon", "בננות": "Banana", "תפוחים": "Apples", "פלפל אדום": "Red Pepper", "אבוקדו": "Avocado", "שום": "Garlic", "חסה": "Lettuce", "עגבניות שרי": "Cherry Tomatoes", "פטרוזיליה": "Parsley", "כוסברה": "Cilantro", "שמיר": "Dill", "נענע": "Mint", "קישואים": "Zucchini", "חצילים": "Aubergine", "כרוב": "Cabbage", "ברוקולי": "Broccoli", "תפוזים": "Orange", "אגסים": "Pears", "תותים": "Strawberries", "פטריות": "Mushrooms", "בצל ירוק": "Spring Onions", "ג׳ינג׳ר": "Ginger", "פלפל חריף": "Green Chilli", "סלק": "Beetroot", "אפרסקים": "Peaches", "מנגו": "Mango", "דלעת": "Pumpkin", "דלורית": "Butternut Squash", "כרישה": "Leek", "שומר": "Fennel Bulb", "אספרגוס": "Asparagus", "נבטים": "Bean Sprouts", "פלפל צהוב": "Yellow Pepper", "פלפל ירוק": "Green Pepper", "בצל סגול": "Red Onions", "שאלוט": "Shallots", "בזיליקום": "Basil", "רוזמרין": "Rosemary", "טימין": "Thyme", "מרווה": "Sage", "עירית": "Chives", "תאנים": "Figs", "אוכמניות": "Blueberries", "פטל": "Raspberries", "ליים": "Lime", "קייל": "Kale", "ארוגולה": "Rocket", "תרד": "Spinach", "סלרי": "Celery", "שעועית ירוקה": "Green Beans", "משמש": "Apricot", "דובדבנים": "Cherry", "כרוב ניצנים": "Brussels Sprouts", "צ׳ילי": "Red Chilli", "פטריות שיטאקי": "Shiitake Mushrooms", "פטריות יער": "Wild Mushrooms", "חלפיניו": "Jalapeno", "לפת": "Turnips", "רימונים": "Pomegranate", "לחם": "Bread", "פיתות": "Pita Bread", "באגט": "Baguette", "טורטיות": "Tortillas", "לחמניות המבורגר": "Buns", "לחמניות": "Bread Rolls", "פירורי לחם": "Breadcrumbs", "לחם שיפון": "Rye Bread", "לחם מלא": "Wholegrain Bread", "צ׳בטה": "Ciabatta", "ג׳בטה": "Ciabatta", "אורז": "Rice", "פסטה": "Penne Rigate", "ספגטי": "Spaghetti", "עדשים": "Lentils", "חומוס יבש": "Chickpeas", "קוסקוס": "Couscous", "בורגול": "Bulgur Wheat", "קינואה": "Quinoa", "שיבולת שועל": "Rolled Oats", "אטריות": "Noodles", "נודלס": "Noodles", "אורז בסמטי": "Basmati Rice", "אורז יסמין": "Jasmine Rice", "אורז מלא": "Brown Rice", "אורז לסושי": "Sushi Rice", "לזניה": "Lasagne Sheets", "פטוצ׳יני": "Fettuccine", "שעועית לבנה": "Butter Beans", "שעועית אדומה": "Kidney Beans", "שעועית שחורה": "Black Beans", "עדשים ירוקות": "French Lentils", "אטריות אורז": "Rice Noodles", "כוסמת": "Buckwheat", "פול": "Broad Beans", "קמח חומוס": "Chickpea Flour", "רסק עגבניות": "Tomato Puree", "זיתים": "Black Olives", "זיתים ירוקים": "Green Olives", "זיתים שחורים": "Pitted Black Olives", "מלפפונים חמוצים": "Dill Pickles", "רוטב עגבניות": "Tomato Sauce", "קטשופ": "Tomato Ketchup", "מיונז": "Mayonnaise", "חרדל": "Mustard", "חרדל דיז׳ון": "Dijon Mustard", "טחינה": "Tahini", "רוטב סויה": "Soy Sauce", "ריבה": "Jam", "דבש": "Honey", "ממרח שוקולד": "Nutella", "חמאת בוטנים": "Peanut Butter", "עגבניות מרוסקות": "Chopped Tomatoes", "חלב קוקוס": "Coconut Milk", "שעועית אפויה": "Baked Beans", "צלפים": "Capers", "סרדינים": "Sardines", "כרוב כבוש": "Sauerkraut", "רוטב ברביקיו": "Barbeque Sauce", "סירופ מייפל": "Maple Syrup", "רוטב צ׳ילי מתוק": "sweet chilli sauce", "פסטו": "Basil Leaves", "סחוג": "Green Salsa", "רוטב צ׳ילי": "Hotsauce", "שמן": "Vegetable Oil", "שמן זית": "Olive Oil", "מלח": "Salt", "סוכר": "Sugar", "קמח": "Flour", "פלפל שחור": "Black Pepper", "פפריקה": "Paprika", "כורכום": "Turmeric", "כמון": "Cumin", "אבקת אפייה": "Baking Powder", "סודה לשתייה": "Bicarbonate Of Soda", "וניל": "Vanilla Extract", "תמצית וניל": "Vanilla Extract", "קקאו": "Cocoa", "שוקולד מריר": "Dark Chocolate", "חומץ": "White Vinegar", "אגוזים": "Walnuts", "אגוזי מלך": "Walnuts", "שקדים": "Almonds", "צימוקים": "Raisins", "תמרים": "Medjool Dates", "שמן קנולה": "Canola Oil", "שמן חמניות": "Sunflower Oil", "חומץ בלסמי": "Balsamic Vinegar", "חומץ תפוחים": "Apple Cider Vinegar", "מיץ לימון": "Lemon Juice", "מלח גס": "Sea Salt", "סוכר חום": "Brown Sugar", "אבקת סוכר": "Icing Sugar", "קורנפלור": "Cornstarch", "קמח תירס": "Corn Flour", "קמח שקדים": "Almond Flour", "ג׳לטין": "Gelatine Leafs", "שוקולד צ׳יפס": "Chocolate Chips", "פפריקה מתוקה": "sweet smoked paprika", "פפריקה חריפה": "Chilli Powder", "קינמון": "Cinnamon", "הל": "Cardamom", "ציפורן": "Cloves", "ג׳ינג׳ר טחון": "Ground Ginger", "אגוז מוסקט": "Nutmeg", "אורגנו": "Oregano", "עלי דפנה": "Bay Leaves", "צ׳ילי גרוס": "Red Chilli Flakes", "אבקת שום": "Garlic Powder", "שומשום": "Sesame Seed", "אגוזי לוז": "Hazlenuts", "קשיו": "Cashews", "פקאן": "Pecan Nuts", "בוטנים": "Peanuts", "צנוברים": "Pine Nuts", "קוקוס טחון": "Desiccated Coconut", "משמש מיובש": "Dried Apricots", "שזיפים מיובשים": "Prunes", "שקדים טחונים": "Ground Almonds", "פלפל אנגלי": "Allspice", "סוכר וניל": "vanilla sugar", "שמן שומשום": "Sesame Seed Oil", "בהרט": "Mixed Spice", "ראס אל חנות": "Ras el hanout", "כמון טחון": "Ground Cumin", "אבקת מרק עוף": "Chicken Stock Cube", "קוביות מרק": "Bouillon Cubes", "שוקולד": "Milk Chocolate", "בייגלה": "Pretzels", "מרשמלו": "Miniature Marshmallows", "שוקולד חלב": "Milk Chocolate", "גלידה": "Ice Cream", "מים": "Water", "בירה": "Stout", "יין": "Red Wine", "יין אדום": "Red Wine", "יין לבן": "White Wine", "סיידר": "Cider", "רום": "Rum", "משקה שקדים": "Almond Milk", "משקה סויה": "Soya Milk", "חלב": "Milk", "ביצים": "Eggs", "גבינה צהובה": "Cheddar Cheese", "יוגורט": "Yogurt", "שמנת מתוקה": "Heavy Cream", "שמנת חמוצה": "Sour Cream", "חמאה": "Butter", "גבינה בולגרית": "Feta", "מוצרלה": "Mozzarella", "פרמזן": "Parmesan", "גבינת שמנת": "Cream Cheese", "ריקוטה": "Ricotta", "מרגרינה": "Vegan Butter", "יוגורט יווני": "Greek Yogurt", "גבינת פטה": "Feta", "גאודה": "Gouda Cheese", "ברי": "Brie", "גבינת עזים": "Goats Cheese", "מסקרפונה": "Mascarpone", "שמנת לבישול": "Single Cream", "קצפת": "Whipping Cream", "חלב מרוכז": "Condensed Milk", "צ׳דר": "Mature Cheddar", "גבינה מגורדת": "Shredded Mexican Cheese", "גבינה צהובה פרוסה": "Cheese Slices", "טופו": "Tofu", "פלאפל": "Falafel", "סלמון מעושן": "Smoked Salmon", "הרינג": "Herring", "חזה עוף": "Chicken Breast", "עוף שלם": "Chicken", "כרעיים": "Chicken Legs", "שוקיים": "Chicken drumsticks", "פרגיות": "Chicken Thighs", "בשר טחון": "Minced Beef", "סטייק": "Beef", "סלמון": "Salmon", "דג": "White Fish", "הודו": "Turkey Mince", "כבש": "Lamb", "טלה": "Lamb", "צלעות טלה": "Lamb Loin Chops", "שוק טלה": "Lamb Leg", "טחון עוף": "Turkey Mince", "טחון הודו": "Turkey Mince", "פילה בקר": "Beef Fillet", "אנטריקוט": "Beef", "שפונדרה": "Beef Brisket", "בשר בקר": "Beef", "בורי": "White Fish", "פילה בקלה": "Cod", "בקלה": "Cod", "שרימפס": "Prawns", "מושט": "White Fish Fillets", "לברק": "White Fish", "דניס": "Red Snapper", "טונה טרייה": "Tuna", "פילה דג": "Fish fillet", "אמנון": "White Fish Fillets", "אפונה קפואה": "Frozen Peas", "צ׳יפס קפוא": "Fries", "בצק עלים": "Puff Pastry", "בצק פילו": "Filo Pastry", "ירקות קפואים": "Stir-fry Vegetables", "שעועית קפואה": "Green Beans", "פירות יער קפואים": "Blackberries", "תותים קפואים": "Strawberries", "מנגו קפוא": "Mango", "תירס בקופסה": "Sweetcorn"};
+const photoUrl = name => name ? 'https://www.themealdb.com/images/ingredients/' + encodeURIComponent(name) + '-small.png' : '';
+// אמוג'י שלא באמת מראה את המוצר (🍿 לביסלי, 🥓 לנקניק, 🦻 למקלונים): בלי. במקומו האות הראשונה בצבע המחלקה
+const NO_EMOJI = new Set(["ארטישוק", "צנון", "צנונית", "קולורבי", "כורכום טרי", "שסק", "ליצ׳י", "פסיפלורה", "גויאבה", "פפאיה", "במיה", "אפרסמון", "קרמבו", "ריבת חלב", "שמרים", "חמוציות", "תאנים מיובשות", "סטיביה", "סוכרזית", "קצפת אבקה", "פרג", "זרעי צ׳יה", "זרעי פשתן", "ביסלי", "חלבה", "לבנה", "נקניק", "פסטרמה", "סלמי", "פסטרמה הודו", "חזה הודו פרוס", "כבד קצוץ", "סייטן", "כבד", "לבבות עוף", "קורקבנים", "במיה קפואה", "נייר אפייה", "נייר כסף", "ניילון נצמד", "מקלוני אוזניים", "קונדומים", "פדים", "צמר גפן", "טמפונים", "תחבושות", "תחבושות לילה", "פדים יומיים", "שמן סויה", "תרסיס שמן", "כבד עוף"]);
+for(const x of SHOP_CATALOG){
+  x.photo = SHOP_PHOTOS[x.name] || '';
+  if(NO_EMOJI.has(x.name) || x.emoji === SHOP_CAT[x.cat].emoji && !EMOJI_OK.has(x.name)) x.emoji = '';
+}
 // מילים שמזהות מחלקה גם כשהמוצר לא ברשימה (למשל "גבינת עזים" = חלב). לא מוצעות בהצעות.
 const SHOP_WORDS = {
   veg: 'ירק פרי תפוח עגבני מלפפון פלפל בצל חסה נקטרינה שזיף דובדבן פטריה צנון קולורבי דלעת לוביה במיה שמיר עלי ' +
@@ -1339,7 +1378,7 @@ function phraseScore(inWords, words){
   }
   return score;
 }
-const SHOP_MATCH = SHOP_CATALOG.flatMap(x => [x.name, ...x.aliases].map(n => ({words: shopNorm(n).split(' '), cat: x.cat, emoji: x.emoji, entry: x})))
+const SHOP_MATCH = SHOP_CATALOG.flatMap(x => [x.name, ...x.aliases].map(n => ({words: shopNorm(n).split(' '), cat: x.cat, get emoji(){ return x.emoji; }, entry: x})))
   .concat(Object.entries(SHOP_WORDS).flatMap(([cat, ws]) => ws.split(/\s+/).map(w => ({words: w.split('_'), cat, emoji: null, word: true}))));
 /** ההתאמה הטובה ביותר ברשימה: צירוף ארוך ומדויק קודם ("שמנת" = שמנת ולא שמן; "בצל ירוק" לפני "בצל"). */
 function shopMatch(name){
@@ -1371,15 +1410,14 @@ function shopInfo(nameOrItem){
   const name = item ? item.name : nameOrItem, m = shopMatch(name);
   let cat = m ? m.cat : 'other';
   if(item && item.cat && SHOP_CAT[item.cat]) cat = item.cat;
-  // תמונה: מהמוצר שהתאים. אם התאימה מילת מפתח ("ביצה"), מחפשים מוצר מהרשימה באותה מחלקה ("ביצים" 🥚)
-  let emoji = m && m.emoji && m.cat === cat ? m.emoji : null;
-  if(!emoji){
+  // תמונה ואמוג'י: מהמוצר שהתאים. מילת מפתח ("ביצה"): מהמוצר מהרשימה שהכי מתאים לה באותה מחלקה ("ביצים")
+  let entry = m && !m.word && m.cat === cat ? m.entry : null;
+  if(!entry){
     const inWords = shopNorm(name).split(' ').filter(Boolean);
     let bs = 0;
-    for(const x of SHOP_MATCH) if(!x.word && x.cat === cat){ const sc = phraseScore(inWords, x.words); if(sc > bs){ bs = sc; emoji = x.emoji; } }
+    for(const x of SHOP_MATCH) if(!x.word && x.cat === cat){ const sc = phraseScore(inWords, x.words); if(sc > bs){ bs = sc; entry = x.entry; } }
   }
-  emoji = emoji || catOf(cat).emoji;
-  return {cat, emoji, catName: catOf(cat).name, order: catOf(cat).order};
+  return {cat, emoji: entry ? entry.emoji : '', photo: entry ? photoUrl(entry.photo) : '', catName: catOf(cat).name, catEmoji: catOf(cat).emoji, order: catOf(cat).order};
 }
 
 // כל מוצר הוא רשומה אחת לתמיד: active = ברשימה עכשיו. count = כמה פעמים הוסף (לסדר ההצעות).
@@ -1415,7 +1453,7 @@ function shopSuggest(items, query, limit){
   const cat = SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name)) && (!q || [x.name, ...x.aliases].some(hit)))
     .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
     .map(x => ({name: x.name, catalog: true}));
-  return past.concat(cat).slice(0, limit || 12).map(x => Object.assign({}, x, {emoji: shopInfo(x).emoji}));
+  return past.concat(cat).slice(0, limit || 12).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
 }
 const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
 /** הרשימה מחולקת למחלקות, לפי סדר ההליכה בסופר. */
@@ -1424,7 +1462,7 @@ function shopGroups(items){
   for(const x of shopList(items)){
     const i = shopInfo(x);
     (g[i.cat] = g[i.cat] || {cat: i.cat, name: i.catName, emoji: SHOP_CAT[i.cat].emoji, order: i.order, items: []})
-      .items.push(Object.assign({}, x, {emoji: i.emoji}));
+      .items.push(Object.assign({}, x, {emoji: i.emoji, photo: i.photo, catId: i.cat}));
   }
   return Object.values(g).sort((a, b) => a.order - b.order);
 }
@@ -1433,7 +1471,7 @@ function shopText(items){
   const groups = shopGroups(items), n = groups.reduce((s, g) => s + g.items.length, 0);
   if(!n) return '';
   return `🛒 *רשימת קניות* (${n})\n\n` +
-    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `▫️ ${x.emoji} ${x.name}`).join('\n')).join('\n\n');
+    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `▫️ ${x.emoji ? x.emoji + ' ' : ''}${x.name}`).join('\n')).join('\n\n');
 }
 function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
 
@@ -1594,7 +1632,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, DOC_TYPES, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
