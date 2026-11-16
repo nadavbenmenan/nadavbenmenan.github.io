@@ -398,7 +398,9 @@
 const ל = window.ליבה;
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
-const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה'};
+const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה',
+           push: 'משימות.דחיפה', device: 'משימות.מכשיר'};
+const SUBS_PATH = 'משימות/מנויים.json';    // המכשירים שנרשמו להתראות ישירות
 
 /* ---------- עזר ---------- */
 const $ = id => document.getElementById(id);
@@ -1283,7 +1285,7 @@ async function syncFile(name){
 }
 async function loadTopics(){
   const t = storeJson(K.topics, null);
-  if(t?.ntfy && t.cmd_key) return t;
+  if(t?.ntfy && t.vapid_public) return t;
   if(D.config.ntfy) return {ntfy: D.config.ntfy, ntfy_cmd: D.config.ntfyCmd};
   try{
     const g = await gh('GET', KEYS_PATH);
@@ -1295,14 +1297,17 @@ async function sync(){
   if(!token){ renderStatus(); return; }
   if(syncing){ again = true; return; }
   syncing = true; syncErr = ''; renderStatus('מסנכרן...');
+  kvSet('token', token).catch(() => {});   // לכפתורים בהתראות (עובד השירות קורא משם)
   try{
     await syncFile('config'); await syncFile('tasks');
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
+    await readPending();
     await syncFile('occ'); await syncFile('shop');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     applyTheme();
     await scheduleNotifications();
+    await ensurePush();
   }catch(err){
     syncErr = err.code === 401 ? 'האסימון פג או אינו תקף. נשמר במכשיר בלבד' : err.code === 403 ? err.message : 'אין חיבור. נשמר במכשיר ויעלה אחר כך';
     if(err.code === 401) toast('האסימון אינו תקף. אפשר לחבר מחדש בהגדרות', {err: true});
@@ -1336,19 +1341,22 @@ async function ntfyPublish(topic, n, delaySec){
 async function scheduleNotifications(){
   const topics = await loadTopics();
   if(!topics?.ntfy) return;
-  const topic = topics.ntfy, now = Date.now(), engine = ל.engineAlive(inbox, now);
-  const plan = ל.planNotifications(data(), now);
+  const topic = topics.ntfy, now = Date.now();
   const sched = storeJson(K.sched, {});
-  const d = ל.diffSchedule(sched, plan, data(), now);
-  d.drop.forEach(id => delete sched[id]);
-  // מוחקים מה שכבר לא רצוי (למשל אחרי "בוצע"), גם כשהמנוע פועל: כך נודניק לא מגיע בדקות עד הריצה הבאה שלו
-  for(const id of d.del){ try{ await ntfyDelete(topic, id); delete sched[id]; }catch(e){} }
-  if(engine){
-    // המנוע קובע (עם כפתורים). האפליקציה רק זוכרת את התכנון, למקרה שהמנוע יפסיק לרוץ
-    store(K.sched, JSON.stringify(Object.fromEntries(plan.map(n => [n.id, {at: n.at, sig: ל.notifSig(n), occId: n.occId}]))));
+  if(pushMode()){
+    // המנוע שולח ישר לאפליקציה. מוחקים מ-ntfy את מה שהאפליקציה קבעה בעבר, כדי שלא יגיע פעמיים
+    for(const [id, x] of Object.entries(sched)){
+      if(x.at > now){ try{ await ntfyDelete(topic, id); delete sched[id]; }catch(e){} }
+      else delete sched[id];
+    }
+    store(K.sched, JSON.stringify(sched));
     return;
   }
-  // גיבוי: המנוע לא רץ ב-7 השעות האחרונות, אז האפליקציה קובעת בעצמה, בלי כפתורים
+  const plan = ל.planNotifications(data(), now);
+  const d = ל.diffSchedule(sched, plan, data(), now);
+  d.drop.forEach(id => delete sched[id]);
+  for(const id of d.del){ try{ await ntfyDelete(topic, id); delete sched[id]; }catch(e){} }
+  // גיבוי: המנוע לא פועל, או שבמכשיר הזה לא הופעלו התראות ישירות. האפליקציה קובעת ב-ntfy, בלי כפתורים
   for(const n of d.pub){
     try{
       await ntfyDelete(topic, n.id);
@@ -1376,6 +1384,12 @@ async function readCommands(){
   }
 }
 async function testNotification(){
+  if(pushOn()){
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('בדיקה: משימות', {body: 'ההתראות מוצגות במכשיר הזה. ההתראות עצמן נשלחות מהמנוע בגוגל',
+      tag: 'test', dir: 'rtl', lang: 'he', icon: 'icon-192.png', badge: 'badge-96.png', data: {u: './'}});
+    return toast('נשלחה התראת בדיקה');
+  }
   const topics = await loadTopics();
   if(!topics?.ntfy) return toast('אין ערוץ התראות. צריך קודם לחבר לגיטהאב', {err: true});
   try{
@@ -1383,6 +1397,102 @@ async function testNotification(){
     toast('נשלחה התראת בדיקה');
   }catch(e){ toast('השליחה נכשלה', {err: true}); }
 }
+
+/* ---------- התראות ישירות לאפליקציה (שלב 2: המנוע בגוגל) ---------- */
+// המכשיר נרשם אצל שירות ההתראות של הדפדפן עם המפתח הציבורי (vapid_public מ-הגדרות.json), ושומר את פרטי
+// הרישום ב-משימות/מנויים.json. המנוע שולח לשם. הכפתורים מטופלים ב-sw.js, שצריך את האסימון: לכן הוא נשמר
+// גם ב-IndexedDB של האתר (רק במכשיר).
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('משימות', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function kvGet(k){
+  const db = await idb();
+  return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+}
+async function kvSet(k, v){
+  const db = await idb();
+  return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+}
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+const pushOn = () => pushSupported() && Notification.permission === 'granted' && !!store(K.push);
+const pushMode = () => pushOn() && ל.engineAlive(inbox, Date.now());
+function deviceId(){
+  let id = store(K.device);
+  if(!id){ id = 'd-' + uid(); store(K.device, id); }
+  return id;
+}
+const b64bytes = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+/** לחיצות על כפתורים בהתראות שעוד לא נכתבו למאגר (למשל בלי רשת). */
+async function readPending(){
+  let list;
+  try{ list = await kvGet('pending'); }catch(e){ return; }
+  if(!list || !list.length) return;
+  for(const cmd of list){ const rec = ל.applyCommand(data(), cmd, cmd.t, null); if(rec) saveRec(rec); }
+  await kvSet('pending', []);
+}
+async function saveSubscription(sub){
+  const j = sub.toJSON();
+  const rec = {id: deviceId(), endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth,
+    device: /Android/i.test(navigator.userAgent) ? 'אנדרואיד' : /iPhone|iPad/i.test(navigator.userAgent) ? 'אייפון' : 'מחשב',
+    updatedAt: nowIso(), deleted: false};
+  for(let n = 0; n < 3; n++){
+    const f = {path: SUBS_PATH};
+    const cur = await readFile(f);
+    try{
+      await gh('PUT', SUBS_PATH, {message: 'משימות: מכשיר להתראות', branch: BRANCH, sha: f.sha || undefined,
+        content: to64(JSON.stringify(ל.mergeSubsFile(cur, {subs: [rec]}), null, 1))});
+      store(K.push, j.endpoint);
+      return;
+    }catch(err){ if(err.code !== 409 || n === 2) throw err; }
+  }
+}
+async function subscribe(topics){
+  const reg = await navigator.serviceWorker.ready, key = b64bytes(topics.vapid_public);
+  let sub = await reg.pushManager.getSubscription();
+  // נרשם בעבר עם מפתח אחר: מבטלים ונרשמים מחדש
+  if(sub && sub.options?.applicationServerKey && new Uint8Array(sub.options.applicationServerKey).join() !== key.join()){ await sub.unsubscribe(); sub = null; }
+  if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: key});
+  return sub;
+}
+async function enablePush(){
+  if(!pushSupported()) return toast('הדפדפן הזה לא תומך בהתראות. צריך לפתוח בכרום', {err: true});
+  if(!token) return toast('צריך קודם לחבר לגיטהאב', {err: true});
+  const topics = await loadTopics();
+  if(!topics?.vapid_public) return toast('חסר מפתח התראות במאגר', {err: true});
+  const perm = await Notification.requestPermission();
+  if(perm !== 'granted') return toast('ההתראות חסומות. בכרום: ⋮ ← הגדרות ← הגדרות אתר ← התראות', {err: true, ms: 6000});
+  try{
+    const sub = await subscribe(topics);
+    await saveSubscription(sub);
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('התראות מהאפליקציה פועלות', {body: 'ככה תיראה תזכורת. הכפתורים יופיעו בתזכורות של משימות',
+      tag: 'test', dir: 'rtl', lang: 'he', icon: 'icon-192.png', badge: 'badge-96.png', data: {u: './'}});
+    toast('✓ ההתראות הופעלו במכשיר הזה');
+  }catch(err){
+    toast('ההפעלה נכשלה: ' + (err.message || err), {err: true, ms: 6000});
+  }
+  if($('dlg-settings').open) openSettings();
+  sync();
+}
+/** פעם בפתיחה: מוודא שהרישום עדיין בתוקף (הדפדפן מחליף אותו לפעמים) ושהוא במאגר. */
+let pushChecked = false;
+async function ensurePush(){
+  if(pushChecked || !pushOn() || !token) return;
+  pushChecked = true;
+  try{
+    const topics = await loadTopics();
+    if(!topics?.vapid_public) return;
+    const sub = await subscribe(topics);
+    const file = await readFile({path: SUBS_PATH});
+    const mine = (file?.subs || []).find(x => x.id === deviceId());
+    if(sub.endpoint !== store(K.push) || !mine || mine.deleted || mine.endpoint !== sub.endpoint) await saveSubscription(sub);
+  }catch(e){ pushChecked = false; }
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if(e.data?.type === 'pending') sync(); });
 
 /* ---------- חשבונות הדייר ---------- */
 // החישוב עצמו בליבה.js (calcElec, calcWater, calcArnona). הסכומים נשמרים רק במאגר הפרטי, ולא יוצאים בהתראות.
@@ -1456,23 +1566,33 @@ function calcUpdate(){
 }
 
 /* ---------- הגדרות ---------- */
+function engineText(){
+  const e = inbox.engine, now = Date.now();
+  if(ל.engineAlive(inbox, now)) return e.mode === 'push' ? `✓ המנוע בגוגל פועל (נבדק לאחרונה ב־${esc(ל.localTime(ל.toMs(e.lastFull)))}).`
+    : '✓ המנוע בגוגל פועל.';
+  if(e?.lastFull) return `המנוע בגוגל לא רץ מאז ${esc(fullDate(ל.localDate(ל.toMs(e.lastFull))))}.`;
+  return 'המנוע בגוגל עוד לא הותקן.';
+}
 function openSettings(){
   const c = D.config, topics = storeJson(K.topics, null);
   $('s-body').innerHTML = `
     <div class="group" style="border:0;margin:0"><h3>התראות</h3>
-      <div class="note">${ל.engineAlive(inbox, Date.now()) ? `✓ המנוע בגוגל פועל (תזמון אחרון ${esc(ל.localTime(ל.toMs(inbox.engine.lastFull)))}). ההתראות מגיעות עם כפתורים.`
-        : inbox.engine?.lastFull ? `המנוע לא רץ מאז ${esc(fullDate(ל.localDate(ל.toMs(inbox.engine.lastFull))))}. בינתיים האפליקציה קובעת את ההתראות, בלי כפתורים.`
-        : 'המנוע בגוגל עוד לא הותקן. בינתיים האפליקציה קובעת את ההתראות, בלי כפתורים.'}</div>
-      ${topics?.ntfy ? `<div class="note" style="margin-top:8px">באפליקציית ntfy בנייד, להירשם לערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
-        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button><button class="btn primary" id="s-test" type="button">שלח התראת בדיקה</button></div>`
-        : '<div class="note">שם הערוץ יופיע כאן אחרי החיבור לגיטהאב.</div>'}
+      <div class="note" id="s-engine">${engineText()}</div>
+      ${pushOn() ? `<div class="note" style="margin-top:8px">✓ במכשיר הזה ההתראות מגיעות ישר לאפליקציה, עם "✓ בוצע" ו"עוד שעה".</div>
+        <div class="btns"><button class="btn" id="s-test" type="button">שלח התראת בדיקה</button></div>`
+        : `<div class="note" style="margin-top:8px">${pushSupported() && Notification.permission === 'denied'
+            ? 'ההתראות חסומות במכשיר הזה. בכרום: ⋮ ← הגדרות ← הגדרות אתר ← התראות, ולאפשר לאתר הזה. אחר כך ללחוץ כאן:'
+            : 'כדי שההתראות יגיעו ישר מהאפליקציה, עם כפתורים:'}</div>
+        <div class="btns"><button class="btn primary" id="s-push" type="button">הפעלת התראות באפליקציה</button></div>`}
+      ${!pushMode() && topics?.ntfy ? `<div class="note" style="margin-top:12px">${pushOn() ? 'עד שהמנוע ירוץ' : 'בינתיים'}: ההתראות מגיעות דרך אפליקציית ntfy, מהערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
+        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button>${pushOn() ? '' : '<button class="btn" id="s-test" type="button">שלח התראת בדיקה</button>'}</div>` : ''}
     </div>
     <div class="group"><h3>שעות</h3>
       <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
         <div class="field"><label for="s-to">עד</label><input type="time" id="s-to" value="${esc(c.activeTo)}"></div></div>
       <div class="row"><div class="field"><label for="s-sum">שעת סיכום בוקר</label><input type="time" id="s-sum" value="${esc(c.summaryTime)}"></div>
         <div class="field"><label for="s-def">שעת ברירת מחדל</label><input type="time" id="s-def" value="${esc(c.defaultTime)}"></div></div>
-      <div class="note">התראה שנופלת מחוץ לשעות לא נשלחת. דחייה שנופלת אחרי השעה האחרונה עוברת ל־08:00 בבוקר. סיכום הבוקר יגיע עם המנוע (שלב 2).</div>
+      <div class="note">התראה שנופלת מחוץ לשעות לא נשלחת. דחייה שנופלת אחרי השעה האחרונה עוברת ל־08:00 בבוקר. סיכום הבוקר נשלח מהמנוע בגוגל.</div>
     </div>
     <div class="group"><h3>מראה</h3>
       <div class="row"><div class="field"><label for="s-theme">מצב כהה</label>${sel('s-theme', [['system', 'לפי המערכת'], ['light', 'בהיר'], ['dark', 'כהה']], c.theme)}</div>
@@ -1504,10 +1624,11 @@ function openSettings(){
   $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); openSettings(); };
   $('s-disc') && ($('s-disc').onclick = () => {
     if(!confirm('לנתק את המכשיר מגיטהאב? הנתונים נשארים במאגר ובמכשיר.')) return;
-    store(K.token, null); token = ''; Object.values(FILES).forEach(f => f.sha = null); openSettings(); renderStatus();
+    store(K.token, null); token = ''; kvSet('token', '').catch(() => {}); Object.values(FILES).forEach(f => f.sha = null); openSettings(); renderStatus();
   });
   $('s-copy') && ($('s-copy').onclick = () => navigator.clipboard?.writeText(topics.ntfy).then(() => toast('הועתק'), () => toast('ההעתקה נכשלה', {err: true})));
   $('s-test') && ($('s-test').onclick = testNotification);
+  $('s-push') && ($('s-push').onclick = enablePush);
   $('s-export').onclick = exportAll;
   if(!$('dlg-settings').open) $('dlg-settings').showModal();
 }
