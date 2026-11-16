@@ -128,9 +128,9 @@
   /* הסרגל נגלל ימינה ושמאלה: כל המסכים בו, בלי "עוד". רואים כחמישה וחצי, כדי שיהיה ברור שיש עוד */
   nav{position:fixed;right:0;left:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;
       padding:4px 6px calc(env(safe-area-inset-bottom) + 4px);z-index:4;overflow-x:auto;overscroll-behavior-x:contain;
-      scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+      scrollbar-width:none;-webkit-overflow-scrolling:touch}
   nav::-webkit-scrollbar{display:none}
-  nav button{flex:0 0 70px;scroll-snap-align:start;white-space:nowrap;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
+  nav button{flex:0 0 70px;white-space:nowrap;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
              gap:2px;padding:6px 0;font-size:12px;color:var(--muted);min-height:56px;border-radius:14px}
   nav button.on{color:var(--accent);font-weight:600}
 
@@ -268,6 +268,13 @@
   .more-row .b{flex:1;min-width:0}
   .more-row .t{font-weight:600;font-size:16px}
   .more-row .s{font-size:13px;color:var(--muted);margin-top:2px}
+  .up-row{flex-wrap:wrap}
+  .up-row .foot{flex-basis:100%;display:flex;align-items:center;gap:12px}
+  .up-row .bar{flex:1;height:6px;border-radius:6px;background:var(--soft);overflow:hidden}
+  .up-row .bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+  .up-row.late .bar i{background:var(--red)} .up-row.late .side{color:var(--red)}
+  .up-row.due .bar i, .up-row.soon .bar i{background:#E07A1F} .up-row.due .side, .up-row.soon .side{color:#C2410C}
+  .up-done{border:0;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:600;min-height:40px;padding:6px 12px;flex:none}
   .more-row .side{font-size:13px;font-weight:600;flex:none;text-align:center;min-width:56px}
   .more-row.expired{background:var(--red-soft)} .more-row.expired .side{color:var(--red)}
   .more-row.soon .side{color:#C2410C}
@@ -421,6 +428,11 @@
   <h1 class="hello">עוד</h1>
   <div class="more-grid" id="more-grid"></div>
 </main>
+<main class="screen" id="scr-upkeep" hidden>
+  <h1 class="hello">תחזוקה שוטפת</h1>
+  <div class="note" style="margin-top:4px">מה מחליפים או עושים כל פרק זמן. "החלפתי" מתחיל את הספירה מחדש, ותזכורת מגיעה כשמגיע הזמן.</div>
+  <div id="up-list" class="more-list"></div>
+</main>
 <main class="screen" id="scr-birthdays" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">ימים מיוחדים</h1>
@@ -448,6 +460,7 @@
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
   <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-5.6-3.6-7.6-.4 1.6-1.3 2.8-2.4 3.4.1-3.3-1.2-6.4-4-8.8.2 3.6-1.6 5.6-3.2 7.6C4.6 11.3 5 13.4 5 15c0 4.2 3 7 7 7z"/></svg>קלוריות</button>
+  <button data-scr="upkeep"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3.6 17.4a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.3-5.3l-2.4 2.4-2-.6-.6-2z"/></svg>תחזוקה</button>
   <button data-scr="birthdays"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16v-7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M4 16c2 1.3 4 1.3 5.3 0s4-1.3 5.4 0 3.3 1.3 5.3 0"/><path d="M12 12V8M12 5.5c-.8-.8-.8-2 0-3 .8 1 .8 2.2 0 3z"/></svg>ימים מיוחדים</button>
   <button data-scr="docs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>מסמכים</button>
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
@@ -588,6 +601,17 @@
     <button class="btn" id="kr-del" type="button" style="color:var(--red);width:100%;margin-top:12px">מחיקת המתכון</button>
   </div>
 </dialog>
+<dialog id="dlg-upkeep" aria-label="פריט תחזוקה"><div class="dlg">
+  <h2 id="up-title">פריט חדש</h2>
+  <div id="up-ideas-f"><span class="lbl">רעיונות</span><div class="opts" id="up-ideas" style="margin:6px 0 10px"></div></div>
+  <div class="field"><label for="up-name">מה</label><input type="text" id="up-name" placeholder="למשל: מסנן מזגן"></div>
+  <span class="lbl">סמל</span><div class="opts" id="up-emojis" style="margin:6px 0 10px"></div>
+  <span class="lbl">כל כמה זמן</span><div class="opts" id="up-every" style="margin:6px 0 6px"></div>
+  <div class="field" id="up-days-f" hidden><label for="up-days">כל כמה ימים</label><input type="number" inputmode="numeric" id="up-days" min="1"></div>
+  <div class="field"><label for="up-last">מתי בפעם האחרונה</label><input type="date" id="up-last"></div>
+  <div class="note" id="up-note"></div>
+  <div class="btns"><button class="btn" id="up-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="up-cancel" type="button">ביטול</button><button class="btn primary" id="up-ok" type="button">שמירה</button></div>
+</div></dialog>
 <dialog id="dlg-bday" aria-label="יום הולדת"><div class="dlg">
   <h2 id="bd-title">יום מיוחד</h2>
   <div class="opts" id="bd-kinds"></div>
@@ -998,12 +1022,13 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'recipes', 'kcal', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  for(const x of ['today', 'shop', 'recipes', 'kcal', 'upkeep', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal';
-  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש'}[s] || 'משימה חדשה');
+  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
-  if(on) on.scrollIntoView({inline: 'nearest', block: 'nearest'});
+  if(on){ const n = $('nav'), r = on.getBoundingClientRect(), nr = n.getBoundingClientRect();
+    if(r.left < nr.left) n.scrollBy({left: r.left - nr.left - 24}); else if(r.right > nr.right) n.scrollBy({left: r.right - nr.right + 24}); }
   renderAll(); scrollTo(0, 0);
 }
 function renderAll(){
@@ -1014,6 +1039,7 @@ function renderAll(){
   else if(screen === 'recipes') renderRecipes();
   else if(screen === 'more') renderMore();
   else if(screen === 'kcal') renderKcal();
+  else if(screen === 'upkeep') renderUpkeep();
   else if(screen === 'birthdays') renderBirthdays();
   else if(screen === 'docs') renderDocs();
   else renderHistory();
@@ -1732,6 +1758,86 @@ function renderMore(){
 }
 $('more-grid').onclick = e => { const b = e.target.closest('[data-go]'); if(b) show(b.dataset.go); };
 
+/* ---------- תחזוקה שוטפת ---------- */
+// החישוב בליבה.js (upkeepView). כל פריט הוא משימה "ממועד הביצוע", כך שההתראות וההיסטוריה עובדים כרגיל.
+const UP_EMOJIS = ['🪥', '💧', '🪒', '💇', '🧽', '🛏️', '🔋', '❄️', '🚗', '🧴', '🌿', '🐾', '💊', '👟', '🧺', '🔧'];
+const UP_IDEAS = [['מסנן מזגן', '❄️', 180, 180], ['החלפת מצעים', '🛏️', 14, 14], ['ספוג כלים', '🧽', 30, 30], ['סוללה לגלאי עשן', '🔋', 365, 365],
+  ['ניקוי מסנן מכונת כביסה', '🧺', 90, 90], ['ראש למברשת חשמלית', '🪥', 90, 90], ['נעלי ריצה', '👟', 365, 365], ['טיפול לרכב', '🚗', 365, 365]];
+function renderUpkeep(){
+  const t = today(), list = ל.upkeepView(D.tasks, D.occ, t);
+  const ago = n => n === 0 ? 'היום' : n === 1 ? 'אתמול' : n >= 60 ? `לפני ${Math.round(n / 30.4)} חודשים` : `לפני ${n} ימים`;
+  const side = x => x.state === 'unknown' ? 'מתי לאחרונה?' : x.left < 0 ? `באיחור ${-x.left === 1 ? 'יום' : -x.left + ' ימים'}`
+    : x.state === 'due' ? 'הגיע הזמן' : x.toMin > 1 && x.toMin < x.left ? `בעוד ${x.toMin}-${x.left} ימים` : daysText(x.left);
+  $('up-list').innerHTML = list.length ? list.map(x => `<div class="more-row up-row ${x.state}" data-id="${esc(x.task.id)}" role="button" tabindex="0">
+      <span class="i">${x.task.emoji || '🔧'}</span>
+      <span class="b"><span class="t" style="display:block">${esc(x.task.title)}</span><span class="s" style="display:block">כל ${esc(x.every)}${x.last ? ` · אחרון: ${ago(x.sinceDays)}` : ''}</span></span>
+      <span class="side">${side(x)}</span>
+      <span class="foot"><span class="bar"><i style="width:${x.pct}%"></i></span>
+      ${x.state === 'unknown' ? '' : `<button type="button" class="up-done" data-done="${esc(x.task.id)}">✓ ${esc(x.task.doneLabel || 'החלפתי')}</button>`}</span></div>`).join('')
+    : '<div class="empty">לוחצים + כדי להוסיף משהו שמחליפים כל כמה זמן</div>';
+}
+$('up-list').onclick = e => {
+  const d = e.target.closest('[data-done]');
+  if(d){ const t = ל.normTask(taskById(d.dataset.done), D.config); return doDone(t, currentOcc(t)); }
+  const r = e.target.closest('[data-id]'); if(r) openUpkeep(r.dataset.id);
+};
+let upEdit = null, upEmoji = '🔧', upEvery = [30, 30];
+function renderUpForm(){
+  $('up-emojis').innerHTML = UP_EMOJIS.map(e => `<button type="button" data-e="${e}" class="${upEmoji === e ? 'on' : ''}" aria-label="סמל ${e}">${e}</button>`).join('');
+  const known = ל.UPKEEP_EVERY.some(([a, b]) => a === upEvery[0] && b === upEvery[1]);
+  $('up-every').innerHTML = ל.UPKEEP_EVERY.map(([a, b, n]) => `<button type="button" data-ev="${a}-${b}" class="${a === upEvery[0] && b === upEvery[1] ? 'on' : ''}">${n}</button>`).join('')
+    + `<button type="button" data-ev="other" class="${known ? '' : 'on'}">אחר</button>`;
+  $('up-days-f').hidden = known;
+  if(!known) $('up-days').value = upEvery[1];
+  $('up-note').textContent = `תזכורת ${upEvery[0] === upEvery[1] ? 'ביום שמגיע הזמן' : 'בסוף הטווח'}, ואם לא סומן, כל יום עד ש"החלפתי".`;
+}
+function openUpkeep(id){
+  upEdit = id ? taskById(id) : null;
+  upEmoji = upEdit?.emoji || '🔧';
+  upEvery = upEdit ? [+upEdit.afterDone.minDays, +upEdit.afterDone.maxDays] : [30, 30];
+  $('up-title').textContent = upEdit ? 'עריכה' : 'פריט חדש';
+  $('up-name').value = upEdit?.title || '';
+  const v = upEdit ? ל.upkeepView([upEdit], D.occ, today())[0] : null;
+  $('up-last').value = v?.last || (upEdit ? '' : today());
+  $('up-last').max = today();
+  $('up-del').hidden = !upEdit;
+  $('up-ideas-f').hidden = !!upEdit;
+  const have = new Set(D.tasks.filter(t => t.upkeep && !t.deleted).map(t => t.title));
+  $('up-ideas').innerHTML = UP_IDEAS.filter(i => !have.has(i[0])).map((i, n) => `<button type="button" data-idea="${n}">${i[1]} ${i[0]}</button>`).join('');
+  renderUpForm();
+  $('dlg-upkeep').showModal();
+}
+$('up-ideas').onclick = e => { const b = e.target.closest('[data-idea]'); if(!b) return; const [n, em, a, c] = UP_IDEAS[+b.dataset.idea];
+  $('up-name').value = n; upEmoji = UP_EMOJIS.includes(em) ? em : em; upEvery = [a, c]; renderUpForm(); };
+$('up-emojis').onclick = e => { const b = e.target.closest('[data-e]'); if(b){ upEmoji = b.dataset.e; renderUpForm(); } };
+$('up-every').onclick = e => { const b = e.target.closest('[data-ev]'); if(!b) return;
+  if(b.dataset.ev === 'other'){ upEvery = [+$('up-days').value || 45, +$('up-days').value || 45]; renderUpForm(); $('up-days-f').hidden = false; $('up-days').focus(); return; }
+  upEvery = b.dataset.ev.split('-').map(Number); renderUpForm(); };
+$('up-days').addEventListener('input', () => { const n = +$('up-days').value; if(n > 0){ upEvery = [n, n]; } });
+$('up-cancel').onclick = () => $('dlg-upkeep').close();
+$('up-ok').onclick = () => {
+  const name = $('up-name').value.trim(), last = $('up-last').value || null;
+  if(!name) return toast('צריך שם', {err: true});
+  if(!(upEvery[1] > 0)) return toast('כל כמה ימים?', {err: true});
+  const v = upEdit ? ל.upkeepView([upEdit], D.occ, today())[0] : null;
+  const t = ל.upkeepTask({id: upEdit?.id, name, emoji: upEmoji, min: upEvery[0], max: upEvery[1], lastDone: last,
+    domain: upEdit?.domain, doneLabel: upEdit?.doneLabel, time: upEdit?.time, notes: upEdit?.notes}, nowIso());
+  if(upEdit){
+    // שינוי תאריך אחרון: הספירה מתחילה ממנו (גם אם קודם סומן "החלפתי" מאוחר יותר)
+    const changedLast = last && last !== v?.last;
+    t.afterDone.lastDone = changedLast ? last : upEdit.afterDone.lastDone;
+    t.afterDone.lastSetAt = changedLast ? nowIso() : upEdit.afterDone.lastSetAt || null;
+  }
+  saveTask(Object.assign({}, upEdit || {}, t, upEdit ? {start: upEdit.start, subtasks: upEdit.subtasks, links: upEdit.links} : {}));
+  $('dlg-upkeep').close();
+  toast(`${upEmoji} ${upEdit ? 'נשמר' : 'נוסף'}: ${name}, כל ${ל.everyText(upEvery[0], upEvery[1])}`);
+};
+$('up-del').onclick = () => {
+  const t = upEdit; if(!t || !confirm(`למחוק את "${t.title}"?`)) return;
+  saveTask(Object.assign({}, t, {deleted: true})); $('dlg-upkeep').close();
+  toast('נמחק', {undo: () => saveTask(Object.assign({}, t, {deleted: false}))});
+};
+
 function renderBirthdays(){
   const list = ל.birthdaysView(D.tasks, today());
   $('bd-list').innerHTML = list.length ? list.map(x => {
@@ -2209,7 +2315,7 @@ $('q-save').onclick = () => {
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
-$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'birthdays' ? openBday() : screen === 'docs' ? openDoc() : openQuick();
+$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'birthdays' ? openBday() : screen === 'docs' ? openDoc() : screen === 'upkeep' ? openUpkeep() : openQuick();
 document.addEventListener('click', e => { const b = e.target.closest('[data-back]'); if(b) show(b.dataset.back); });
 /* ---------- יומן גוגל ---------- */
 // כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
