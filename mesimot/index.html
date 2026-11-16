@@ -168,7 +168,7 @@
   .dlg-head h2{font-size:18px;margin:0}
   .field{display:flex;flex-direction:column;gap:6px;margin:12px 0}
   .field>label,.lbl{font-size:14px;color:var(--muted);font-weight:500}
-  input[type=text],input[type=number],input[type=date],input[type=time],input[type=password],select,textarea{
+  input[type=text],input[type=search],input[type=url],input[type=number],input[type=date],input[type=time],input[type=password],select,textarea{
     width:100%;min-height:48px;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:10px 12px}
   textarea{min-height:84px;resize:vertical}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
@@ -207,6 +207,32 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
+  .rc-cats{margin-top:12px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .rc-cats button{flex:none;min-height:38px;padding:6px 12px;font-size:14px}
+  #rc-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .rc-item{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:8px;border:0;text-align:right;width:100%;color:inherit}
+  .rc-pic{width:72px;height:72px;border-radius:14px;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:34px;flex:none}
+  .rc-item .t{font-size:17px;font-weight:600}
+  .rc-item .s{font-size:13px;color:var(--muted);margin-top:2px}
+  .rc-hero{height:200px;margin:-18px -16px 12px;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:80px}
+  .rc-sec{margin-top:18px}
+  .rc-sec>h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .rc-sec>h3 .btn{margin-inline-start:auto;flex:none;min-height:40px;font-size:14px;padding:0 14px}
+  .rc-box{background:var(--card);border-radius:16px;padding:6px 12px}
+  .rc-ing{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:16px}
+  .rc-ing:last-child,.rc-step:last-child{border-bottom:0}
+  .rc-ing input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent);flex:none}
+  .rc-ing.got{color:var(--muted);text-decoration:line-through}
+  .rc-step{padding:12px 0;border-bottom:1px solid var(--line);font-size:16px;line-height:1.55}
+  .rc-step b{color:var(--accent);margin-inline-end:6px}
+  .rc-timers{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .rc-timers button{border:0;border-radius:999px;background:color-mix(in srgb, var(--accent) 14%, var(--card));color:var(--accent);
+                    font-weight:600;font-size:14px;min-height:36px;padding:4px 12px}
+  .rc-meta{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border-radius:16px;margin-top:18px;text-align:center}
+  .rc-meta div{padding:12px 4px}
+  .rc-meta span{display:block;font-size:13px;color:var(--muted)}
+  body.cooking .rc-step{font-size:20px}
+  body.cooking .rc-ing{font-size:19px}
   .cal-tog{flex:none!important;width:52px;padding:0;display:grid;place-items:center;color:var(--muted)}
   .cal-tog[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
   .cal-row{display:flex;align-items:center;gap:10px;margin-top:10px}
@@ -289,6 +315,13 @@
   <div id="shop-list"></div>
 </main>
 
+<main class="screen" id="scr-recipes" hidden>
+  <h1 class="hello">מתכונים</h1>
+  <div class="shop-add"><input type="search" id="rc-q" placeholder="מה מתחשק לך להכין?" aria-label="חיפוש מתכון" autocomplete="off"></div>
+  <div class="opts rc-cats" id="rc-cats"></div>
+  <div id="rc-list"></div>
+</main>
+
 <main class="screen" id="scr-history" hidden>
   <h1 class="hello">היסטוריה</h1>
   <div class="row" style="margin-top:14px">
@@ -302,6 +335,7 @@
 <nav id="nav">
   <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
+  <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
   <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>תחומים</button>
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>לוח שנה</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>היסטוריה</button>
@@ -387,6 +421,37 @@
   <div class="dlg" id="s-body"></div>
 </dialog>
 
+<dialog id="dlg-recipe" class="full" aria-label="מתכון">
+  <div class="dlg-head">
+    <button class="txt-btn" id="r-close">סגירה</button>
+    <h2 id="r-title">מתכון</h2>
+    <button class="txt-btn" id="r-edit">עריכה</button>
+  </div>
+  <div class="dlg" id="r-body"></div>
+</dialog>
+<dialog id="dlg-redit" class="full" aria-label="עריכת מתכון">
+  <div class="dlg-head">
+    <button class="txt-btn" id="re-close">ביטול</button>
+    <h2 id="re-title">מתכון חדש</h2>
+    <button class="txt-btn" id="re-save">שמירה</button>
+  </div>
+  <div class="dlg" id="re-body"></div>
+</dialog>
+<dialog id="dlg-radd" aria-label="מתכון חדש"><div class="dlg">
+  <h2>מתכון חדש</h2>
+  <div class="sheet-list">
+    <button class="btn" id="ra-manual">✏️ הוספה ידנית</button>
+    <button class="btn" id="ra-paste">📋 הדבקת טקסט של מתכון</button>
+    <div class="note">מעתיקים מתכון מאתר או מוואטסאפ, מדביקים, והאפליקציה מפרקת אותו למצרכים ושלבים.</div>
+    <button class="btn" id="ra-cancel">ביטול</button>
+  </div>
+</div></dialog>
+<dialog id="dlg-rshop" aria-label="הוספה לקניות"><div class="dlg">
+  <h2>הוספה לקניות</h2>
+  <div class="note" style="margin-bottom:8px">מסומן = ייכנס לרשימת הקניות. אפשר לתקן את השם.</div>
+  <div id="rs-list"></div>
+  <div class="btns"><button class="btn" id="rs-cancel">ביטול</button><button class="btn primary" id="rs-ok">הוספה לקניות</button></div>
+</div></dialog>
 <dialog id="dlg-calc" class="full" aria-label="חשבונות הדייר">
   <div class="dlg-head">
     <button class="txt-btn" id="c-close">סגירה</button>
@@ -445,6 +510,8 @@ const FILES = {
            merge: (a, b) => ל.mergeTasksFile(a, b), msg: 'עדכון משימות'},
   occ:    {path: 'משימות/פעמים.json', cache: 'משימות.פעמים', pending: 'משימות.פעמים.ממתין', sha: null,
            merge: (a, b) => ל.mergeOccFile(a, b), msg: 'עדכון ביצועים'},
+  recipes: {path: 'משימות/מתכונים.json', cache: 'משימות.מתכונים', pending: 'משימות.מתכונים.ממתין', sha: null,
+           merge: (a, b) => ל.mergeRecipesFile(a, b), msg: 'עדכון מתכונים'},
   shop:   {path: 'משימות/קניות.json', cache: 'משימות.קניות', pending: 'משימות.קניות.ממתין', sha: null,
            merge: (a, b) => ל.mergeShopFile(a, b), msg: 'עדכון קניות'},
   config: {path: 'משימות/תצורה.json', cache: 'משימות.תצורה', pending: 'משימות.תצורה.ממתין', sha: null,
@@ -457,6 +524,7 @@ const D = {
     occ: FILES.occ.merge(storeJson(FILES.occ.cache, null) || {occ: []}, null),
     config: ל.mergeConfig(storeJson(FILES.config.cache, null) || seed.config),
     shop: FILES.shop.merge(storeJson(FILES.shop.cache, null) || {items: []}, null),
+    recipes: FILES.recipes.merge(storeJson(FILES.recipes.cache, null) || {recipes: []}, null),
   },
   get tasks(){ return this.file.tasks.tasks; },
   get domains(){ return this.file.tasks.domains; },
@@ -729,8 +797,9 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  for(const x of ['today', 'shop', 'recipes', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = s === 'shop';
+  $('fab').setAttribute('aria-label', s === 'recipes' ? 'מתכון חדש' : 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   renderAll(); scrollTo(0, 0);
 }
@@ -739,6 +808,7 @@ function renderAll(){
   else if(screen === 'domains') renderDomains();
   else if(screen === 'calendar') renderCalendar();
   else if(screen === 'shop') renderShop();
+  else if(screen === 'recipes') renderRecipes();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
   renderStatus();
@@ -812,6 +882,185 @@ $('shop-list').onclick = e => {
   saveShop(ל.shopBuy(x, nowIso()));
   toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))});
 };
+
+/* ---------- מתכונים ---------- */
+// הנתונים ב-משימות/מתכונים.json. מצרך → מוצר לקניות: ליבה.ingredientProduct. משך בשלב → כפתור תזכורת (משימה עם שעה,
+// כך שהמנוע שולח התראה גם כשהאפליקציה סגורה).
+const recipeList = () => D.file.recipes.recipes.filter(r => !r.deleted);
+const recipeById = id => recipeList().find(r => r.id === id);
+function saveRecipe(r){
+  r = Object.assign({}, r, {updatedAt: nowIso()});
+  D.file.recipes = {v: 1, recipes: ל.mergeById(D.file.recipes.recipes, [r])};
+  persist('recipes', true); changed();
+  return r;
+}
+const DISH = [['פיצה', '🍕'], ['עוג', '🍰'], ['עוגיות', '🍪'], ['סלט', '🥗'], ['מרק', '🍲'], ['פסטה', '🍝'], ['ספגטי', '🍝'], ['דג', '🐟'],
+  ['סלמון', '🐟'], ['אמנון', '🐟'], ['עוף', '🍗'], ['שניצל', '🍗'], ['בשר', '🥩'], ['כדורי', '🧆'], ['קציצות', '🧆'], ['שקשוקה', '🍳'],
+  ['חביתה', '🍳'], ['לחם', '🍞'], ['חלה', '🍞'], ['מאפה', '🥐'], ['בורקס', '🥐'], ['פשטידה', '🥧'], ['אורז', '🍚'], ['מטבוחה', '🌶️'],
+  ['חומוס', '🥙'], ['פסטרמה', '🥩'], ['גולש', '🍲'], ['קינוח', '🍮'], ['גלידה', '🍨'], ['שייק', '🥤'], ['ממרח', '🥣']];
+function recipeEmoji(r){
+  const t = ל.shopKey(r.title || '');
+  for(const [w, e] of DISH) if(t.split(' ').some(x => x.startsWith(w))) return e;
+  const m = ל.shopMatch(r.title || '');
+  return m && m.emoji || '🍽️';
+}
+const safeImg = u => /^https:\/\/[^\s"'()<>]+$/.test(u || '') ? u : '';
+const picStyle = r => safeImg(r.image) ? ` style="background-image:url('${esc(r.image)}')"` : '';
+let rcCat = '';
+function renderRecipes(){
+  const q = ל.shopKey($('rc-q').value), all = recipeList();
+  const used = ל.RECIPE_CATS.filter(c => all.some(r => r.cat === c));
+  $('rc-cats').innerHTML = [['', 'הכול'], ...used.map(c => [c, c])].map(([k, v]) => `<button type="button" data-c="${esc(k)}" class="${rcCat === k ? 'on' : ''}">${esc(v)}</button>`).join('');
+  $('rc-cats').hidden = used.length < 2;
+  const list = all.filter(r => (!rcCat || r.cat === rcCat) && (!q || ל.shopKey([r.title, r.desc, ...(r.ingredients || [])].join(' ')).includes(q)))
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'he'));
+  $('rc-list').innerHTML = list.length ? list.map(r => `<button class="rc-item" type="button" data-r="${esc(r.id)}">
+      <span class="rc-pic"${picStyle(r)}>${safeImg(r.image) ? '' : recipeEmoji(r)}</span>
+      <span><span class="t">${esc(r.title)}</span><span class="s" style="display:block">${esc([r.cat, r.total && '⏱ ' + r.total, (r.ingredients || []).length + ' מצרכים'].filter(Boolean).join(' · '))}</span></span></button>`).join('')
+    : `<div class="empty">${all.length ? 'לא נמצא מתכון' : 'אין עדיין מתכונים. לוחצים + כדי להוסיף'}</div>`;
+}
+$('rc-q').addEventListener('input', renderRecipes);
+$('rc-cats').onclick = e => { const b = e.target.closest('[data-c]'); if(b){ rcCat = b.dataset.c; renderRecipes(); } };
+$('rc-list').onclick = e => { const b = e.target.closest('[data-r]'); if(b) openRecipe(b.dataset.r); };
+
+// דף מתכון
+let rcOpen = null, rcGot = new Set(), wake = null;
+function openRecipe(id){
+  if(rcOpen !== id) rcGot = new Set();
+  rcOpen = id;
+  renderRecipe();
+  if(!$('dlg-recipe').open) $('dlg-recipe').showModal();
+}
+function renderRecipe(){
+  const r = recipeById(rcOpen);
+  if(!r){ $('dlg-recipe').close(); return; }
+  $('r-title').textContent = r.title;
+  const ing = r.ingredients || [], steps = r.steps || [];
+  $('r-body').innerHTML = `
+    <div class="rc-hero"${picStyle(r)}>${safeImg(r.image) ? '' : recipeEmoji(r)}</div>
+    ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
+    ${ing.length ? `<div class="rc-sec"><h3>מצרכים <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
+      <div class="rc-box">${ing.map((x, i) => `<label class="rc-ing${rcGot.has(i) ? ' got' : ''}"><input type="checkbox" data-i="${i}"${rcGot.has(i) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div></div>` : ''}
+    ${steps.length ? `<div class="rc-sec"><h3>אופן ההכנה</h3><div class="rc-box">${steps.map((x, i) => {
+        const tm = ל.durationsIn(x);
+        return `<div class="rc-step"><b>${i + 1}.</b>${esc(x)}${tm.length ? `<div class="rc-timers">${tm.map(t =>
+          `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}" aria-label="תזכורת בעוד ${esc(t.label)}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>`;
+      }).join('')}</div></div>` : ''}
+    ${r.notes ? `<div class="rc-sec"><h3>הערות</h3><div class="rc-box" style="padding:12px;white-space:pre-wrap">${esc(r.notes)}</div></div>` : ''}
+    ${r.prep || r.total || r.level ? `<div class="rc-meta"><div><span>זמן הכנה</span>${esc(r.prep || '—')}</div><div><span>זמן כולל</span>${esc(r.total || '—')}</div><div><span>רמת קושי</span>${esc(r.level || '—')}</div></div>` : ''}
+    <div class="btns" style="margin-top:20px">
+      <button class="btn" type="button" id="r-wa">שליחה בוואטסאפ</button>
+      ${'wakeLock' in navigator ? `<button class="btn${wake ? ' primary' : ''}" type="button" id="r-cook">${wake ? '✓ מצב בישול' : 'מצב בישול'}</button>` : ''}
+    </div>
+    <div class="btns"><button class="btn" type="button" id="r-del" style="color:var(--red)">מחיקת המתכון</button></div>`;
+  $('r-body').querySelectorAll('.rc-ing input').forEach(cb => cb.onchange = () => {
+    const i = +cb.dataset.i; cb.checked ? rcGot.add(i) : rcGot.delete(i); cb.closest('.rc-ing').classList.toggle('got', cb.checked);
+  });
+  $('r-body').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
+  if($('r-shop')) $('r-shop').onclick = () => openRecipeShop(r);
+  $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(r)); if(!window.open(url, '_blank')) location.href = url; };
+  if($('r-cook')) $('r-cook').onclick = toggleCooking;
+  $('r-del').onclick = () => {
+    if(!confirm(`למחוק את "${r.title}"?`)) return;
+    saveRecipe(Object.assign({}, r, {deleted: true})); $('dlg-recipe').close();
+    toast('המתכון נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))});
+  };
+}
+/** מצב בישול: המסך לא נכבה, והטקסט גדול. */
+async function toggleCooking(){
+  try{
+    if(wake){ await wake.release(); wake = null; }
+    else{ wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; document.body.classList.remove('cooking'); }); }
+  }catch(e){ toast('המכשיר לא מאפשר להשאיר את המסך דלוק', {err: true}); wake = null; }
+  document.body.classList.toggle('cooking', !!wake);
+  renderRecipe();
+}
+$('dlg-recipe').addEventListener('close', () => { if(wake){ wake.release().catch(() => {}); wake = null; document.body.classList.remove('cooking'); } });
+$('r-close').onclick = () => $('dlg-recipe').close();
+$('r-edit').onclick = () => { const r = recipeById(rcOpen); if(r) openRecipeEditor(r); };
+/** "⏱ 8-12 דקות": משימה עם שעה מדויקת, כך שההתראה מגיעה גם כשהאפליקציה סגורה. */
+function recipeTimer(r, minutes, label, step){
+  const at = Math.ceil((Date.now() + minutes * 6e4) / 6e4) * 6e4, date = ל.localDate(at), time = ל.localTime(at);
+  const t = saveTask({id: 't' + uid(), title: `${r.title}: שלב ${step} (${label})`, domain: 'home', priority: 'normal', kind: 'once',
+    once: {date}, time, exact: true, pre: [], nag: {mode: 'none'}, subtasks: [], notes: '', links: [], start: today(), archived: false, deleted: false});
+  toast(`⏱ תזכורת ${date === today() ? 'היום' : date === ל.addDays(today(), 1) ? 'מחר' : ל.shortDate(date)} ב־${time}`,
+    {undo: () => saveTask(Object.assign({}, t, {deleted: true}))});
+}
+// מצרכים → קניות
+function openRecipeShop(r){
+  const seen = new Set(), rows = [];
+  for(const x of r.ingredients || []){
+    const name = ל.ingredientProduct(x);
+    if(!name) continue;
+    const key = ל.canonName(name);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    const inList = ל.shopList(D.file.shop.items).some(i => ל.canonName(i.name) === key);
+    rows.push({name: key, raw: x, inList});
+  }
+  $('rs-list').innerHTML = rows.length ? rows.map((x, i) => `<div class="rc-ing"><input type="checkbox" data-i="${i}"${x.inList ? '' : ' checked'} aria-label="${esc(x.name)}">
+      <span style="flex:1"><input type="text" value="${esc(x.name)}" data-n="${i}" style="min-height:40px;padding:6px 10px" aria-label="שם המוצר">
+      <span class="note" style="display:block;margin-top:2px">${esc(x.raw)}${x.inList ? ' · כבר ברשימה' : ''}</span></span></div>`).join('')
+    : '<div class="empty">לא נמצאו מצרכים</div>';
+  $('dlg-rshop').showModal();
+}
+$('rs-cancel').onclick = () => $('dlg-rshop').close();
+$('rs-ok').onclick = () => {
+  let n = 0;
+  $('rs-list').querySelectorAll('input[type=checkbox]').forEach(cb => {
+    if(!cb.checked) return;
+    const name = $('rs-list').querySelector(`[data-n="${cb.dataset.i}"]`).value.trim();
+    const r = ל.shopAdd(D.file.shop.items, name, nowIso());
+    if(r){ D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, [r])}; n++; }
+  });
+  persist('shop', true); changed();
+  $('dlg-rshop').close();
+  toast(n ? `🛒 נוספו ${n} מוצרים לקניות` : 'הכול כבר ברשימה');
+};
+// עורך
+let rcEdit = null;
+function openRecipeEditor(r, paste){
+  rcEdit = r ? Object.assign({}, r) : {id: 'r' + uid(), title: '', desc: '', image: '', cat: '', ingredients: [], steps: [], notes: '', prep: '', total: '', level: '', deleted: false};
+  $('re-title').textContent = r ? 'עריכת מתכון' : 'מתכון חדש';
+  const lv = ['', 'קל', 'בינוני', 'מאתגר'];
+  $('re-body').innerHTML = `
+    ${paste ? `<div class="field"><label for="re-paste">הדביקו כאן את המתכון</label><textarea id="re-paste" style="min-height:160px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
+      <button class="btn primary" type="button" id="re-parse" style="margin-top:8px">פירוק למצרכים ושלבים</button></div>` : ''}
+    <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
+    <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
+      <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
+    <div class="field"><label for="re-d">תיאור קצר</label><input type="text" id="re-d" value="${esc(rcEdit.desc)}"></div>
+    <div class="field"><label for="re-ing">מצרכים (שורה לכל מצרך)</label><textarea id="re-ing" style="min-height:140px">${esc((rcEdit.ingredients || []).join('\n'))}</textarea></div>
+    <div class="field"><label for="re-st">אופן ההכנה (שורה לכל שלב)</label><textarea id="re-st" style="min-height:180px">${esc((rcEdit.steps || []).join('\n'))}</textarea></div>
+    <div class="field"><label for="re-n">הערות</label><textarea id="re-n">${esc(rcEdit.notes || '')}</textarea></div>
+    <div class="row"><div class="field"><label for="re-prep">זמן הכנה</label><input type="text" id="re-prep" placeholder="חצי שעה" value="${esc(rcEdit.prep || '')}"></div>
+      <div class="field"><label for="re-tot">זמן כולל</label><input type="text" id="re-tot" placeholder="שעה" value="${esc(rcEdit.total || '')}"></div></div>
+    <div class="field"><label for="re-img">קישור לתמונה (לא חובה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>`;
+  if($('re-parse')) $('re-parse').onclick = () => {
+    const p = ל.parseRecipeText($('re-paste').value);
+    if(!p.title && !p.ingredients.length && !p.steps.length) return toast('לא הצלחתי לקרוא מתכון מהטקסט', {err: true});
+    if(p.title && !$('re-t').value) $('re-t').value = p.title;
+    if(p.desc && !$('re-d').value) $('re-d').value = p.desc;
+    $('re-ing').value = p.ingredients.join('\n'); $('re-st').value = p.steps.join('\n');
+    if(p.notes) $('re-n').value = p.notes;
+    toast(`נמצאו ${p.ingredients.length} מצרכים ו־${p.steps.length} שלבים. אפשר לתקן ולשמור`);
+  };
+  if(!$('dlg-redit').open) $('dlg-redit').showModal();
+}
+$('re-close').onclick = () => $('dlg-redit').close();
+$('re-save').onclick = () => {
+  const lines = id => $(id).value.split('\n').map(x => x.trim()).filter(Boolean);
+  const title = $('re-t').value.trim();
+  if(!title) return toast('צריך שם למתכון', {err: true});
+  const r = saveRecipe(Object.assign({}, rcEdit, {title, cat: $('re-cat').value, level: $('re-lv').value, desc: $('re-d').value.trim(),
+    ingredients: lines('re-ing'), steps: lines('re-st'), notes: $('re-n').value.trim(), prep: $('re-prep').value.trim(),
+    total: $('re-tot').value.trim(), image: safeImg($('re-img').value.trim())}));
+  $('dlg-redit').close();
+  openRecipe(r.id);
+};
+$('ra-manual').onclick = () => { $('dlg-radd').close(); openRecipeEditor(null, false); };
+$('ra-paste').onclick = () => { $('dlg-radd').close(); openRecipeEditor(null, true); };
+$('ra-cancel').onclick = () => $('dlg-radd').close();
 
 /* ---------- פעולות על מופע ---------- */
 function resolve(occId, taskId){
@@ -1104,7 +1353,7 @@ $('q-save').onclick = () => {
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
-$('fab').onclick = openQuick;
+$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : openQuick();
 /* ---------- יומן גוגל ---------- */
 // כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
 let calFile = storeJson(K.cal, {events: []});
@@ -1355,7 +1604,7 @@ async function sync(){
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
     await readPending();
-    await syncFile('occ'); await syncFile('shop');
+    await syncFile('occ'); await syncFile('shop'); await syncFile('recipes');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     if(D.tasks.some(t => t.calendar) || (calFile.events || []).length)
       try{ const c = await readFile({path: 'משימות/יומן.json'}); if(c){ calFile = c; store(K.cal, JSON.stringify(c)); } }catch(e){}
