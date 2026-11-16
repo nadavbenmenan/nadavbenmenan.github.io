@@ -530,6 +530,40 @@ function diffSchedule(state, plan, data, now){
 /** המנוע חי אם רץ תזמון מלא ב-7 השעות האחרונות (הוא רץ לפחות כל 6 שעות). */
 const engineAlive = (inbox, now) => !!(inbox && inbox.engine && inbox.engine.lastFull && now - toMs(inbox.engine.lastFull) < 7 * 36e5);
 
+/* ---------- התראות ישירות לאפליקציה (Web Push, מהמנוע) ---------- */
+// אין תזמון מראש: המנוע רץ כל דקה, ושולח רק מה שהגיע זמנו. לכן "בוצע" עוצר מיד את כל התזכורות הבאות.
+const PUSH_BACK = 20 * 60e3, PUSH_LEAD = 30e3;
+const pushKey = n => `${n.id}@${n.at}`;
+/**
+ * מה לשלוח עכשיו: התראות שזמנן הגיע (עד 20 דקות אחורה, למקרה שריצה התעכבה) ועוד לא נשלחו.
+ * next = מתי ההתראה הבאה (בדקות הקרובות), כדי שהמנוע יידע לרוץ אז. sent = {pushKey: זמן שליחה}.
+ */
+function pushDue(data, now, sent){
+  sent = sent || {};
+  const plan = planNotifications(data, now - PUSH_BACK, {horizonH: (PUSH_BACK + 15 * 60e3) / 36e5});
+  const due = [], later = [];
+  for(const n of plan){
+    if(n.at > now + PUSH_LEAD){ later.push(n.at); continue; }
+    if(sent[pushKey(n)]) continue;
+    const f = n.occId && findOcc(data, n.occId, now);
+    if(!f || (f.occ.kind !== 'quota' && !isOpen(f.occ, now))) continue;
+    due.push(n);
+  }
+  return {due, next: later.length ? Math.min(...later) : null};
+}
+/** תוכן ההתראה (מוצפן בדרך). btn = להציג כפתורים. */
+const pushPayload = n => JSON.stringify({t: n.title, b: n.message || '', u: n.click || APP, tag: n.occId || n.id,
+  o: n.occId || null, n: n.id, btn: !!(n.buttons && n.occId)});
+/** מנקה מהזיכרון התראות שנשלחו לפני יותר מיומיים. */
+function pruneSent(sent, now){
+  const out = {};
+  for(const [k, t] of Object.entries(sent || {})) if(now - t < 2 * DAY) out[k] = t;
+  return out;
+}
+/** מכשירים שנרשמו להתראות: {v, subs: [{id, endpoint, p256dh, auth, updatedAt, deleted}]}. */
+function mergeSubsFile(a, b, now){ return {v: 1, subs: mergeById(a?.subs, b?.subs, now)}; }
+const liveSubs = file => (file?.subs || []).filter(s => !s.deleted && s.endpoint && s.p256dh && s.auth);
+
 /* ---------- מיזוג ---------- */
 /** לפי id: ה-updatedAt המאוחר מנצח. מחיקה (deleted) נשמרת 30 יום ואז נעלמת. */
 function mergeById(a, b, now){
@@ -1008,7 +1042,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG,
+  SHOP_CATS, SHOP_CATALOG, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
