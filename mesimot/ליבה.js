@@ -530,6 +530,49 @@ function diffSchedule(state, plan, data, now){
 /** המנוע חי אם רץ תזמון מלא ב-7 השעות האחרונות (הוא רץ לפחות כל 6 שעות). */
 const engineAlive = (inbox, now) => !!(inbox && inbox.engine && inbox.engine.lastFull && now - toMs(inbox.engine.lastFull) < 7 * 36e5);
 
+/* ---------- משימה קבועה מההוספה המהירה ---------- */
+const REPEATS = [['', 'לא חוזר'], ['daily', 'כל יום'], ['weekly', 'כל שבוע'], ['monthly', 'כל חודש'], ['m2', 'כל חודשיים'], ['yearly', 'כל שנה']];
+const repeatText = r => (REPEATS.find(x => x[0] === r) || [, /^m\d+$/.test(r || '') ? `כל ${r.slice(1)} חודשים` : ''])[1];
+/** חוק לוח לפי הבחירה, מעוגן בתאריך הראשון (אותו יום בשבוע / בחודש / בשנה). */
+function ruleFor(repeat, date){
+  const day = +date.slice(8, 10);
+  if(repeat === 'daily') return {type: 'daily'};
+  if(repeat === 'weekly') return {type: 'weekly', days: [weekday(date)]};
+  if(repeat === 'monthly') return {type: 'monthly', day};
+  if(repeat === 'yearly') return {type: 'yearly', month: +date.slice(5, 7), day};
+  const n = /^m(\d+)$/.exec(repeat || '');
+  return n ? {type: 'everyNMonths', n: +n[1], anchor: date, day} : null;
+}
+/** הכיוון ההפוך, ליומן: חוק לוח → RRULE. null אם אין התאמה פשוטה. */
+function rruleOf(rule){
+  if(!rule) return null;
+  return {daily: 'FREQ=DAILY', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY', yearly: 'FREQ=YEARLY',
+    everyNMonths: `FREQ=MONTHLY;INTERVAL=${Math.max(1, +rule.n || 1)}`}[rule.type] || null;
+}
+
+/* ---------- יומן גוגל ---------- */
+// קישור שפותח ביומן גוגל אירוע חדש, ממולא מראש. נדב לוחץ "שמירה" ביומן. בלי הרשאות ובלי גישה לחשבון.
+// עם שעה (משימה שנקבעה לה שעה במפורש): אירוע של חצי שעה. בלי שעה: אירוע של יום שלם.
+const calStamp = ms => localDate(ms).replace(/-/g, '') + 'T' + localTime(ms).replace(':', '') + '00';
+function calendarUrl(ev){
+  const q = ['action=TEMPLATE', 'text=' + encodeURIComponent(ev.title || '')];
+  if(ev.time){
+    const start = at(ev.date, ev.time);
+    q.push('dates=' + calStamp(start) + '/' + calStamp(start + (ev.minutes || 30) * 6e4), 'ctz=Asia%2FJerusalem');
+  }else q.push('dates=' + compact(ev.date) + '/' + compact(addDays(ev.date, 1)));
+  if(ev.details) q.push('details=' + encodeURIComponent(ev.details));
+  if(ev.rrule) q.push('recur=' + encodeURIComponent('RRULE:' + ev.rrule));   // אירוע חוזר
+  return 'https://calendar.google.com/calendar/render?' + q.join('&');
+}
+/** אירוע ביומן למופע של משימה. משימה דיסקרטית: בשם שמופיע בהתראות, לא בשם האמיתי. */
+function calendarFor(task, occ){
+  if(!occ || !occ.due) return null;
+  return calendarUrl({title: displayTitle(task), date: occ.due, time: task.exact ? task.time : null,
+    // משימה קבועה: אירוע חוזר ביומן (חוץ מ"יום אחרון בחודש", שאין לו ניסוח פשוט)
+    rrule: task.kind === 'schedule' && task.schedule?.rule?.day !== 'last' ? rruleOf(task.schedule?.rule) : null,
+    details: 'ממשימות: ' + APP + '#o=' + encodeURIComponent(occ.id)});
+}
+
 /* ---------- התראות ישירות לאפליקציה (Web Push, מהמנוע) ---------- */
 // אין תזמון מראש: המנוע רץ כל דקה, ושולח רק מה שהגיע זמנו. לכן "בוצע" עוצר מיד את כל התזכורות הבאות.
 const PUSH_BACK = 20 * 60e3, PUSH_LEAD = 30e3;
@@ -673,12 +716,30 @@ function parseQuick(text, now){
   const today = localDate(now);
   let date = null, time = null, part = null, m;
   const cut = re => { const x = s.match(re); if(x) s = s.replace(x[0], ' '); return x; };
+  // "כל חודש", "כל חודשיים", "כל 3 חודשים", "כל יום", "כל שבוע", "כל שנה": משימה קבועה
+  let repeat = null;
+  if((m = cut(/ (?:כל|פעם ב)\s?(יום|שבוע|חודש|חודשיים|שנה|(\d+) חודשים)(?= )/)))
+    repeat = m[2] ? (+m[2] === 1 ? 'monthly' : 'm' + m[2]) : {'יום': 'daily', 'שבוע': 'weekly', 'חודש': 'monthly', 'חודשיים': 'm2', 'שנה': 'yearly'}[m[1]];
+  const done = o => repeat ? Object.assign(o, {repeat}) : o;
   if((m = cut(/ (?:בעוד|עוד) (חצי שעה|רבע שעה|שעה|שעתיים|(\d+) (שעות|דקות|דק'))(?= )/))){
     const min = m[2] ? +m[2] * (m[3] === 'שעות' ? 60 : 1) : {'חצי שעה': 30, 'רבע שעה': 15, 'שעה': 60, 'שעתיים': 120}[m[1]];
     const ms = Math.ceil((now + min * 6e4) / 6e4) * 6e4;
-    return {title: s.trim(), date: localDate(ms), time: localTime(ms)};
+    return done({title: s.trim(), date: localDate(ms), time: localTime(ms)});
   }
-  if(cut(/ מחרתיים(?= )/)) date = addDays(today, 2);
+  // תאריך "3.4" או "3/4" (יום.חודש): השנה, ואם עבר, בשנה הבאה. "10.30" הוא שעה (אין חודש 30)
+  if((m = cut(/ (?:ב[-־]?\s?)?(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?(?= )/)) && +m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31){
+    const y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : +today.slice(0, 4);
+    date = `${y}-${pad(+m[2])}-${pad(Math.min(+m[1], daysInMonth(y, +m[2])))}`;
+    if(!m[3] && date < today) date = `${y + 1}-${date.slice(5)}`;
+  }else if(m) s = s.replace(' ', ' ' + m[0].trim() + ' ');   // לא תאריך: מחזירים, כדי שייקרא כשעה
+  // "כל חודש ב-10": היום ה-10 בחודש, לא שעה (בלי "בשעה" ובלי נקודתיים)
+  if(!date && repeat && (repeat === 'monthly' || /^m\d+$/.test(repeat)) && !/ (בבוקר|בצהריים|בצהרים|אחה"צ|בערב|בלילה|בשעה)(?= )/.test(s) && (m = cut(/ ב[-־]?\s?(\d{1,2})(?= )/)) && +m[1] >= 1 && +m[1] <= 31){
+    const [y, mo] = today.split('-').map(Number), d = Math.min(+m[1], daysInMonth(y, mo));
+    date = `${y}-${pad(mo)}-${pad(d)}`;
+    if(date < today){ const ny = mo === 12 ? y + 1 : y, nm = mo === 12 ? 1 : mo + 1; date = `${ny}-${pad(nm)}-${pad(Math.min(+m[1], daysInMonth(ny, nm)))}`; }
+  }
+  if(date){}
+  else if(cut(/ מחרתיים(?= )/)) date = addDays(today, 2);
   else if(cut(/ מחר(?= )/)) date = addDays(today, 1);
   else if(cut(/ היום(?= )/)) date = today;
   else if((m = cut(/ (?:ב?יום |ב)(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)(?= )/))){
@@ -704,7 +765,7 @@ function parseQuick(text, now){
   }
   if(!time && part) time = {'בבוקר': '08:00', 'בצהריים': '12:00', 'בצהרים': '12:00', 'אחה"צ': '16:00', 'אחר הצהריים': '16:00', 'בערב': '19:00', 'בלילה': '21:00'}[part];
   if(time && !date) date = at(today, time) > now ? today : addDays(today, 1);
-  return {title: s.trim(), date, time};
+  return done({title: s.trim(), date, time});
 }
 
 /* ---------- קניות ---------- */
@@ -1026,7 +1087,7 @@ function tenantText(b){
 /** מחזיר משימות לעדכן ותצורה חדשה, או null כשאין מה לעשות. */
 function migrate(data, today, nowIso){
   const cfg = config(data.config), tasks = data.tasks || [], v = +cfg.seedV || 1;
-  if(v >= 3) return null;
+  if(v >= 4) return null;
   const seed = initialData(today), byId = id => tasks.find(t => t.id === id), seedRule = id => seed.config.mailRules.find(r => r.id === id);
   const out = [];
   let rules = (cfg.mailRules || []).slice();
@@ -1045,9 +1106,19 @@ function migrate(data, today, nowIso){
     const i = out.indexOf(tk), nt = Object.assign({}, tk, {notes: TOKEN_NOTES, updatedAt: nowIso});
     if(i >= 0) out[i] = nt; else out.push(nt);
   }
-  return {tasks: out, config: Object.assign({}, cfg, {seedV: 3, mailRules: rules, updatedAt: nowIso})};
+  // גרסה 4: מברשת שיניים ומסננת
+  for(const t of seed.tasks.filter(x => x.id === 'toothbrush' || x.id === 'filter'))
+    if(!byId(t.id)) out.push(Object.assign({}, t, {updatedAt: nowIso}));
+  return {tasks: out, config: Object.assign({}, cfg, {seedV: 4, mailRules: rules, updatedAt: nowIso})};
 }
 
+/** תזכורות החלפה (16.11.2026): חודש מההחלפה האחרונה, חודשיים למסננת. "החלפתי" מתחיל את הספירה מחדש. */
+const REPLACE_TASKS = today => [
+  {id: 'toothbrush', title: 'החלפת מברשת שיניים', domain: 'health', kind: 'afterDone',
+   afterDone: {minDays: 30, maxDays: 30, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
+  {id: 'filter', title: 'החלפת מסננת', domain: 'home', kind: 'afterDone',
+   afterDone: {minDays: 60, maxDays: 60, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
+];
 const TOKEN_NOTES = 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה, 90 יום. להדביק בשני מקומות: 1) באפליקציה: ⋮ ← גיטהאב וסנכרון ← החלפת אסימון (זה גם מסמן את המשימה כבוצעה). 2) במנוע: script.google.com ← הפרויקט ← הגדרות הפרויקט ← Script properties ← GH_TOKEN.';
 
 /* ---------- נתונים התחלתיים (סעיף 5 באפיון) ---------- */
@@ -1083,10 +1154,11 @@ function initialData(today){
       T({id: 'token', title: 'חידוש אסימון גיטהאב', domain: 'personal', priority: 'high', kind: 'afterDone',
         afterDone: {minDays: 82, maxDays: 89, lastDone: today}, soft: true, nag: {mode: 'daily', from: 'max'},
         doneLabel: 'חידשתי', notes: TOKEN_NOTES}),
+      ...REPLACE_TASKS(today).map(T),
     ],
     domains: DOMAINS.map(d => Object.assign({hidden: false, updatedAt: ''}, d)),
     config: Object.assign({}, DEFAULT_CONFIG, {
-      seedV: 3,
+      seedV: 4,
       mailRules: [
         {id: 'elec', enabled: true, from: 'noreplys@iec.co.il', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
           priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'elec',
@@ -1112,7 +1184,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
