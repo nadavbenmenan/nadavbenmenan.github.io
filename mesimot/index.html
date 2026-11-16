@@ -207,6 +207,22 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
+  .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .more-grid button{border:0;background:var(--card);border-radius:18px;padding:16px 12px;text-align:right;color:inherit;min-height:96px;display:flex;flex-direction:column;gap:4px}
+  .more-grid .i{font-size:28px}
+  .more-grid .t{font-weight:700;font-size:16px}
+  .more-grid .s{font-size:13px;color:var(--muted)}
+  .back-more{padding:6px 0;font-size:15px}
+  .more-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .more-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;border:0;text-align:right;color:inherit;width:100%}
+  .more-row .i{font-size:26px;flex:none}
+  .more-row .b{flex:1;min-width:0}
+  .more-row .t{font-weight:600;font-size:16px}
+  .more-row .s{font-size:13px;color:var(--muted);margin-top:2px}
+  .more-row .side{font-size:13px;font-weight:600;flex:none;text-align:center;min-width:56px}
+  .more-row.expired{background:var(--red-soft)} .more-row.expired .side{color:var(--red)}
+  .more-row.soon .side{color:#C2410C}
+  .more-row.today{outline:2px solid var(--accent)}
   .rc-cats{margin-top:12px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
   .rc-cats button{flex:none;min-height:38px;padding:6px 12px;font-size:14px}
   #rc-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
@@ -300,6 +316,7 @@
 
 <!-- ===== תחומים ===== -->
 <main class="screen" id="scr-domains" hidden>
+  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">תחומים</h1>
   <div class="chips" id="dom-filter"></div>
   <div id="dom-body"></div>
@@ -307,6 +324,7 @@
 
 <!-- ===== לוח שנה ===== -->
 <main class="screen" id="scr-calendar" hidden>
+  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">לוח שנה</h1>
   <div class="cal-head">
     <button class="icon-btn" id="cal-prev" aria-label="החודש הקודם"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -337,7 +355,23 @@
   <div id="rc-list"></div>
 </main>
 
+<main class="screen" id="scr-more" hidden>
+  <h1 class="hello">עוד</h1>
+  <div class="more-grid" id="more-grid"></div>
+</main>
+<main class="screen" id="scr-birthdays" hidden>
+  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
+  <h1 class="hello">ימי הולדת</h1>
+  <div id="bd-list" class="more-list"></div>
+</main>
+<main class="screen" id="scr-docs" hidden>
+  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
+  <h1 class="hello">מסמכים</h1>
+  <div class="note" style="margin:4px 0 10px">תזכורת לפני שהתוקף נגמר. "חידשתי" = תאריך תוקף חדש.</div>
+  <div id="doc-list" class="more-list"></div>
+</main>
 <main class="screen" id="scr-history" hidden>
+  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">היסטוריה</h1>
   <div class="row" style="margin-top:14px">
     <select id="hist-task" aria-label="סינון לפי משימה"></select>
@@ -351,9 +385,7 @@
   <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
-  <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>תחומים</button>
-  <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>לוח שנה</button>
-  <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>היסטוריה</button>
+  <button data-scr="more"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>עוד</button>
 </nav>
 
 <!-- ===== מסך משימה ===== -->
@@ -444,6 +476,23 @@
   </div>
   <div class="dlg" id="r-body"></div>
 </dialog>
+<dialog id="dlg-bday" aria-label="יום הולדת"><div class="dlg">
+  <h2 id="bd-title">יום הולדת</h2>
+  <div class="field"><label for="bd-name">של מי</label><input type="text" id="bd-name" placeholder="אמא"></div>
+  <div class="field"><label for="bd-date">תאריך לידה</label><input type="date" id="bd-date"></div>
+  <label class="check-row"><input type="checkbox" id="bd-noyear"> השנה לא ידועה</label>
+  <div class="note">תזכורת שבוע לפני, יום לפני, וביום עצמו ב־09:00.</div>
+  <div class="btns"><button class="btn" id="bd-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="bd-cancel" type="button">ביטול</button><button class="btn primary" id="bd-ok" type="button">שמירה</button></div>
+</div></dialog>
+<dialog id="dlg-doc" aria-label="מסמך"><div class="dlg">
+  <h2 id="doc-title">מסמך</h2>
+  <div class="opts" id="doc-types"></div>
+  <div class="field"><label for="doc-name">שם המסמך</label><input type="text" id="doc-name" placeholder="דרכון"></div>
+  <div class="field"><label for="doc-exp" id="doc-exp-lbl">בתוקף עד</label><input type="date" id="doc-exp"></div>
+  <div class="field"><label for="doc-rem">תזכורת ראשונה</label><select id="doc-rem"><option value="90">3 חודשים לפני</option><option value="60">חודשיים לפני</option><option value="30" selected>חודש לפני</option><option value="14">שבועיים לפני</option><option value="7">שבוע לפני</option></select></div>
+  <div class="field"><label for="doc-notes">הערות (לא חובה)</label><input type="text" id="doc-notes" placeholder="למשל: לחדש באתר משרד הפנים"></div>
+  <div class="btns"><button class="btn" id="doc-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="doc-cancel" type="button">ביטול</button><button class="btn primary" id="doc-ok" type="button">שמירה</button></div>
+</div></dialog>
 <dialog id="dlg-img" aria-label="בחירת תמונה"><div class="dlg">
   <h2 id="im-title">בחירת תמונה</h2>
   <div class="img-pick" id="im-pick"></div>
@@ -822,10 +871,11 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'recipes', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = s === 'shop';
-  $('fab').setAttribute('aria-label', s === 'recipes' ? 'מתכון חדש' : 'משימה חדשה');
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
+  for(const x of ['today', 'shop', 'recipes', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = s === 'shop' || s === 'more';
+  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום הולדת חדש', docs: 'מסמך חדש'}[s] || 'משימה חדשה');
+  const tab = ['today', 'shop', 'recipes'].includes(s) ? s : 'more';   // מסכים שנכנסים אליהם מ"עוד"
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === tab));
   renderAll(); scrollTo(0, 0);
 }
 function renderAll(){
@@ -834,6 +884,9 @@ function renderAll(){
   else if(screen === 'calendar') renderCalendar();
   else if(screen === 'shop') renderShop();
   else if(screen === 'recipes') renderRecipes();
+  else if(screen === 'more') renderMore();
+  else if(screen === 'birthdays') renderBirthdays();
+  else if(screen === 'docs') renderDocs();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
   renderStatus();
@@ -1213,6 +1266,99 @@ $('ra-manual').onclick = () => { $('dlg-radd').close(); openRecipeEditor(null, f
 $('ra-paste').onclick = () => { $('dlg-radd').close(); openRecipeEditor(null, true); };
 $('ra-cancel').onclick = () => $('dlg-radd').close();
 
+/* ---------- "עוד": ימי הולדת, מסמכים, ושאר המסכים ---------- */
+const daysText = n => n === 0 ? 'היום' : n === 1 ? 'מחר' : n === 2 ? 'מחרתיים' : n < 0 ? `לפני ${-n} ימים`
+  : n >= 365 * 2 ? `בעוד ${Math.round(n / 365)} שנים` : n >= 330 ? 'בעוד שנה' : n >= 60 ? `בעוד ${Math.round(n / 30.4)} חודשים` : `בעוד ${n} ימים`;
+function renderMore(){
+  const t = today(), bd = ל.birthdaysView(D.tasks, t), dc = ל.docsView(D.tasks, D.occ, t);
+  const nextBd = bd[0], urgent = dc.filter(x => x.state === 'expired' || x.state === 'soon');
+  const tiles = [
+    ['birthdays', '🎂', 'ימי הולדת', nextBd ? `${nextBd.task.person}: ${daysText(nextBd.inDays)}` : 'עוד לא נוספו'],
+    ['docs', '📄', 'מסמכים', urgent.length ? `${urgent.length} לחידוש בקרוב` : dc.length ? `${dc.length} בתוקף` : 'עוד לא נוספו'],
+    ['calendar', '📅', 'לוח שנה', 'כל המשימות לפי תאריך'],
+    ['domains', '🗂️', 'תחומים', 'משימות לפי תחום'],
+    ['history', '🕘', 'היסטוריה', 'מה בוצע ומתי'],
+  ];
+  $('more-grid').innerHTML = tiles.map(([k, i, n, sub]) => `<button type="button" data-go="${k}"><span class="i">${i}</span><span class="t">${n}</span><span class="s">${esc(sub)}</span></button>`).join('');
+}
+$('more-grid').onclick = e => { const b = e.target.closest('[data-go]'); if(b) show(b.dataset.go); };
+
+function renderBirthdays(){
+  const list = ל.birthdaysView(D.tasks, today());
+  $('bd-list').innerHTML = list.length ? list.map(x => {
+    const [, m, d] = x.next.split('-');
+    return `<button type="button" class="more-row${x.inDays === 0 ? ' today' : ''}" data-id="${esc(x.task.id)}"><span class="i">${x.inDays === 0 ? '🎉' : '🎂'}</span>
+      <span class="b"><span class="t" style="display:block">${esc(x.task.person)}</span><span class="s" style="display:block">${+d}.${+m}${x.age ? ` · ${x.inDays === 0 ? 'חוגג/ת' : 'יהיה/תהיה'} ${x.age}` : ''}</span></span>
+      <span class="side">${daysText(x.inDays)}</span></button>`;
+  }).join('') : '<div class="empty">לוחצים + כדי להוסיף יום הולדת</div>';
+}
+$('bd-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openBday(b.dataset.id); };
+let bdEdit = null;
+function openBday(id){
+  bdEdit = id ? taskById(id) : null;
+  $('bd-title').textContent = bdEdit ? 'עריכת יום הולדת' : 'יום הולדת חדש';
+  $('bd-name').value = bdEdit ? bdEdit.person : '';
+  const r = bdEdit?.schedule?.rule;
+  $('bd-date').value = bdEdit ? `${bdEdit.birthYear || 2000}-${ל.pad(r.month)}-${ל.pad(r.day)}` : '';
+  $('bd-noyear').checked = !!bdEdit && !bdEdit.birthYear;
+  $('bd-del').hidden = !bdEdit;
+  $('dlg-bday').showModal();
+  setTimeout(() => $('bd-name').focus(), 50);
+}
+$('bd-cancel').onclick = () => $('dlg-bday').close();
+$('bd-ok').onclick = () => {
+  const name = $('bd-name').value.trim(), date = $('bd-date').value;
+  if(!name || !date) return toast('צריך שם ותאריך', {err: true});
+  const t = ל.birthdayTask({id: bdEdit?.id, name, date, knowYear: !$('bd-noyear').checked}, nowIso());
+  saveTask(Object.assign({}, bdEdit || {}, t));
+  $('dlg-bday').close();
+  toast(`🎂 נוסף: ${name}. תזכורת שבוע לפני ויום לפני`);
+};
+$('bd-del').onclick = () => {
+  if(!bdEdit || !confirm(`למחוק את יום ההולדת של ${bdEdit.person}?`)) return;
+  saveTask(Object.assign({}, bdEdit, {deleted: true})); $('dlg-bday').close();
+};
+
+function renderDocs(){
+  const list = ל.docsView(D.tasks, D.occ, today());
+  const label = {expired: 'פג תוקף', soon: 'לחדש בקרוב', ok: 'בתוקף', renewed: 'חודש'};
+  $('doc-list').innerHTML = list.length ? list.map(x => `<button type="button" class="more-row ${x.state}" data-id="${esc(x.task.id)}"><span class="i">📄</span>
+      <span class="b"><span class="t" style="display:block">${esc(x.task.docName)}</span><span class="s" style="display:block">${label[x.state]} · עד ${esc(fullDate(x.expiry))}</span></span>
+      <span class="side">${x.state === 'renewed' ? '✓' : x.inDays < 0 ? 'פג' : daysText(x.inDays)}</span></button>`).join('')
+    : '<div class="empty">לוחצים + כדי להוסיף מסמך (דרכון, רישיון, ביטוח...)</div>';
+}
+$('doc-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openDoc(b.dataset.id); };
+let docEdit = null;
+function openDoc(id){
+  docEdit = id ? taskById(id) : null;
+  $('doc-title').textContent = docEdit ? docEdit.docName : 'מסמך חדש';
+  $('doc-name').value = docEdit ? docEdit.docName : '';
+  $('doc-exp').value = docEdit ? docEdit.once.date : '';
+  $('doc-exp-lbl').textContent = docEdit ? 'בתוקף עד (אחרי חידוש: התאריך החדש)' : 'בתוקף עד';
+  $('doc-rem').value = String(docEdit?.remindDays || 30);
+  $('doc-notes').value = docEdit?.notes || '';
+  $('doc-types').innerHTML = docEdit ? '' : ל.DOC_TYPES.map(n => `<button type="button" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  $('doc-types').hidden = !!docEdit;
+  $('doc-del').hidden = !docEdit;
+  $('dlg-doc').showModal();
+}
+$('doc-types').onclick = e => { const b = e.target.closest('[data-n]'); if(!b) return; $('doc-name').value = b.dataset.n;
+  $('doc-types').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+$('doc-cancel').onclick = () => $('dlg-doc').close();
+$('doc-ok').onclick = () => {
+  const name = $('doc-name').value.trim(), expiry = $('doc-exp').value;
+  if(!name || !expiry) return toast('צריך שם ותאריך תוקף', {err: true});
+  const t = ל.docTask({id: docEdit?.id, name, expiry, remindDays: +$('doc-rem').value, notes: $('doc-notes').value.trim()}, nowIso());
+  const renewed = docEdit && docEdit.once.date !== expiry;
+  saveTask(Object.assign({}, docEdit || {}, t));
+  $('dlg-doc').close();
+  toast(renewed ? `✓ ${name} חודש, בתוקף עד ${ל.shortDate(expiry)}` : `📄 נוסף: ${name}. תזכורת ${$('doc-rem').selectedOptions[0].text}`);
+};
+$('doc-del').onclick = () => {
+  if(!docEdit || !confirm(`למחוק את ${docEdit.docName}?`)) return;
+  saveTask(Object.assign({}, docEdit, {deleted: true})); $('dlg-doc').close();
+};
+
 /* ---------- פעולות על מופע ---------- */
 function resolve(occId, taskId){
   if(occId){ const f = ל.findOcc(data(), occId, Date.now()); if(f) return f; }
@@ -1504,7 +1650,8 @@ $('q-save').onclick = () => {
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
-$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : openQuick();
+$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'birthdays' ? openBday() : screen === 'docs' ? openDoc() : openQuick();
+document.addEventListener('click', e => { const b = e.target.closest('[data-back]'); if(b) show(b.dataset.back); });
 /* ---------- יומן גוגל ---------- */
 // כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
 let calFile = storeJson(K.cal, {events: []});
