@@ -7,7 +7,7 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v5';
+const מטמון = 'mesimot-v6';
 const קבצים = ['./', 'index.html', 'ליבה.js', 'מאכלים.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
@@ -67,7 +67,7 @@ self.addEventListener('push', e => {
   try{ d = e.data ? e.data.json() : {}; }catch(err){ d = {t: e.data ? e.data.text() : ''}; }
   e.waitUntil(self.registration.showNotification(d.t || 'משימות', {
     body: d.b || '', tag: d.tag || undefined, renotify: !!d.tag, data: d, dir: 'rtl', lang: 'he',
-    icon: 'icon-192.png', badge: 'badge-96.png', actions: d.btn ? ACTIONS : [],
+    icon: 'icon-192.png', badge: 'badge-96.png', actions: d.stop ? [{action: 'stop', title: '⏹ עצור'}] : d.btn ? ACTIONS : [],
     // טיימר: נשארת עד שסוגרים, ורוטטת חזק
     requireInteraction: !!d.ri, vibrate: d.vib ? [600, 300, 600, 300, 600, 300, 600] : undefined,
   }));
@@ -78,6 +78,8 @@ self.addEventListener('notificationclick', e => {
   const n = e.notification, d = n.data || {};
   n.close();
   if(e.action === 'done' || e.action === 'snooze1h') e.waitUntil(doAction(e.action, d));
+  else if(e.action === 'stop') e.waitUntil(stopTimer(d.stop).catch(() => {}));
+  // לחיצה על התראת טיימר: פותחים את האפליקציה, והיא עוצרת את הצלצולים (#tm=)
   else e.waitUntil(openApp(d.u || './'));
 });
 // האפליקציה (או בדיקה) יכולה לבקש את אותה פעולה בהודעה
@@ -112,6 +114,25 @@ async function doAction(c, d){
   }
   for(const w of await self.clients.matchAll({type: 'window', includeUncontrolled: true})) w.postMessage({type: 'pending'});
   return result;
+}
+
+/* ---------- "⏹ עצור" בטיימר: stopped במאגר, והמנוע מפסיק לצלצל ---------- */
+const TIMERS = 'משימות/טיימרים.json';
+async function stopTimer(id){
+  if(!id) return 'אין טיימר';
+  const token = await kvGet('token');
+  if(!token) throw new Error('אין אסימון במכשיר');
+  for(let n = 0; n < 3; n++){
+    const cur = await read(token, TIMERS);
+    const t = cur && (cur.json.timers || []).find(x => x.id === id);
+    if(!t || t.stopped || t.deleted) return 'כבר נעצר';
+    const merged = ליבה.mergeTimersFile(cur.json, {timers: [Object.assign({}, t, {stopped: true, updatedAt: new Date().toISOString()})]});
+    try{
+      await gh(token, 'PUT', TIMERS, {message: 'טיימר: עצור', branch: 'main', content: to64(JSON.stringify(merged, null, 1)), sha: cur.sha});
+      for(const w of await self.clients.matchAll({type: 'window', includeUncontrolled: true})) w.postMessage({type: 'pending'});
+      return 'נעצר';
+    }catch(err){ if(err.code !== 409 || n === 2) throw err; }
+  }
 }
 
 /* ---------- גיטהאב ---------- */
