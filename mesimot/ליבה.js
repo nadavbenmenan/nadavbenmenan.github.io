@@ -313,10 +313,10 @@ function planNotifications(data, now, opts){
   const end = now + (opts.horizonH || 70) * 36e5, today = localDate(now), endDate = localDate(end);
   const domains = new Map((data.domains || []).map(d => [d.id, d.name]));
   const out = new Map();
-  const add = (n, keepTime) => {
-    const ms = keepTime ? shiftToActive(n.at, cfg) : n.at;
+  const add = (n, keepTime, exact) => {
+    const ms = keepTime && !exact ? shiftToActive(n.at, cfg) : n.at;
     if(ms <= now + 15e3 || ms > end) return;
-    if(!keepTime && !inActive(ms, cfg)) return;          // מחוץ לשעות: לא נשלח, הסיכום מכסה
+    if(!keepTime && !exact && !inActive(ms, cfg)) return;   // מחוץ לשעות: לא נשלח, הסיכום מכסה. חוץ משעה שנבחרה במפורש
     out.set(n.id, Object.assign({}, n, {at: ms}));
   };
   for(const raw of data.tasks || []){
@@ -343,7 +343,7 @@ function planNotifications(data, now, opts){
       const cands = [];
       for(const x of task.pre.map(Number)) if(x > 0)
         cands.push({id: `${o.id}-pre${x}`, at: at(addDays(o.due, -x), task.time), title: `${inText(x)}: ${title}`, message: domain});
-      cands.push({id: `${o.id}-day`, at: at(o.due, task.time), title, message: domain || 'היום'});
+      cands.push({id: `${o.id}-day`, at: at(o.due, task.time), title, message: domain || 'היום', exact: !!task.exact});
       if(task.kind === 'afterDone' && task.soft)
         cands.push({id: `${o.id}-soft`, at: at(o.window.minDate, task.time), title: `אפשר לקבוע: ${title}`, message: domain});
       for(const n of nagDates(task, addDays(o.due, 1), endDate)){
@@ -354,7 +354,8 @@ function planNotifications(data, now, opts){
       for(const c of cands){
         // מופע נדחה לא מקבל שום תזכורת עד סוף הדחייה, וגם לא באותו יום שבו הדחייה נגמרת
         if(snzMs && (c.at <= snzMs || localDate(c.at) === localDate(snzMs))) continue;
-        add(Object.assign({}, one, c));
+        const ex = c.exact; delete c.exact;
+        add(Object.assign({}, one, c), false, ex);
       }
       if(snzMs) add(Object.assign({}, one, {id: `${o.id}-snz`, at: snzMs, title, message: 'תזכורת שנדחתה'}), true);
     }
@@ -631,6 +632,70 @@ function describeRule(task){
   return '';
 }
 
+/* ---------- הוספה מהירה: "לקחת משקפיים מחר ב-7" ---------- */
+/** מחלץ תאריך ושעה מהטקסט. מחזיר {title, date, time} (date/time = null כשלא נאמר). */
+function parseQuick(text, now){
+  let s = ' ' + String(text || '').replace(/\s+/g, ' ').trim() + ' ';
+  const today = localDate(now);
+  let date = null, time = null, part = null, m;
+  const cut = re => { const x = s.match(re); if(x) s = s.replace(x[0], ' '); return x; };
+  if((m = cut(/ (?:בעוד|עוד) (חצי שעה|רבע שעה|שעה|שעתיים|(\d+) (שעות|דקות|דק'))(?= )/))){
+    const min = m[2] ? +m[2] * (m[3] === 'שעות' ? 60 : 1) : {'חצי שעה': 30, 'רבע שעה': 15, 'שעה': 60, 'שעתיים': 120}[m[1]];
+    const ms = Math.ceil((now + min * 6e4) / 6e4) * 6e4;
+    return {title: s.trim(), date: localDate(ms), time: localTime(ms)};
+  }
+  if(cut(/ מחרתיים(?= )/)) date = addDays(today, 2);
+  else if(cut(/ מחר(?= )/)) date = addDays(today, 1);
+  else if(cut(/ היום(?= )/)) date = today;
+  else if((m = cut(/ (?:ב?יום |ב)(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)(?= )/))){
+    let d = addDays(today, 1);
+    while(weekday(d) !== DAY_NAMES.indexOf(m[1])) d = addDays(d, 1);
+    date = d;
+  }
+  if((m = cut(/ (בבוקר|בצהריים|בצהרים|אחה"צ|אחר הצהריים|בערב|בלילה)(?= )/))) part = m[1];
+  if((m = cut(/ (?:בשעה |ב[-־]?\s?)(\d{1,2})(?:[:.](\d{2}))?(?= )/)) || (m = cut(/ (\d{1,2}):(\d{2})(?= )/))){
+    let h = +m[1]; const mm = +(m[2] || 0);
+    if(h <= 23 && mm <= 59){
+      if(part && h < 12 && /ערב|לילה|צהר|אחה/.test(part) && !(/צהר/.test(part) && h >= 11)) h += 12;
+      time = `${pad(h)}:${pad(mm)}`;
+      if(!date){
+        date = today;
+        if(at(today, time) <= now){
+          // "ב-7" בשלוש אחר הצהריים = 19:00 היום. אחרת: מחר
+          if(!part && h < 12 && at(today, `${pad(h + 12)}:${pad(mm)}`) > now) time = `${pad(h + 12)}:${pad(mm)}`;
+          else date = addDays(today, 1);
+        }
+      }
+    }
+  }
+  if(!time && part) time = {'בבוקר': '08:00', 'בצהריים': '12:00', 'בצהרים': '12:00', 'אחה"צ': '16:00', 'אחר הצהריים': '16:00', 'בערב': '19:00', 'בלילה': '21:00'}[part];
+  if(time && !date) date = at(today, time) > now ? today : addDays(today, 1);
+  return {title: s.trim(), date, time};
+}
+
+/* ---------- קניות ---------- */
+// כל מוצר הוא רשומה אחת לתמיד: active = ברשימה עכשיו. count = כמה פעמים הוסף (לסדר ההצעות).
+const shopKey = name => String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const shopId = name => 'p-' + sha256(shopKey(name)).slice(0, 10);
+function shopAdd(items, name, nowIso){
+  const clean = String(name || '').trim().replace(/\s+/g, ' ');
+  if(!clean) return null;
+  const id = shopId(clean), cur = (items || []).find(x => x.id === id && !x.deleted);
+  if(cur && cur.active) return null;
+  return {id, name: clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
+    boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
+}
+function shopBuy(item, nowIso){ return Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); }
+/** הצעות: מוצרים מהעבר שלא ברשימה, הפופולריים קודם. עם טקסט: רק מה שמכיל אותו. */
+function shopSuggest(items, query, limit){
+  const q = shopKey(query);
+  return (items || []).filter(x => !x.deleted && !x.active && (!q || shopKey(x.name).includes(q)))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name))
+    .slice(0, limit || 12);
+}
+const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
+function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
+
 /* ---------- חשבונות הדייר ---------- */
 // חשמל: חלק יחסי לפי מונה המשנה, מתוך הסכום הכולל של החשבון (כולל מע"מ, תשלום קבוע והספק).
 // ארנונה: סכום קבוע לתקופה של חודשיים (אפשר יחסי לימים). מים: חצי מהסכום.
@@ -776,6 +841,7 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSuggest, shopList, mergeShopFile,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
