@@ -212,8 +212,17 @@
   .shop-add .btn{flex:none}
   #shop-sug{margin-top:12px}
   #shop-sug button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #shop-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  #shop-list{margin-top:4px}
+  #shop-list .sec{margin-top:18px}
+  #shop-list .sec>h2{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--muted)}
+  #shop-list .sec>h2 b{font-weight:500;font-size:13px;background:var(--soft);border-radius:999px;padding:1px 8px}
+  #shop-list .list{display:flex;flex-direction:column;gap:8px}
   #shop-list .t{font-size:17px}
+  .pic{width:40px;height:40px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:22px;flex:none;
+       border:0;padding:0;line-height:1}
+  .shop-name{display:flex;align-items:center;gap:12px;flex:1;min-width:0;border:0;background:transparent;text-align:right;padding:4px 0;color:inherit}
+  .lbl.sug{margin-top:14px;display:block}
+  #dlg-shopcat .opts button{min-height:48px}
   .q-when-line{font-size:14px;color:var(--accent);min-height:20px;margin-top:6px}
   .res{background:var(--soft);border-radius:14px;padding:12px;margin-top:12px}
   .res b{font-size:22px}
@@ -266,7 +275,8 @@
     <input type="text" id="shop-in" placeholder="מה צריך לקנות?" aria-label="מוצר" enterkeyhint="done" autocomplete="off">
     <button class="btn primary" id="shop-add" type="button">הוספה</button>
   </div>
-  <div class="opts" id="shop-sug" aria-label="מוצרים מהעבר"></div>
+  <div id="shop-sug-box"><span class="lbl sug" id="shop-sug-lbl"></span>
+  <div class="opts" id="shop-sug" aria-label="הצעות"></div></div>
   <div id="shop-list"></div>
 </main>
 
@@ -327,6 +337,11 @@
   <div class="btns"><button class="btn" id="d-cancel">ביטול</button><button class="btn primary" id="d-ok">✓ אישור</button></div>
 </div></dialog>
 
+<dialog id="dlg-shopcat" aria-label="מחלקה"><div class="dlg">
+  <h2 id="sc-title">מחלקה</h2>
+  <div class="opts" id="sc-opts"></div>
+  <div class="btns"><button class="btn" id="sc-cancel" type="button">סגירה</button></div>
+</div></dialog>
 <dialog id="dlg-snooze" aria-label="דחייה"><div class="dlg">
   <h2 id="z-title">דחייה</h2>
   <div class="sheet-list">
@@ -729,13 +744,33 @@ function saveShop(r){
   persist('shop', true); changed();
 }
 function renderShop(){
-  const items = D.file.shop.items, list = ל.shopList(items), q = $('shop-in').value;
-  $('shop-sug').innerHTML = ל.shopSuggest(items, q, q ? 8 : 12).map(x => `<button type="button" data-p="${esc(x.id)}">+ ${esc(x.name)}</button>`).join('');
-  $('shop-list').innerHTML = list.length ? list.map(x => `<div class="item" data-p="${esc(x.id)}">
+  const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
+  const sug = ל.shopSuggest(items, q, q ? 10 : 16);
+  $('shop-sug-lbl').textContent = !sug.length ? '' : q ? 'הצעות' : sug[0].catalog ? 'להוסיף מהר: מוצרים נפוצים' : 'להוסיף מהר: מה שקנית בעבר, הנפוץ קודם';
+  // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
+  if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
+  $('shop-sug-box').style.marginTop = q || !groups.length ? '' : '22px';
+  $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.emoji} ${esc(x.name)}</button>`).join('');
+  $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
+    <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
       <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
-      <div class="body"><div class="t">${esc(x.name)}</div></div></div>`).join('')
-    : `<div class="empty">${items.length ? 'הרשימה ריקה. אפשר להוסיף מההצעות למעלה' : 'הרשימה ריקה'}</div>`;
+      <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}"><span class="pic">${x.emoji}</span><span class="t">${esc(x.name)}</span></button></div>`).join('')}</div></div>`).join('')
+    : `<div class="empty" style="margin-top:16px">הרשימה ריקה</div>`;
 }
+let shopCatItem = null;
+function openShopCat(x){
+  shopCatItem = x;
+  const cur = ל.shopInfo(x).cat;
+  $('sc-title').textContent = `באיזו מחלקה: ${x.name}?`;
+  $('sc-opts').innerHTML = ל.SHOP_CATS.map(c => `<button type="button" data-c="${c.id}" class="${c.id === cur ? 'on' : ''}">${c.emoji} ${esc(c.name)}</button>`).join('');
+  $('dlg-shopcat').showModal();
+}
+$('sc-opts').onclick = e => {
+  const b = e.target.closest('[data-c]'); if(!b || !shopCatItem) return;
+  saveShop(ל.shopSetCat(shopCatItem, b.dataset.c, nowIso()));
+  $('dlg-shopcat').close(); renderShop();
+};
+$('sc-cancel').onclick = () => $('dlg-shopcat').close();
 function shopAddName(name){
   const r = ל.shopAdd(D.file.shop.items, name, nowIso());
   if(!r){ if(name.trim()) toast('כבר ברשימה'); return; }
@@ -745,14 +780,14 @@ $('shop-add').onclick = () => { shopAddName($('shop-in').value); $('shop-in').va
 $('shop-in').addEventListener('keydown', e => { if(e.key === 'Enter') $('shop-add').click(); });
 $('shop-in').addEventListener('input', renderShop);
 $('shop-sug').onclick = e => {
-  const b = e.target.closest('[data-p]'); if(!b) return;
-  const x = D.file.shop.items.find(i => i.id === b.dataset.p);
-  if(x){ shopAddName(x.name); $('shop-in').value = ''; renderShop(); }
+  const b = e.target.closest('[data-n]'); if(!b) return;
+  shopAddName(b.dataset.n); $('shop-in').value = ''; renderShop();
 };
 $('shop-list').onclick = e => {
-  const b = e.target.closest('[data-act="buy"]'); if(!b) return;
+  const b = e.target.closest('[data-act]'); if(!b) return;
   const x = D.file.shop.items.find(i => i.id === b.closest('[data-p]').dataset.p);
   if(!x) return;
+  if(b.dataset.act === 'cat') return openShopCat(x);
   saveShop(ל.shopBuy(x, nowIso()));
   toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))});
 };
