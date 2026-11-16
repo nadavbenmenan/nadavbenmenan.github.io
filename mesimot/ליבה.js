@@ -674,26 +674,134 @@ function parseQuick(text, now){
 }
 
 /* ---------- קניות ---------- */
+// מחלקות לפי סדר ההליכה בסופר: מהכניסה (ירקות) ועד הקירור והקפואים בסוף, כדי שהקר יהיה בעגלה הכי פחות זמן.
+const SHOP_CATS = [
+  ['veg', '🥬', 'פירות וירקות'], ['bread', '🍞', 'לחם ומאפים'], ['dry', '🫘', 'קטניות, אורז ופסטה'],
+  ['cans', '🥫', 'שימורים ורטבים'], ['bake', '🧂', 'שמן, תבלינים ואפייה'], ['morning', '☕', 'קפה, תה ודגני בוקר'],
+  ['snack', '🍫', 'חטיפים ומתוקים'], ['drink', '🥤', 'משקאות'], ['dairy', '🥛', 'חלב, גבינות וביצים'],
+  ['deli', '🥙', 'מעדנייה וסלטים'], ['meat', '🍗', 'בשר, עוף ודגים'], ['frozen', '🧊', 'קפואים'],
+  ['clean', '🧽', 'ניקיון ובית'], ['care', '🧴', 'טיפוח והיגיינה'], ['other', '🛒', 'שונות'],
+].map(([id, emoji, name], i) => ({id, emoji, name, order: i}));
+const SHOP_CAT = Object.fromEntries(SHOP_CATS.map(c => [c.id, c]));
+// המוצרים הנפוצים בסופר בישראל, בכל מחלקה מהנפוץ לפחות נפוץ. "שם|אמוג'י". שם בלי אמוג'י מקבל את של המחלקה.
+const SHOP_POPULAR = {
+  veg: 'עגבניות|🍅 מלפפונים|🥒 בצל|🧅 תפוחי אדמה|🥔 גזר|🥕 לימון|🍋 בננות|🍌 תפוחים|🍎 פלפל אדום|🫑 אבוקדו|🥑 שום|🧄 חסה|🥬 ' +
+       'בטטה|🍠 עגבניות שרי|🍅 פטרוזיליה|🌿 כוסברה|🌿 שמיר|🌿 נענע|🌿 קישואים|🥒 חצילים|🍆 כרוב|🥬 ברוקולי|🥦 כרובית|🥦 תפוזים|🍊 ' +
+       'קלמנטינות|🍊 אגסים|🍐 ענבים|🍇 אבטיח|🍉 מלון|🍈 תותים|🍓 פטריות|🍄 בצל ירוק|🧅 תירס|🌽 ג׳ינג׳ר|🫚 פלפל חריף|🌶️ סלק| אפרסקים|🍑 מנגו|🥭 קיווי|🥝',
+  bread: 'לחם|🍞 פיתות|🫓 לחמניות|🥖 חלה|🍞 באגט|🥖 טורטיות|🫓 לחם מלא|🍞 קרואסון|🥐 עוגה|🍰 לחמניות המבורגר|🍔 פירורי לחם|🍞',
+  dry: 'אורז|🍚 פסטה|🍝 ספגטי|🍝 עדשים|🫘 חומוס יבש|🫘 שעועית|🫘 קוסקוס|🍚 בורגול|🌾 קינואה|🌾 פתיתים|🍚 שיבולת שועל|🌾 אטריות|🍜 נודלס|🍜',
+  cans: 'רסק עגבניות|🥫 טונה|🐟 תירס בקופסה|🌽 חומוס בקופסה|🥫 זיתים|🫒 מלפפונים חמוצים|🥒 רוטב עגבניות|🥫 קטשופ|🍅 מיונז|🥫 חרדל|🥫 ' +
+        'טחינה|🥫 רוטב סויה|🥫 שעועית בקופסה|🥫 אפונה וגזר|🥫 שימורי פטריות|🍄 ריבה|🍓 דבש|🍯 ממרח שוקולד|🍫 חמאת בוטנים|🥜',
+  bake: 'שמן|🫒 שמן זית|🫒 מלח|🧂 סוכר|🧂 קמח|🌾 פלפל שחור|🧂 פפריקה|🌶️ כורכום|🧂 כמון|🧂 אבקת אפייה|🧂 סודה לשתייה|🧂 שמרים|🧂 ' +
+        'וניל|🧂 קקאו|🍫 שוקולד מריר|🍫 אבקת מרק|🍲 חומץ|🧂 תבלין|🧂 אגוזים|🌰 שקדים|🌰 צימוקים|🍇 תמרים|🌴',
+  morning: 'קפה|☕ קפה נמס|☕ קפה טורקי|☕ קפסולות|☕ תה|🍵 דגני בוקר|🥣 קורנפלקס|🥣 גרנולה|🥣 סילאן|🍯',
+  snack: 'ביסלי|🍿 במבה|🥜 צ׳יפס|🥔 בייגלה|🥨 שוקולד|🍫 עוגיות|🍪 וופלים|🧇 קרקרים|🍘 פריכיות|🍘 גרעינים|🌻 פופקורן|🍿 ' +
+         'חטיף אנרגיה|🍫 מסטיק|🍬 סוכריות|🍬 גלידה|🍦',
+  drink: 'מים|💧 סודה|💧 קולה|🥤 מיץ תפוזים|🧃 מיץ|🧃 תרכיז|🧃 בירה|🍺 יין|🍷 שוקו|🥛 משקה סויה|🥛 משקה שקדים|🥛 מים מינרליים|💧',
+  dairy: 'חלב|🥛 ביצים|🥚 קוטג׳|🧀 גבינה לבנה|🧀 גבינה צהובה|🧀 יוגורט|🥛 שמנת מתוקה|🥛 שמנת חמוצה|🥛 חמאה|🧈 לבנה|🥛 ' +
+         'גבינה בולגרית|🧀 מוצרלה|🧀 פרמזן|🧀 גבינת שמנת|🧀 מעדן|🍮 פודינג|🍮 מילקי|🍮 אשל|🥛 גיל|🥛 ריקוטה|🧀 חלב שקדים|🥛 מרגרינה|🧈',
+  deli: 'חומוס|🥙 טחינה מוכנה|🥙 סלט חצילים|🍆 מטבוחה|🍅 נקניק|🥓 פסטרמה|🥓 נקניקיות|🌭 טופו|🧈 שניצל תירס|🌽',
+  meat: 'חזה עוף|🍗 שניצל|🍗 עוף שלם|🍗 כרעיים|🍗 פרגיות|🍗 שוקיים|🍗 בשר טחון|🥩 סטייק|🥩 צלי|🥩 המבורגר|🍔 ' +
+        'כבד|🥩 הודו|🍗 סלמון|🐟 אמנון|🐟 דג|🐟 קבב|🥩',
+  frozen: 'ירקות קפואים|🧊 אפונה קפואה|🫛 שעועית קפואה|🫘 צ׳יפס קפוא|🍟 בורקס|🥐 פיצה קפואה|🍕 שניצל קפוא|🍗 בצק עלים|🥐 ' +
+          'פירות קפואים|🍓 קרח|🧊 מלאווח|🫓 ג׳חנון|🫓',
+  clean: 'נייר טואלט|🧻 מגבות נייר|🧻 סבון כלים|🧽 טבליות למדיח|🧽 ספוגים|🧽 אבקת כביסה|🧺 ג׳ל כביסה|🧺 מרכך כביסה|🧺 ' +
+         'אקונומיקה|🧴 מנקה רצפות|🧴 שקיות אשפה|🗑️ נייר אפייה|📜 נייר כסף|📜 ניילון נצמד|📜 מטליות|🧽 מגבונים|🧻 ' +
+         'כוסות חד פעמיות|🥤 צלחות חד פעמיות|🍽️ סוללות|🔋 נורה|💡 שקיות סנדוויץ׳|🛍️ מצתים|🔥',
+  care: 'משחת שיניים|🪥 מברשת שיניים|🪥 שמפו|🧴 מרכך|🧴 סבון|🧼 סבון ידיים|🧼 ג׳ל רחצה|🧴 דאודורנט|🧴 סכיני גילוח|🪒 ' +
+        'קצף גילוח|🪒 קרם הגנה|🧴 קרם לחות|🧴 מקלוני אוזניים|🦻 חוט דנטלי|🦷 ממחטות|🤧 טמפונים|🩸 תחבושות|🩸 פלסטרים|🩹 אקמול|💊 ויטמינים|💊',
+};
+const SHOP_CATALOG = [];
+for(const [cat, s] of Object.entries(SHOP_POPULAR))
+  [...s.matchAll(/\s*([^|]+?)\|(\S*)/g)].forEach(([, name, emoji], i) => {
+    SHOP_CATALOG.push({name: name.trim(), cat, emoji: emoji || SHOP_CAT[cat].emoji, rank: i});
+  });
+// מילים שמזהות מחלקה גם כשהמוצר לא ברשימה (למשל "גבינת עזים" = חלב). לא מוצעות בהצעות.
+const SHOP_WORDS = {
+  veg: 'ירק ירקות פרי פירות תפוח עגבני מלפפון פלפל בצל חסה תפוז נקטרינה שזיף אפרסמון רימון פומלה אננס דובדבן ' +
+       'פטריה פטריות ארוגולה תרד סלרי צנון קולורבי דלעת לוביה במיה שמיר עלי',
+  bread: 'לחם לחמניה לחמניות פיתה מאפה מאפים בייגל עוגה עוגת עוגות חלות',
+  dry: 'אורז פסטה עדשים שעועית גריסים פתיתים אטריות קוסקוס קמח',
+  cans: 'שימורי שימורים קופסה רוטב ממרח ריבה חמוצים',
+  bake: 'תבלין תבלינים אבקת שמן תמצית שוקולד צ׳יפס אגוזי',
+  morning: 'קפה תה דגני',
+  snack: 'חטיף חטיפים שוקולד ממתק ממתקים עוגיות',
+  drink: 'מיץ משקה משקאות בקבוק יין בירה וודקה ערק סודה מים',
+  dairy: 'חלב גבינה גבינת גבינות יוגורט שמנת מעדן מעדני ביצה ביצים',
+  deli: 'סלט סלטים נקניק',
+  meat: 'עוף בשר דג דגים פילה שניצל קציצות כנפיים לבבות',
+  frozen: 'קפוא קפואה קפואים',
+  clean: 'ניקוי ניקיון מנקה כביסה כלים אשפה ספוג',
+  care: 'שמפו סבון קרם תרופה תרופות ויטמין ויטמינים טיפות',
+};
+const SHOP_WORD_CAT = {};
+for(const [cat, s] of Object.entries(SHOP_WORDS)) s.split(/\s+/).forEach(w => { SHOP_WORD_CAT[w] = cat; });
+const SHOP_BY_NAME = Object.fromEntries(SHOP_CATALOG.map(x => [x.name, x]));
+const shopNorm = s => String(s || '').trim().replace(/\s+/g, ' ').replace(/['"`׳״]/g, '׳').toLowerCase();
+
+/** מחלקה ואמוג'י למוצר: בחירה ידנית קודם, אחר כך הרשימה הנפוצה, אחר כך לפי מילה בשם. */
+function shopInfo(nameOrItem){
+  const item = typeof nameOrItem === 'object' ? nameOrItem : null, name = shopNorm(item ? item.name : nameOrItem);
+  const catOf = id => SHOP_CAT[id] || SHOP_CAT.other;
+  let hit = SHOP_BY_NAME[name] || null;
+  if(!hit){
+    // הצירוף הארוך ביותר מהרשימה שמופיע בתחילת השם ("חלב 3%", "עגבניות שרי מתוקות")
+    let best = null;
+    for(const x of SHOP_CATALOG) if((name === x.name || name.startsWith(x.name + ' ')) && (!best || x.name.length > best.name.length)) best = x;
+    hit = best;
+  }
+  let cat = hit ? hit.cat : null, emoji = hit ? hit.emoji : null;
+  if(!cat){
+    const words = name.split(' ');
+    for(const w of words){
+      const c = SHOP_WORD_CAT[w] || SHOP_WORD_CAT[w.replace(/^[והבלמש](?=..)/, '')];
+      if(c){ cat = c; break; }
+    }
+  }
+  if(item && item.cat && SHOP_CAT[item.cat]) cat = item.cat;
+  cat = cat || 'other';
+  return {cat, emoji: emoji || catOf(cat).emoji, catName: catOf(cat).name, order: catOf(cat).order};
+}
+
 // כל מוצר הוא רשומה אחת לתמיד: active = ברשימה עכשיו. count = כמה פעמים הוסף (לסדר ההצעות).
-const shopKey = name => String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const shopKey = name => shopNorm(name);
 const shopId = name => 'p-' + sha256(shopKey(name)).slice(0, 10);
 function shopAdd(items, name, nowIso){
   const clean = String(name || '').trim().replace(/\s+/g, ' ');
   if(!clean) return null;
   const id = shopId(clean), cur = (items || []).find(x => x.id === id && !x.deleted);
   if(cur && cur.active) return null;
-  return {id, name: clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
+  const r = {id, name: cur ? cur.name : clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
     boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
+  if(cur && cur.cat) r.cat = cur.cat;
+  return r;
 }
 function shopBuy(item, nowIso){ return Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); }
-/** הצעות: מוצרים מהעבר שלא ברשימה, הפופולריים קודם. עם טקסט: רק מה שמכיל אותו. */
+function shopSetCat(item, cat, nowIso){ return Object.assign({}, item, {cat: SHOP_CAT[cat] ? cat : 'other', updatedAt: nowIso}); }
+/** הצעות: קודם מוצרים מהעבר (הפופולריים קודם), ואחריהם מוצרים נפוצים מהרשימה המובנית. עם טקסט: רק מה שמכיל אותו. */
 function shopSuggest(items, query, limit){
-  const q = shopKey(query);
-  return (items || []).filter(x => !x.deleted && !x.active && (!q || shopKey(x.name).includes(q)))
-    .sort((a, b) => (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name))
-    .slice(0, limit || 12);
+  const q = shopKey(query), mine = (items || []).filter(x => !x.deleted);
+  const known = new Set(mine.map(x => shopKey(x.name)));
+  const past = mine.filter(x => !x.active && (!q || shopKey(x.name).includes(q)))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name));
+  // מהרשימה המובנית: לסירוגין בין המחלקות, כדי שבהתחלה יופיע מגוון ולא רק ירקות
+  // ברשימה המובנית: רק מילה שמתחילה במה שהוקלד ("גב" = גבינה, לא עגבניות)
+  const cat = SHOP_CATALOG.filter(x => !known.has(x.name) && (!q || x.name.startsWith(q) || x.name.includes(' ' + q)))
+    .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
+    .map(x => ({name: x.name, catalog: true}));
+  return past.concat(cat).slice(0, limit || 12).map(x => Object.assign({}, x, {emoji: shopInfo(x).emoji}));
 }
 const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
+/** הרשימה מחולקת למחלקות, לפי סדר ההליכה בסופר. */
+function shopGroups(items){
+  const g = {};
+  for(const x of shopList(items)){
+    const i = shopInfo(x);
+    (g[i.cat] = g[i.cat] || {cat: i.cat, name: i.catName, emoji: SHOP_CAT[i.cat].emoji, order: i.order, items: []})
+      .items.push(Object.assign({}, x, {emoji: i.emoji}));
+  }
+  return Object.values(g).sort((a, b) => a.order - b.order);
+}
 function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
 
 /* ---------- חשבונות הדייר ---------- */
@@ -841,7 +949,8 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSuggest, shopList, mergeShopFile,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopInfo, mergeShopFile,
+  SHOP_CATS, SHOP_CATALOG,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
