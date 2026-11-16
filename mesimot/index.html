@@ -207,6 +207,14 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
+  .shop-add{display:flex;gap:8px;margin-top:14px}
+  .shop-add input{flex:1}
+  .shop-add .btn{flex:none}
+  #shop-sug{margin-top:12px}
+  #shop-sug button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #shop-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  #shop-list .t{font-size:17px}
+  .q-when-line{font-size:14px;color:var(--accent);min-height:20px;margin-top:6px}
   .res{background:var(--soft);border-radius:14px;padding:12px;margin-top:12px}
   .res b{font-size:22px}
   .res pre{white-space:pre-wrap;font:inherit;margin:8px 0 0;font-size:14px;color:var(--muted)}
@@ -252,6 +260,16 @@
 </main>
 
 <!-- ===== היסטוריה ===== -->
+<main class="screen" id="scr-shop" hidden>
+  <h1 class="hello">קניות</h1>
+  <div class="shop-add">
+    <input type="text" id="shop-in" placeholder="מה צריך לקנות?" aria-label="מוצר" enterkeyhint="done" autocomplete="off">
+    <button class="btn primary" id="shop-add" type="button">הוספה</button>
+  </div>
+  <div class="opts" id="shop-sug" aria-label="מוצרים מהעבר"></div>
+  <div id="shop-list"></div>
+</main>
+
 <main class="screen" id="scr-history" hidden>
   <h1 class="hello">היסטוריה</h1>
   <div class="row" style="margin-top:14px">
@@ -264,6 +282,7 @@
 <button id="fab" aria-label="משימה חדשה"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav id="nav">
   <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
+  <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>תחומים</button>
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>לוח שנה</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>היסטוריה</button>
@@ -287,8 +306,10 @@
 <!-- ===== חלוניות ===== -->
 <dialog id="dlg-quick" aria-label="משימה חדשה"><div class="dlg">
   <h2>משימה חדשה</h2>
-  <input type="text" id="q-title" placeholder="מה צריך לעשות?" aria-label="שם המשימה" enterkeyhint="done">
+  <input type="text" id="q-title" placeholder="למשל: לקחת משקפיים מחר ב-7" aria-label="שם המשימה" enterkeyhint="done">
+  <div class="q-when-line" id="q-line" aria-live="polite"></div>
   <div class="field"><span class="lbl">מתי</span><div class="opts" id="q-when"></div></div>
+  <div class="field"><label for="q-time">שעה להתראה (לא חובה)</label><input type="time" id="q-time"></div>
   <div class="field"><span class="lbl">תחום</span><div class="opts" id="q-domain"></div></div>
   <div class="btns">
     <button class="btn" id="q-more">עוד אפשרויות</button>
@@ -396,6 +417,8 @@ const FILES = {
            merge: (a, b) => ל.mergeTasksFile(a, b), msg: 'עדכון משימות'},
   occ:    {path: 'משימות/פעמים.json', cache: 'משימות.פעמים', pending: 'משימות.פעמים.ממתין', sha: null,
            merge: (a, b) => ל.mergeOccFile(a, b), msg: 'עדכון ביצועים'},
+  shop:   {path: 'משימות/קניות.json', cache: 'משימות.קניות', pending: 'משימות.קניות.ממתין', sha: null,
+           merge: (a, b) => ל.mergeShopFile(a, b), msg: 'עדכון קניות'},
   config: {path: 'משימות/תצורה.json', cache: 'משימות.תצורה', pending: 'משימות.תצורה.ממתין', sha: null,
            merge: (a, b) => ל.mergeConfig(a, b), msg: 'עדכון הגדרות משימות'},
 };
@@ -405,6 +428,7 @@ const D = {
     tasks: FILES.tasks.merge(storeJson(FILES.tasks.cache, null) || {tasks: seed.tasks, domains: seed.domains}, null),
     occ: FILES.occ.merge(storeJson(FILES.occ.cache, null) || {occ: []}, null),
     config: ל.mergeConfig(storeJson(FILES.config.cache, null) || seed.config),
+    shop: FILES.shop.merge(storeJson(FILES.shop.cache, null) || {items: []}, null),
   },
   get tasks(){ return this.file.tasks.tasks; },
   get domains(){ return this.file.tasks.domains; },
@@ -677,7 +701,8 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  for(const x of ['today', 'shop', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = s === 'shop';
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   renderAll(); scrollTo(0, 0);
 }
@@ -685,6 +710,7 @@ function renderAll(){
   if(screen === 'today') renderToday();
   else if(screen === 'domains') renderDomains();
   else if(screen === 'calendar') renderCalendar();
+  else if(screen === 'shop') renderShop();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
   renderStatus();
@@ -695,6 +721,41 @@ $('cal').addEventListener('click', e => { const b = e.target.closest('[data-day]
 $('cal-prev').onclick = () => { const [y, m] = calMonth.split('-').map(Number); calMonth = m === 1 ? `${y - 1}-12` : `${y}-${ל.pad(m - 1)}`; renderCalendar(); };
 $('cal-next').onclick = () => { const [y, m] = calMonth.split('-').map(Number); calMonth = m === 12 ? `${y + 1}-01` : `${y}-${ל.pad(m + 1)}`; renderCalendar(); };
 $('hist-task').onchange = $('hist-domain').onchange = renderHistory;
+
+/* ---------- קניות ---------- */
+// רשימה אחת. "קניתי" מוריד מהרשימה. ההצעות: מוצרים מהעבר, הפופולריים קודם (ליבה.shopSuggest).
+function saveShop(r){
+  D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, [r])};
+  persist('shop', true); changed();
+}
+function renderShop(){
+  const items = D.file.shop.items, list = ל.shopList(items), q = $('shop-in').value;
+  $('shop-sug').innerHTML = ל.shopSuggest(items, q, q ? 8 : 12).map(x => `<button type="button" data-p="${esc(x.id)}">+ ${esc(x.name)}</button>`).join('');
+  $('shop-list').innerHTML = list.length ? list.map(x => `<div class="item" data-p="${esc(x.id)}">
+      <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
+      <div class="body"><div class="t">${esc(x.name)}</div></div></div>`).join('')
+    : `<div class="empty">${items.length ? 'הרשימה ריקה. אפשר להוסיף מההצעות למעלה' : 'הרשימה ריקה'}</div>`;
+}
+function shopAddName(name){
+  const r = ל.shopAdd(D.file.shop.items, name, nowIso());
+  if(!r){ if(name.trim()) toast('כבר ברשימה'); return; }
+  saveShop(r);
+}
+$('shop-add').onclick = () => { shopAddName($('shop-in').value); $('shop-in').value = ''; renderShop(); $('shop-in').focus(); };
+$('shop-in').addEventListener('keydown', e => { if(e.key === 'Enter') $('shop-add').click(); });
+$('shop-in').addEventListener('input', renderShop);
+$('shop-sug').onclick = e => {
+  const b = e.target.closest('[data-p]'); if(!b) return;
+  const x = D.file.shop.items.find(i => i.id === b.dataset.p);
+  if(x){ shopAddName(x.name); $('shop-in').value = ''; renderShop(); }
+};
+$('shop-list').onclick = e => {
+  const b = e.target.closest('[data-act="buy"]'); if(!b) return;
+  const x = D.file.shop.items.find(i => i.id === b.closest('[data-p]').dataset.p);
+  if(!x) return;
+  saveShop(ל.shopBuy(x, nowIso()));
+  toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))});
+};
 
 /* ---------- פעולות על מופע ---------- */
 function resolve(occId, taskId){
@@ -903,26 +964,50 @@ $('z-cancel').onclick = () => $('dlg-snooze').close();
 const WHEN = [['today', 'היום'], ['tomorrow', 'מחר'], ['week', 'השבוע'], ['none', 'בלי תאריך']];
 let quick = {when: 'today', domain: 'personal'};
 function openQuick(){
-  quick = {when: 'today', domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal')};
-  $('q-title').value = '';
+  quick = {when: 'today', date: null, domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal'), touched: false};
+  $('q-title').value = ''; $('q-time').value = '';
   renderQuick();
   $('dlg-quick').showModal();
   setTimeout(() => $('q-title').focus(), 50);
 }
-function renderQuick(){
-  $('q-when').innerHTML = WHEN.map(([k, v]) => `<button type="button" data-w="${k}" class="${quick.when === k ? 'on' : ''}">${v}</button>`).join('');
-  $('q-domain').innerHTML = visibleDomains().map(x => `<button type="button" data-d="${esc(x.id)}" class="${quick.domain === x.id ? 'on' : ''}"><span class="dot" style="--c:${esc(x.color)}"></span> ${esc(x.name)}</button>`).join('');
+function quickDate(){
+  const d = today();
+  return quick.when === 'today' ? d : quick.when === 'tomorrow' ? ל.addDays(d, 1) : quick.when === 'week' ? ל.addDays(d, 6 - ל.weekday(d))
+    : quick.when === 'date' ? quick.date : null;
 }
-$('q-when').onclick = e => { const b = e.target.closest('[data-w]'); if(b){ quick.when = b.dataset.w; renderQuick(); } };
+function renderQuick(){
+  const chips = WHEN.slice();
+  if(quick.when === 'date') chips.splice(2, 0, ['date', `${dayName(quick.date)} ${ל.shortDate(quick.date)}`]);
+  $('q-when').innerHTML = chips.map(([k, v]) => `<button type="button" data-w="${k}" class="${quick.when === k ? 'on' : ''}">${esc(v)}</button>`).join('');
+  $('q-domain').innerHTML = visibleDomains().map(x => `<button type="button" data-d="${esc(x.id)}" class="${quick.domain === x.id ? 'on' : ''}"><span class="dot" style="--c:${esc(x.color)}"></span> ${esc(x.name)}</button>`).join('');
+  const time = $('q-time').value, date = quickDate();
+  $('q-line').textContent = time && date ? `🔔 התראה ${date === today() ? 'היום' : date === ל.addDays(today(), 1) ? 'מחר' : `ב${dayName(date)} ${ל.shortDate(date)}`} ב־${time}` : '';
+}
+// "לקחת משקפיים מחר ב-7": התאריך והשעה נקראים מהטקסט, אלא אם נבחרו ביד
+$('q-title').addEventListener('input', () => {
+  if(quick.touched) return;
+  const p = ל.parseQuick($('q-title').value, Date.now());
+  const d = today();
+  if(p.date){ quick.when = p.date === d ? 'today' : p.date === ל.addDays(d, 1) ? 'tomorrow' : 'date'; quick.date = p.date; }
+  else quick.when = 'today';
+  $('q-time').value = p.time || '';
+  renderQuick();
+});
+$('q-time').addEventListener('input', () => { quick.touched = true; if(quick.when === 'none') quick.when = 'today'; renderQuick(); });
+$('q-when').onclick = e => { const b = e.target.closest('[data-w]'); if(b){ quick.touched = true; quick.when = b.dataset.w; if(quick.when === 'none') $('q-time').value = ''; renderQuick(); } };
 $('q-domain').onclick = e => { const b = e.target.closest('[data-d]'); if(b){ quick.domain = b.dataset.d; renderQuick(); } };
 function quickTask(){
-  const title = $('q-title').value.trim(), d = today();
-  const t = {id: 't' + uid(), title, domain: quick.domain, priority: 'normal', time: null, pre: [], nag: {mode: 'daily'},
+  const raw = $('q-title').value.trim(), d = today(), time = $('q-time').value || null;
+  const parsed = quick.touched ? null : ל.parseQuick(raw, Date.now());
+  const title = (parsed && parsed.title) || raw;
+  const t = {id: 't' + uid(), title, domain: quick.domain, priority: 'normal', time, pre: [], nag: {mode: 'daily'},
     subtasks: [], notes: '', links: [], start: d, archived: false, deleted: false};
-  if(quick.when === 'none') t.kind = 'inbox';
+  if(quick.when === 'none' && !time) t.kind = 'inbox';
   else{
     t.kind = 'once';
-    t.once = {date: quick.when === 'today' ? d : quick.when === 'tomorrow' ? ל.addDays(d, 1) : ל.addDays(d, 6 - ל.weekday(d))};
+    t.once = {date: quickDate() || d};
+    // שעה שנבחרה: ההתראה יוצאת בדיוק בה, גם מחוץ לשעות הפעילות
+    if(time) t.exact = true;
   }
   return t;
 }
@@ -930,7 +1015,7 @@ $('q-save').onclick = () => {
   if(!$('q-title').value.trim()) return toast('כתוב מה צריך לעשות', {err: true});
   const t = saveTask(quickTask());
   $('dlg-quick').close();
-  toast(`נוספה: ${t.title}`);
+  toast(t.exact ? `נוספה: ${t.title}. התראה ${t.once.date === today() ? 'היום' : t.once.date === ל.addDays(today(), 1) ? 'מחר' : ל.shortDate(t.once.date)} ב־${t.time}` : `נוספה: ${t.title}`);
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
@@ -1167,7 +1252,7 @@ async function sync(){
     await syncFile('config'); await syncFile('tasks');
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
-    await syncFile('occ');
+    await syncFile('occ'); await syncFile('shop');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     applyTheme();
     await scheduleNotifications();
