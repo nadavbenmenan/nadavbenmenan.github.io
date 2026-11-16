@@ -599,50 +599,79 @@ function ingredientProduct(line){
   if(m && !m.word) return m.entry.name;
   return s.split(' ').slice(0, 3).join(' ');
 }
-/** משכים בשלב: "8-12 דקות", "חצי שעה", "72 שעות" → [{label, minutes}] (בטווח: המספר הקטן). */
+/** משכים בשלב: "8-12 דקות", "כחצי דקה", "כשעה", "72 שעות" → [{label, minutes}] (בטווח: המספר הקטן). */
+const WORD_DUR = {'שעה וחצי': 90, 'שעתיים': 120, 'חצי שעה': 30, 'רבע שעה': 15, 'חצי דקה': 1, 'שעה': 60, 'דקה': 1, 'יומיים': 2880};
+const DUR_RE = /(?:(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+))?\s*|(חצי|רבע)\s+)(דקות|דקה|דק׳|שעות|שעה|ימים|יום)(?=[\s.,;)\-–]|$)|(שעה וחצי|שעתיים|חצי שעה|רבע שעה|חצי דקה|יומיים|שעה|דקה)(?=[\s.,;)\-–]|$)/g;
 function durationsIn(text){
-  const out = [], seen = new Set(), t = ' ' + String(text || '') + ' ';
-  const re = /(?:(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+))?\s*|(חצי|רבע)\s+)(דקות|דקה|דק׳|שעות|שעה|ימים|יום)(?=[\s.,;)])|(שעתיים|חצי שעה|רבע שעה|שעה וחצי)(?=[\s.,;)])/g;
+  const out = [], seen = new Set();
+  // "כ-5 דקות", "כשעה", "לחצי שעה": בלי האות שלפני
+  const t = ' ' + String(text || '').replace(/(^|[\s(])[כלב]-?(?=\d|חצי|רבע|שעה|שעתיים|דקה|יומיים)/g, '$1') + ' ';
   let m;
-  while((m = re.exec(t))){
+  DUR_RE.lastIndex = 0;
+  while((m = DUR_RE.exec(t))){
+    if(/[א-ת]/.test(t[m.index - 1] || '')) continue;   // חלק ממילה אחרת
     let minutes, label;
-    if(m[5]){ label = m[5]; minutes = {'שעתיים': 120, 'חצי שעה': 30, 'רבע שעה': 15, 'שעה וחצי': 90}[m[5]]; }
+    if(m[5]){ label = m[5]; minutes = WORD_DUR[m[5]]; }
     else{
       const unit = /דק/.test(m[4]) ? 1 : /שע/.test(m[4]) ? 60 : 1440;
       const n = m[3] ? (m[3] === 'חצי' ? 0.5 : 0.25) : +m[1].replace(',', '.');
-      minutes = Math.round(n * unit); label = (m[0]).trim();
+      minutes = Math.max(1, Math.round(n * unit)); label = m[0].trim();
     }
     if(minutes > 0 && !seen.has(minutes)){ seen.add(minutes); out.push({label, minutes}); }
   }
   return out;
 }
-/** טקסט מודבק (מאתר, מוואטסאפ) → מתכון: כותרת, מצרכים, שלבים, הערות, לפי הכותרות בטקסט. */
+const isDurationOnly = l => { const d = durationsIn(l); return d.length > 0 && l.replace(DUR_RE, '').replace(/[\s\-–,.:]/g, '') === ''; };
+const LEVELS = {'קל': 'קל', 'קלה': 'קל', 'פשוט': 'קל', 'בינוני': 'בינוני', 'בינונית': 'בינוני', 'מאתגר': 'מאתגר', 'קשה': 'מאתגר', 'מורכב': 'מאתגר'};
+/**
+ * טקסט מודבק (מאתר, מוואטסאפ, מאפליקציה אחרת) → מתכון. מזהה כותרות: מצרכים, אופן ההכנה, הערות, זמן הכנה, זמן כולל,
+ * רמת קושי, קישור למקור. שורות שהן רק משך ("5 דקות", כפתורי טיימר שהועתקו) לא נהיות שלבים. מה שאחרי הקישור: לא נכנס.
+ */
 function parseRecipeText(text){
-  const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const r = {title: '', desc: '', ingredients: [], steps: [], notes: ''};
-  let part = null; const notes = [], before = [];
-  const head = l => l.replace(/[:：\-–]+$/, '').trim();
+  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const r = {title: '', desc: '', ingredients: [], steps: [], notes: '', prep: '', total: '', level: '', source: ''};
+  const notes = [], before = [];
+  let part = null, field = null;
+  const META = [[/^(זמן הכנה|זמן עבודה|זמן ההכנה)$/, 'prep'], [/^(זמן כולל|זמן כולל להכנה|סה״כ זמן|סה"כ זמן)$/, 'total'],
+    [/^(רמת קושי|רמת הקושי|דרגת קושי|קושי)$/, 'level'], [/^(קישור למקור|מקור|לינק|קישור)$/, 'source'], [/^(מנות|כמות|תפוקה)$/, 'skip']];
+  const SECTIONS = [[/^(מצרכים|מרכיבים|רכיבים|חומרים|מה צריך)( ל.*| עבור.*)?$/, 'ing'],
+    [/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות ההכנה|הוראות|הכנה|שלבי הכנה|שלבי ההכנה|דרך ההכנה)$/, 'steps'],
+    [/^(הערות|הערה|טיפים|טיפ|טיפים והערות)$/, 'notes']];
   for(const raw of lines){
-    const h = head(raw);
-    if(/^(מצרכים|מרכיבים|רכיבים|חומרים)(\b| ל| עבור|$)/.test(h) && h.length < 30){ part = 'ing'; continue; }
-    if(/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות|הכנה|שלבי הכנה|דרך ההכנה)(\b|$)/.test(h) && h.length < 30){ part = 'steps'; continue; }
-    if(/^(הערות|טיפים|טיפ|הערה)(\b|$)/.test(h) && h.length < 20){ part = 'notes'; continue; }
-    const clean = raw.replace(/^(?:[-*•▪·]|\d+[.)]|\(\d+\))\s*/, '').trim();
+    // "כותרת: ערך" באותה שורה, או כותרת ואז ערך בשורה הבאה
+    const mm = /^([^:：]{2,24})[:：]\s*(.*)$/.exec(raw);
+    const head = (mm ? mm[1] : raw).trim(), rest = mm ? mm[2].trim() : '';
+    const sec = SECTIONS.find(([re]) => re.test(head)), meta = META.find(([re]) => re.test(head));
+    if(sec && (mm || raw.length < 30)){ part = sec[1]; field = null; if(rest) raw === rest || (part === 'notes' ? notes.push(rest) : null); continue; }
+    if(meta && (mm || raw.length < 30)){ part = 'meta'; field = meta[1]; if(rest){ setMeta(r, field, rest); field = null; } continue; }
+    if(field){ setMeta(r, field, raw); field = null; continue; }
+    if(part === 'meta' || part === 'end'){ if(r.source) part = 'end'; continue; }   // שם הכותב, כפתורים שהועתקו
+    const clean = raw.replace(/^(?:[-*•▪·]|\d+\s*[.)]|\(\d+\))\s*/, '').trim();
     if(!clean) continue;
     if(part === 'ing') r.ingredients.push(clean);
-    else if(part === 'steps') r.steps.push(clean);
+    else if(part === 'steps'){ if(!isDurationOnly(clean)) r.steps.push(clean); }
     else if(part === 'notes') notes.push(clean);
     else before.push(clean);
   }
-  r.title = before.shift() || '';
-  r.desc = before.join(' ');
+  // שם: שורה קצרה ראשונה. אם הראשונה היא תיאור ארוך, השם נגזר ממנו ("סלט מטבוחה של עגבניות..." → "סלט מטבוחה")
+  if(before.length && before[0].length <= 45 && !/[.!]$/.test(before[0])){ r.title = before.shift(); r.desc = before.join(' '); }
+  else if(before.length){
+    r.desc = before.join(' ');
+    r.title = before[0].split(/ של | עם | ש(?=[א-ת]+ )|,|\.| - | – /)[0].split(' ').slice(0, 4).join(' ').trim();
+  }
   r.notes = notes.join('\n');
   // בלי כותרות בכלל: שורות קצרות = מצרכים, ארוכות = שלבים
-  if(!r.ingredients.length && !r.steps.length && before.length){
-    for(const l of before) (l.length <= 40 ? r.ingredients : r.steps).push(l);
+  if(!r.ingredients.length && !r.steps.length && before.length > 1){
+    r.ingredients = []; r.steps = [];
+    for(const l of before.slice(r.title === before[0] ? 1 : 0)) (l.length <= 40 ? r.ingredients : r.steps).push(l);
     r.desc = '';
   }
   return r;
+}
+function setMeta(r, field, v){
+  if(field === 'level') r.level = LEVELS[v.trim()] || r.level;
+  else if(field === 'source'){ const u = /https?:\/\/\S+/.exec(v); if(u) r.source = u[0]; }
+  else if(field === 'prep' || field === 'total') r[field] = v.trim().slice(0, 30);
 }
 /** המתכון כהודעה (וואטסאפ). */
 function recipeText(rc){
