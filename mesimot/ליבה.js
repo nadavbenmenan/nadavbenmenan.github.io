@@ -573,6 +573,87 @@ function calendarFor(task, occ){
     details: 'ממשימות: ' + APP + '#o=' + encodeURIComponent(occ.id)});
 }
 
+/* ---------- מתכונים ---------- */
+// משימות/מתכונים.json: {v, recipes: [{id, title, desc, image, cat, ingredients: [טקסט], steps: [טקסט], notes,
+//   prep, total, level, updatedAt, deleted}]}. מיזוג לפי id, כמו כל השאר.
+const RECIPE_CATS = ['מנה עיקרית', 'דגים', 'בשר ועוף', 'תוספות', 'סלטים וממרחים', 'מרקים', 'מאפים ובצקים', 'קינוחים ועוגות', 'אחר'];
+function mergeRecipesFile(a, b, now){ return {v: 1, recipes: mergeById(a?.recipes, b?.recipes, now)}; }
+const UNITS = 'כוסות|כוס|כפות|כף|כפיות|כפית|גרם|גר׳|ג׳|ג|קילוגרם|קילו|ק״ג|קג|ליטר|ליטרים|מ״ל|מל|יחידות|יחידה|חבילות|חבילה|' +
+  'שקיות|שקית|פחיות|פחית|קופסאות|קופסה|קופסת|צנצנת|קורט|מעט|חופן|ענפים|ענף|ענפי|צרור|צרורות|שיני|שן|פרוסות|פרוסה|' +
+  'מקלות|מקל|עלים|עלי|בקבוק|רבע|חצי|שליש|קצת|לפי הטעם|כמה|זוג|גביע|גביעים|מכסה|מכסות|כפיה|טיפות|טיפה|ראש|ראשי|אשכול|' +
+  'נתח|נתחים|פילה|פילות|קוביות|קובייה|יח׳|יח';
+const UNIT_RE = new RegExp(`^(?:(?:${UNITS})(?=\\s|$)\\s*(?:של\\s+)?)+`);
+/** מצרך במתכון → שם המוצר לקניות. "2 3/4 כוסות מים קרים (650 מ"ל)" → "מים"; "3 שיני שום כתושות" → "שום". */
+function ingredientProduct(line){
+  let s = shopNorm(String(line || '').replace(/\([^)]*\)/g, ' ').replace(/[*•▪·]/g, ' '));
+  s = s.split(/[,;:]| או | \/ /)[0];
+  // כמויות בהתחלה: מספרים, שברים, טווחים, ואחריהם יחידות
+  for(let i = 0; i < 4; i++){
+    s = s.replace(/^[\d\s.,/\-–½¼¾⅛⅓⅔+]+/, '').trim();
+    s = s.replace(UNIT_RE, '').trim();
+  }
+  s = s.replace(/^(?:של|את)\s+/, '').replace(/\s+(?:\d.*)$/, '').trim();
+  if(!s) return null;
+  const m = shopMatch(s);
+  // מוצר מהרשימה: השם שלו ("קמח 00 לפיצה" → "קמח"). אחרת: עד 3 המילים הראשונות
+  if(m && !m.word) return m.entry.name;
+  return s.split(' ').slice(0, 3).join(' ');
+}
+/** משכים בשלב: "8-12 דקות", "חצי שעה", "72 שעות" → [{label, minutes}] (בטווח: המספר הקטן). */
+function durationsIn(text){
+  const out = [], seen = new Set(), t = ' ' + String(text || '') + ' ';
+  const re = /(?:(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+))?\s*|(חצי|רבע)\s+)(דקות|דקה|דק׳|שעות|שעה|ימים|יום)(?=[\s.,;)])|(שעתיים|חצי שעה|רבע שעה|שעה וחצי)(?=[\s.,;)])/g;
+  let m;
+  while((m = re.exec(t))){
+    let minutes, label;
+    if(m[5]){ label = m[5]; minutes = {'שעתיים': 120, 'חצי שעה': 30, 'רבע שעה': 15, 'שעה וחצי': 90}[m[5]]; }
+    else{
+      const unit = /דק/.test(m[4]) ? 1 : /שע/.test(m[4]) ? 60 : 1440;
+      const n = m[3] ? (m[3] === 'חצי' ? 0.5 : 0.25) : +m[1].replace(',', '.');
+      minutes = Math.round(n * unit); label = (m[0]).trim();
+    }
+    if(minutes > 0 && !seen.has(minutes)){ seen.add(minutes); out.push({label, minutes}); }
+  }
+  return out;
+}
+/** טקסט מודבק (מאתר, מוואטסאפ) → מתכון: כותרת, מצרכים, שלבים, הערות, לפי הכותרות בטקסט. */
+function parseRecipeText(text){
+  const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const r = {title: '', desc: '', ingredients: [], steps: [], notes: ''};
+  let part = null; const notes = [], before = [];
+  const head = l => l.replace(/[:：\-–]+$/, '').trim();
+  for(const raw of lines){
+    const h = head(raw);
+    if(/^(מצרכים|מרכיבים|רכיבים|חומרים)(\b| ל| עבור|$)/.test(h) && h.length < 30){ part = 'ing'; continue; }
+    if(/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות|הכנה|שלבי הכנה|דרך ההכנה)(\b|$)/.test(h) && h.length < 30){ part = 'steps'; continue; }
+    if(/^(הערות|טיפים|טיפ|הערה)(\b|$)/.test(h) && h.length < 20){ part = 'notes'; continue; }
+    const clean = raw.replace(/^(?:[-*•▪·]|\d+[.)]|\(\d+\))\s*/, '').trim();
+    if(!clean) continue;
+    if(part === 'ing') r.ingredients.push(clean);
+    else if(part === 'steps') r.steps.push(clean);
+    else if(part === 'notes') notes.push(clean);
+    else before.push(clean);
+  }
+  r.title = before.shift() || '';
+  r.desc = before.join(' ');
+  r.notes = notes.join('\n');
+  // בלי כותרות בכלל: שורות קצרות = מצרכים, ארוכות = שלבים
+  if(!r.ingredients.length && !r.steps.length && before.length){
+    for(const l of before) (l.length <= 40 ? r.ingredients : r.steps).push(l);
+    r.desc = '';
+  }
+  return r;
+}
+/** המתכון כהודעה (וואטסאפ). */
+function recipeText(rc){
+  const L = [`🍽️ *${rc.title}*`];
+  if(rc.desc) L.push(rc.desc);
+  if((rc.ingredients || []).length) L.push('', '*מצרכים:*', ...rc.ingredients.map(x => '▫️ ' + x));
+  if((rc.steps || []).length) L.push('', '*אופן ההכנה:*', ...rc.steps.map((x, i) => `${i + 1}. ${x}`));
+  if(rc.notes) L.push('', '*הערות:*', rc.notes);
+  return L.join('\n');
+}
+
 /* ---------- יומן גוגל דרך המנוע ---------- */
 // משימה עם calendar: true נכנסת ליומן גוגל של נדב. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
 // מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
@@ -1221,7 +1302,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, RECIPE_CATS, mergeRecipesFile, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
