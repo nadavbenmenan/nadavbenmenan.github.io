@@ -590,6 +590,9 @@ const UNIT_RE = new RegExp(`^(?:(?:${UNITS})(?=\\s|$)\\s*(?:של\\s+)?)+`);
 function ingredientProduct(line){
   if(/[:：]\s*$/.test(String(line || ''))) return null;   // כותרת משנה ("לבצק:")
   let s = shopNorm(String(line || '').replace(/\([^)]*\)/g, ' ').replace(/[*•▪·]/g, ' '));
+  // "ל-24 שעות: 1/2 כפית שמרים" / "לבצק: 2 כוסות קמח": מה שאחרי הנקודתיים הוא המצרך
+  const colon = /^([^:：]{1,25})[:：]\s*(.+)$/.exec(s);
+  if(colon && (/^[לב]-?\s?[\d]|\d/.test(colon[1]) || /^ל[א-ת]/.test(colon[1]))) s = colon[2];
   s = s.split(/[,;:]| או | \/ /)[0];
   // כמויות בהתחלה: מספרים, שברים, טווחים, ואחריהם יחידות
   for(let i = 0; i < 4; i++){
@@ -609,7 +612,9 @@ const DUR_RE = /(?:(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+))?\s*|(חצי|רבע)\s+
 function durationsIn(text){
   const out = [], seen = new Set();
   // "כ-5 דקות", "כשעה", "לחצי שעה": בלי האות שלפני
-  const t = ' ' + String(text || '').replace(/(^|[\s(])[כלב]-?(?=\d|חצי|רבע|שעה|שעתיים|דקה|יומיים)/g, '$1') + ' ';
+  let t = ' ' + String(text || '').replace(/(^|[\s(])[כלב]-?(?=\d|חצי|רבע|שעה|שעתיים|דקה|יומיים)/g, '$1') + ' ';
+  // "24/48/72 שעות" → "24 שעות 48 שעות 72 שעות"
+  t = t.replace(/(\d+(?:\s*\/\s*\d+)+)\s*(דקות|שעות|ימים)/g, (m, nums, u) => nums.split('/').map(n => n.trim() + ' ' + u).join(' , '));
   let m;
   DUR_RE.lastIndex = 0;
   while((m = DUR_RE.exec(t))){
@@ -642,6 +647,9 @@ const isDurationOnly = l => { const d = durationsIn(l); return d.length > 0 && l
  * 11. שם: השורה הראשונה. אם היא תיאור ארוך: השם נגזר מתחילתו ("סלט מטבוחה של עגבניות..." → "סלט מטבוחה").
  * 12. מצרכים בשורה אחת מופרדים בפסיקים ("כפית פפריקה, כפית כמון, מלח"): כל אחד בנפרד.
  * 13. בלי כותרות בכלל: שורה קצרה או שמתחילה בכמות = מצרך; שורה ארוכה = שלב.
+ * 14. פתיח של צ'אט ("הנה מתכון...", "בשמחה!", שורה שנגמרת בנקודתיים לפני הכותרות): לא נכנס.
+ * 15. שם עם מקף ("פיצה Ooni – מתכון לבצק נפוליטני"): השם לפני המקף, והשאר תיאור. "מתכון ל..." בתחילת השם יורד.
+ * 16. כותרת חלק מוכרת עם טקסט אחריה ("הכנה לפני חלוקה: ...") היא שלב, לא כותרת. כותרת עם תוכן רק במילה המדויקת.
  */
 const LEVELS = {'קל': 'קל', 'קלה': 'קל', 'פשוט': 'קל', 'פשוטה': 'קל', 'easy': 'קל', 'בינוני': 'בינוני', 'בינונית': 'בינוני', 'medium': 'בינוני',
   'מאתגר': 'מאתגר', 'מאתגרת': 'מאתגר', 'קשה': 'מאתגר', 'מורכב': 'מאתגר', 'מורכבת': 'מאתגר', 'hard': 'מאתגר'};
@@ -657,6 +665,8 @@ const RX = {
   junk: /^(?:הדפסה|הדפס|שתפו|שתף|שיתוף|שמור|שמרו|שמירה|לייק|אהבתי|מצב בישול|הוספה לרשימה|הוספה לקניות|דירוג|פרסומת|בתיאבון.*|לחצו כאן.*|קראו עוד.*|print|share|save|jump to recipe)$/i,
   rating: /[★☆⭐]|^\d(?:\.\d)?\s*\(\d+\s*(?:דירוגים|ratings?)\)/,
   stop: /^(?:תגובות|מתכונים נוספים|מתכונים דומים|עוד מתכונים|אולי יעניין|הירשמו|comments|related)/i,
+  intro: /^(?:הנה|להלן|בשמחה|כמובן|בטח|אשמח|הכנתי|זה ה?מתכון|קיבלת|מצרף|מצורף|here is|here's|sure)\b|שצירפת|ששלחת|מהתמונות|מהתמונה/i,
+  secExact: /^(?:ה?מצרכים|ה?מרכיבים|רכיבים|חומרים|ingredients|אופן\s+ה?הכנה|הוראות(?:\s+ה?הכנה)?|שלבי\s+ה?הכנה|instructions|directions|method|ה?הכנה|הערות|טיפים|notes?|tips?)$/i,
 };
 const META = [[/^(?:זמן\s+ה?הכנה|זמן\s+עבודה|prep\s*time)$/i, 'prep'], [/^(?:זמן\s+ה?(?:אפייה|בישול)|cook\s*time|bake\s*time)$/i, 'cook'],
   [/^(?:זמן\s+כולל(?:\s+להכנה)?|סה["״]?כ\s+זמן|total\s*time)$/i, 'total'], [/^(?:רמת\s+ה?קושי|דרגת\s+קושי|קושי|difficulty)$/i, 'level'],
@@ -689,7 +699,7 @@ function parseRecipeText(text){
     if(RX.junk.test(k) || RX.rating.test(raw)) continue;
     // 4. פרטים (שורה אחת או שתיים)
     const mm = /^([^:：]{2,24})[:：]\s*(.*)$/.exec(raw);
-    const head = key(mm ? mm[1] : raw), rest = mm ? mm[2].trim() : '';
+    const head = key(mm ? mm[1] : raw), rest = mm ? key(mm[2]) ? mm[2].trim() : '' : '';   // "*הכנה:*": הכוכבית אחרי הנקודתיים היא לא תוכן
     const meta = META.find(([re]) => re.test(head));
     if(meta && (mm || raw.length < 30)){
       if(rest) setMeta(meta[1], rest); else field = meta[1];
@@ -698,7 +708,8 @@ function parseRecipeText(text){
     }
     if(field){ const f = field; field = null; if(raw.length <= 40){ setMeta(f, raw); continue; } }
     // 2-3. כותרות חלקים
-    const sec = RX.ing.test(head) ? 'ing' : RX.steps.test(head) ? 'steps' : RX.notes.test(head) ? 'notes' : null;
+    let sec = RX.ing.test(head) ? 'ing' : RX.steps.test(head) ? 'steps' : RX.notes.test(head) ? 'notes' : null;
+    if(sec && rest && !RX.secExact.test(head)) sec = null;   // 16. "הכנה לפני חלוקה: ..." הוא שלב
     if(sec && head.length <= 35){
       part = sec; numbered = false; joinNext = false;
       if(rest) raw = rest; else continue;
@@ -729,7 +740,8 @@ function parseRecipeText(text){
       if(c) notes.push(c);
     }else{
       const c = raw.replace(RX.junkMark, '').replace(/\s+/g, ' ').trim();
-      if(c) before.push(c);
+      // 14. פתיח של צ'אט לפני הכותרות
+      if(c && !(RX.intro.test(c) || (/[:：]$/.test(c) && c.length > 30 && !r.ingredients.length && !r.steps.length))) before.push(c);
     }
   }
   r.notes = notes.join('\n');
@@ -741,6 +753,12 @@ function parseRecipeText(text){
       const c = l.replace(RX.bullet, '').trim();
       (QTY_START.test(c) || (c.length <= 30 && !/[.!]$/.test(c)) ? r.ingredients : r.steps).push(c);
     }
+  }
+  // 15. שם עם מקף: לפני המקף שם, אחריו תיאור
+  if(before.length){
+    const dash = before[0].split(/\s[–—-]\s/);
+    if(dash.length > 1 && dash[0].length <= 40){ before[0] = dash[0].trim(); before.splice(1, 0, dash.slice(1).join(' – ').trim()); }
+    before[0] = before[0].replace(/^מתכון\s+(?:ל|של\s+)?(?=[א-ת])/, '').trim();
   }
   // 11. שם ותיאור
   if(before.length && before[0].length <= 45 && !/[.!]$/.test(before[0])){ r.title = before.shift(); r.desc = before.join(' '); }
@@ -765,10 +783,25 @@ const CAT_RULES = [
 const hasWord = (text, w) => { const t = ' ' + shopNorm(text).replace(/[^\u0590-\u05FFa-z0-9׳ ]/g, ' ') + ' ';
   return w.includes(' ') ? t.includes(' ' + w + ' ') || t.includes(' ' + w) : t.split(' ').some(x => x === w || (x.length > 2 && sameWord(x, w)) || x.replace(/^[והבלמש]/, '') === w); };
 /** קטגוריה משוערת למתכון לפי השם, או '' אם לא ברור. */
-function guessRecipeCat(r){
-  for(const [cat, words] of CAT_RULES) if(words.some(w => hasWord(r.title || '', w))) return cat;
-  return '';
+/** המילה הראשונה בשם שמתאימה לכלל: "כדורי בשר ברוטב עגבניות" = כדורי בשר (לפני "רוטב"). "מתכון ל" בהתחלה לא נספר. */
+function firstMatch(title, rules){
+  const words = shopNorm(title).replace(/^מתכון\s+(?:ל|של\s+)?/, '').replace(/[^\u0590-\u05FFa-z0-9׳ ]/g, ' ').split(/\s+/).filter(Boolean)
+    .map(w => w.length > 3 && /^[והבלמש]/.test(w) ? [w, w.slice(1)] : [w]);
+  let best = null;
+  rules.forEach(([key, list], ri) => {
+    for(const w of list){
+      const parts = w.split(' ');
+      for(let i = 0; i + parts.length <= words.length; i++){
+        if(parts.every((p, j) => words[i + j].some(x => x === p || (x.length > 2 && sameWord(x, p))))){
+          if(!best || i < best.i || (i === best.i && ri < best.ri)) best = {key, i, ri};
+          break;
+        }
+      }
+    }
+  });
+  return best ? best.key : '';
 }
+function guessRecipeCat(r){ return firstMatch(r.title || '', CAT_RULES); }
 const recipeCat = r => r.cat || guessRecipeCat(r) || 'אחר';
 // תמונות (TheMealDB, 141 תמונות, נבדק שכולן נטענות). קבוצה לפי מילה בשם; בתוך קבוצה: כל מתכון מקבל תמונה אחרת.
 const IMG_BASE = 'https://www.themealdb.com/images/media/meals/';
@@ -800,7 +833,7 @@ const RECIPE_IMAGES = {
   breakfast: ["jvjnoh1780086318.jpg", "hqaejl1695738653.jpg"]
 };
 // סוג המנה (מרק, סלט, ממרח) לפני המרכיב: "סלט טונה" = סלט, "מרק עוף" = מרק
-const IMG_RULES = [['soup', ['מרק']], ['dip', ['מטבוחה', 'חומוס', 'באבא', 'ממרח', 'מטבל', 'טחינה', 'צזיקי', 'גוואקמולי', 'סלסה']], ['salad', ['סלט']],
+const IMG_RULES = [['soup', ['מרק']], ['dip', ['סלט מטבוחה', 'סלט חצילים', 'מטבוחה', 'חומוס', 'באבא', 'ממרח', 'מטבל', 'טחינה', 'צזיקי', 'גוואקמולי', 'סלסה']], ['salad', ['סלט']],
   ['pizza', ['פיצה']], ['salmon', ['סלמון']], ['shrimp', ['שרימפס']], ['fish', ['דג', 'דגים', 'אמנון', 'טונה', 'לברק', 'דניס', 'בקלה', 'מושט']],
   ['meatball', ['קציצות', 'כדורי בשר', 'כדורי', 'קבב', 'קופתה']], ['burger', ['המבורגר']], ['eggs', ['שקשוקה', 'חביתה', 'ביצים', 'פריטטה']],
   ['cookies', ['עוגיות', 'עוגייה', 'בראוניז']], ['cake', ['עוגה', 'עוגת', 'עוגות', 'מאפינס']], ['dessert', ['קינוח', 'מוס', 'פודינג', 'גלידה', 'טירמיסו', 'שוקולד']],
@@ -810,10 +843,7 @@ const IMG_RULES = [['soup', ['מרק']], ['dip', ['מטבוחה', 'חומוס', 
   ['potato', ['תפוחי אדמה', 'צ׳יפס', 'פירה']], ['breakfast', ['פנקייק', 'בלינצ׳ס', 'קרפ']], ['veg', ['ירקות', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי']]];
 const CAT_IMG = {'מנה עיקרית': 'chicken', 'דגים': 'fish', 'בשר ועוף': 'beef', 'תוספות': 'side', 'סלטים וממרחים': 'salad', 'מרקים': 'soup',
   'מאפים ובצקים': 'bread', 'קינוחים ועוגות': 'dessert', 'אחר': 'side'};
-function recipeImageGroup(r){
-  for(const [g, words] of IMG_RULES) if(words.some(w => hasWord(r.title || '', w))) return g;
-  return CAT_IMG[recipeCat(r)] || 'side';
-}
+function recipeImageGroup(r){ return firstMatch(r.title || '', IMG_RULES) || CAT_IMG[recipeCat(r)] || 'side'; }
 const imgUrl = f => IMG_BASE + f + '/medium';
 const imgFile = u => { const m = /\/meals\/([^/]+?)(?:\/(?:medium|small|preview|large))?$/.exec(u || ''); return m ? m[1] : null; };
 /** הקבוצה של תמונה (לפי הקובץ), או null לתמונה מבחוץ. */
