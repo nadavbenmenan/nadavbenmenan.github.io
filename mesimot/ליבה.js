@@ -596,10 +596,29 @@ function calcArnona(fixed, days, periodDays){
   if(isFinite(d) && isFinite(p) && p > 0 && d < p) return {ok: true, amount: agorot(f * Math.max(0, d) / p), partial: true};
   return {ok: true, amount: agorot(f), partial: false};
 }
+/** חיוב אחד בכל חשבון חשמל: החשמל, ועוד ארנונה ומים אם מולאו. */
+function calcCharge(i){
+  const e = calcElec(i);
+  if(!e.ok) return e;
+  const blank = x => x === '' || x == null;
+  const a = blank(i.arnona) ? {ok: true, amount: 0} : calcArnona(i.arnona);
+  const w = blank(i.waterTotal) ? {ok: true, amount: 0} : calcWater(i.waterTotal, i.waterShare);
+  if(!a.ok) return {ok: false, err: 'סכום הארנונה לא תקין'};
+  if(!w.ok) return {ok: false, err: 'סכום המים לא תקין'};
+  return Object.assign({}, e, {elecAmount: e.amount, arnonaAmount: a.amount, waterAmount: w.amount,
+    amount: agorot(e.amount + a.amount + w.amount)});
+}
 const money = x => (Math.round(x * 100) % 100 ? x.toFixed(2) : String(Math.round(x))) + ' ₪';
 /** הודעה לדייר. */
 function tenantText(b){
-  if(b.kind === 'elec') return `חשמל, ${b.period || 'החשבון האחרון'}:\nהמונה שלך: מ־${b.subPrev} עד ${b.subCur}, כלומר ${b.kwh} קוט"ש.\nכל הבית: ${b.houseKwh} קוט"ש, אז החלק שלך ${b.pct}%.\nהחשבון כולו ${money(num(b.total))}, ולכן לתשלום: ${money(b.amount)}.`;
+  if(b.kind === 'elec'){
+    const el = b.elecAmount ?? b.amount, lines = [`חשבונות, ${b.period || 'החשבון האחרון'}:`,
+      `חשמל: המונה שלך מ־${b.subPrev} עד ${b.subCur}, כלומר ${b.kwh} קוט"ש. כל הבית ${b.houseKwh} קוט"ש, אז החלק שלך ${b.pct}% מתוך ${money(num(b.total))}: ${money(el)}.`];
+    if(b.arnonaAmount) lines.push(`ארנונה (קבוע לחודשיים): ${money(b.arnonaAmount)}.`);
+    if(b.waterAmount) lines.push(`מים, חצי מ־${money(num(b.waterTotal))}: ${money(b.waterAmount)}.`);
+    lines.push(`סך הכול לתשלום: ${money(b.amount)}.`);
+    return lines.join('\n');
+  }
   if(b.kind === 'water') return `מים, ${b.period || 'החשבון האחרון'}:\nהחשבון כולו ${money(num(b.total))}, חצי לכל אחד.\nלתשלום: ${money(b.amount)}.`;
   if(b.kind === 'arnona') return `ארנונה, ${b.period || 'התקופה האחרונה'}:\n${b.partial ? `${b.days} ימים מתוך ${b.periodDays}, מתוך ${money(num(b.fixed))}` : 'הסכום הקבוע שסיכמנו'}.\nלתשלום: ${money(b.amount)}.`;
   return '';
@@ -682,6 +701,6 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, tenantText, money, migrate,
+  TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
