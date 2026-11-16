@@ -209,6 +209,9 @@
 
   .doc-pics{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
   .doc-pics button{width:76px;height:76px;border-radius:12px;border:0;padding:0;background:var(--soft) center/cover no-repeat;font-size:12px;color:var(--muted)}
+  .doc-pics .file{width:auto;min-width:76px;max-width:100%;height:auto;min-height:48px;padding:8px 10px;display:flex;align-items:center;gap:6px;
+    background:var(--soft);color:var(--text);font-size:13px;text-align:right}
+  .doc-pics .file .x{margin-inline-start:6px;color:var(--red);font-size:16px;padding:0 4px}
   .doc-add{display:inline-flex;align-items:center;justify-content:center;width:100%;cursor:pointer}
   .ph-view{display:grid;place-items:center;padding:12px;min-height:70vh}
   .ph-view img{max-width:100%;max-height:80vh;border-radius:10px}
@@ -502,9 +505,11 @@
   <div class="field"><label for="doc-exp" id="doc-exp-lbl">בתוקף עד</label><input type="date" id="doc-exp"></div>
   <div class="field"><label for="doc-rem">תזכורת ראשונה</label><select id="doc-rem"><option value="90">3 חודשים לפני</option><option value="60">חודשיים לפני</option><option value="30" selected>חודש לפני</option><option value="14">שבועיים לפני</option><option value="7">שבוע לפני</option></select></div>
   <div class="field"><label for="doc-notes">הערות (לא חובה)</label><input type="text" id="doc-notes" placeholder="למשל: לחדש באתר משרד הפנים"></div>
-  <div class="field"><span class="lbl">תמונות של המסמך</span>
+  <div class="field"><span class="lbl">תמונות וקבצים של המסמך</span>
     <div class="doc-pics" id="doc-pics"></div>
-    <label class="btn doc-add" for="doc-file">📷 הוספת תמונה</label><input type="file" id="doc-file" accept="image/*" multiple hidden>
+    <div class="row"><label class="btn doc-add" for="doc-file">📷 תמונה</label><label class="btn doc-add" for="doc-att">📎 קובץ (PDF, Word)</label></div>
+    <input type="file" id="doc-file" accept="image/*" multiple hidden>
+    <input type="file" id="doc-att" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden>
     <div class="note">נשמרות במאגר הפרטי שלך בגיטהאב, כמו שאר הנתונים. לא בשום מקום ציבורי.</div></div>
   <div class="btns"><button class="btn" id="doc-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="doc-cancel" type="button">ביטול</button><button class="btn primary" id="doc-ok" type="button">שמירה</button></div>
 </div></dialog>
@@ -1363,7 +1368,7 @@ function renderDocs(){
   const list = ל.docsView(D.tasks, D.occ, today());
   const label = {expired: 'פג תוקף', soon: 'לחדש בקרוב', ok: 'בתוקף', renewed: 'חודש'};
   $('doc-list').innerHTML = list.length ? list.map(x => `<button type="button" class="more-row ${x.state}" data-id="${esc(x.task.id)}"><span class="i">📄</span>
-      <span class="b"><span class="t" style="display:block">${esc(x.task.docName)}</span><span class="s" style="display:block">${label[x.state]} · עד ${esc(fullDate(x.expiry))}${(x.task.docImages || []).length ? ` · 📷 ${x.task.docImages.length}` : ''}</span></span>
+      <span class="b"><span class="t" style="display:block">${esc(x.task.docName)}</span><span class="s" style="display:block">${label[x.state]} · עד ${esc(fullDate(x.expiry))}${(() => { const all = x.task.docImages || [], f = all.filter(p => p.kind === 'file').length, i = all.length - f; return (i ? ` · 📷 ${i}` : '') + (f ? ` · 📎 ${f}` : ''); })()}</span></span>
       <span class="side">${x.state === 'renewed' ? '✓' : x.inDays < 0 ? 'פג' : daysText(x.inDays)}</span></button>`).join('')
     : '<div class="empty">לוחצים + כדי להוסיף מסמך (דרכון, רישיון, ביטוח...)</div>';
 }
@@ -1384,9 +1389,12 @@ async function shrink(file){
   return new Promise(res => c.toBlob(res, 'image/jpeg', 0.82));
 }
 const blobTo64 = b => new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(b); });
+const fileIcon = n => /\.pdf$/i.test(n) ? '📕' : /\.docx?$/i.test(n) ? '📘' : /\.xlsx?$/i.test(n) ? '📗' : '📄';
 function renderDocPics(){
-  $('doc-pics').innerHTML = docPics.map((p, i) => `<button type="button" data-i="${i}" aria-label="תמונה ${i + 1}">…</button>`).join('');
-  docPics.forEach((p, i) => rawFile(p.path).then(u => { const b = $('doc-pics').querySelector(`[data-i="${i}"]`); if(b){ b.textContent = ''; b.style.backgroundImage = `url('${u}')`; } })
+  $('doc-pics').innerHTML = docPics.map((p, i) => p.kind === 'file'
+    ? `<button type="button" class="file" data-f="${i}" aria-label="פתיחת ${esc(p.name)}">${fileIcon(p.name)} <span>${esc(p.name.length > 22 ? p.name.slice(0, 20) + '…' : p.name)}</span><span class="x" data-del="${i}" aria-label="מחיקה">✕</span></button>`
+    : `<button type="button" data-i="${i}" aria-label="תמונה ${i + 1}">…</button>`).join('');
+  docPics.forEach((p, i) => p.kind !== 'file' && rawFile(p.path).then(u => { const b = $('doc-pics').querySelector(`[data-i="${i}"]`); if(b){ b.textContent = ''; b.style.backgroundImage = `url('${u}')`; } })
     .catch(() => { const b = $('doc-pics').querySelector(`[data-i="${i}"]`); if(b) b.textContent = 'בלי רשת'; }));
 }
 $('doc-file').onchange = async e => {
@@ -1407,7 +1415,46 @@ $('doc-file').onchange = async e => {
   if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
 };
 let phOpen = null;
+// קובץ (PDF, Word): עולה כמו שהוא, עד 15MB. לחיצה פותחת אותו באפליקציה המתאימה בנייד
+$('doc-att').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if(!token) return toast('צריך חיבור לגיטהאב כדי לשמור קבצים', {err: true});
+  for(const f of files){
+    if(f.size > 15 * 1024 * 1024){ toast(`${f.name}: גדול מ-15MB`, {err: true}); continue; }
+    try{
+      toast('מעלה קובץ...', {ms: 15000});
+      const id = uid(), ext = (/\.[a-z0-9]{1,5}$/i.exec(f.name) || ['.bin'])[0].toLowerCase(), path = `משימות/מסמכים/${docNewId}/${id}${ext}`;
+      await gh('PUT', path, {message: 'משימות: קובץ של מסמך', branch: BRANCH, content: await blobTo64(f)});
+      picCache[path] = URL.createObjectURL(f);
+      docPics.push({id, path, kind: 'file', name: f.name, mime: f.type || '', size: f.size, addedAt: nowIso()});
+      renderDocPics();
+      toast('✓ הקובץ נשמר');
+    }catch(err){ toast('שמירת הקובץ נכשלה. צריך רשת', {err: true}); }
+  }
+  if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
+};
+async function removeDocItem(i){
+  const p = docPics[i];
+  try{ const g = await gh('GET', p.path); if(g) await gh('DELETE', p.path, {message: 'משימות: מחיקה מקובץ של מסמך', branch: BRANCH, sha: g.sha}); }catch(err){}
+  docPics.splice(i, 1); renderDocPics();
+  if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
+}
+async function openDocFile(p){
+  try{
+    let u = picCache[p.path];
+    if(!u){
+      const r = await fetch(api(p.path) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
+      if(!r.ok) throw new Error();
+      u = picCache[p.path] = URL.createObjectURL(new Blob([await r.arrayBuffer()], {type: p.mime || 'application/octet-stream'}));
+    }
+    const a = document.createElement('a'); a.href = u; a.download = p.name; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+  }catch(err){ toast('פתיחת הקובץ נכשלה. צריך רשת', {err: true}); }
+}
 $('doc-pics').onclick = async e => {
+  const del = e.target.closest('[data-del]');
+  if(del){ e.stopPropagation(); if(confirm(`למחוק את ${docPics[+del.dataset.del].name}?`)) removeDocItem(+del.dataset.del); return; }
+  const fb = e.target.closest('[data-f]');
+  if(fb) return openDocFile(docPics[+fb.dataset.f]);
   const b = e.target.closest('[data-i]'); if(!b) return;
   phOpen = +b.dataset.i;
   $('ph-title').textContent = $('doc-name').value || 'מסמך';
