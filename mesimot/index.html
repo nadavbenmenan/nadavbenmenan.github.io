@@ -403,6 +403,10 @@
   .up-row.st-late .bar i{background:var(--red)} .up-row.st-late .side{color:var(--red)}
   .up-row.st-due .bar i, .up-row.st-soon .bar i{background:#E07A1F} .up-row.st-due .side, .up-row.st-soon .side{color:#C2410C}
   .up-done{border:0;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:600;min-height:40px;padding:6px 12px;flex:none}
+  #dlg-timer.ringing .tmr-left{color:var(--red);animation:ring 1s ease-in-out infinite}
+  #dlg-timer.ringing #tmr-close{background:var(--red);color:#fff;min-height:64px;font-size:20px}
+  @keyframes ring{50%{transform:scale(1.06)}}
+  @media (prefers-reduced-motion:reduce){#dlg-timer.ringing .tmr-left{animation:none}}
   .more-row .side{font-size:13px;font-weight:600;flex:none;text-align:center;min-width:56px}
   .more-row.expired{background:var(--red-soft)} .more-row.expired .side{color:var(--red)}
   .more-row.soon .side{color:#C2410C}
@@ -1569,6 +1573,7 @@ function saveTimers(list){
   persist('timers', true); changed();
 }
 function recipeTimer(r, minutes, label, step){
+  unlockAudio();
   const now = Date.now(), t = {id: 'tm' + uid(), at: now + Math.round(minutes * 60) * 1000, title: `${r.title}: שלב ${step}`, body: label,
     updatedAt: nowIso(), deleted: false};
   // ניקיון: טיימרים שנגמרו לפני יותר מיום
@@ -1576,6 +1581,37 @@ function recipeTimer(r, minutes, label, step){
   saveTimers([t, ...old]);
   renderTimers();
   openTimer(t.id);
+}
+/* צלצול באפליקציה: צליל חזק (Web Audio) ורטט, בלולאה, עד "עצור". עובד כשהאפליקציה פתוחה על המסך.
+   הדפדפן מרשה צליל רק אחרי נגיעה במסך, ולכן ההקשר נפתח בנגיעה הראשונה (וגם בהפעלת הטיימר). */
+let audioCtx = null, alarm = null;
+const unlockAudio = () => { try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if(audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){} };
+document.addEventListener('pointerdown', unlockAudio, {passive: true});
+function beepBurst(){
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  for(let i = 0; i < 4; i++) for(const [f, d] of [[1046, 0], [1318, .09]]){
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+    const st = t0 + i * .25 + d; g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(.6, st + .01); g.gain.setValueAtTime(.6, st + .07); g.gain.linearRampToValueAtTime(0, st + .08);
+    o.start(st); o.stop(st + .09);
+  }
+}
+function startAlarm(t){
+  stopAlarm(false);
+  unlockAudio();
+  alarm = {id: t.id, iv: setInterval(() => { beepBurst(); navigator.vibrate?.([500, 200, 500]); }, 1600)};
+  beepBurst(); navigator.vibrate?.([500, 200, 500]);
+  openTimer(t.id);
+}
+/** עצירה: הצליל נפסק, והטיימר מסומן stopped (המנוע מפסיק לשלוח צלצולים, וההתראה שבמסך נסגרת). */
+function stopAlarm(mark){
+  const id = alarm?.id ?? (mark ? tmrOpen : null);
+  if(alarm){ clearInterval(alarm.iv); alarm = null; navigator.vibrate?.(0); }
+  if(!mark || !id) return;
+  const t = (D.file.timers.timers || []).find(x => x.id === id);
+  if(t && !t.stopped) saveTimers([Object.assign({}, t, {stopped: true, updatedAt: nowIso()})]);
+  navigator.serviceWorker?.ready.then(reg => reg.getNotifications({tag: 'timer-' + id})).then(ns => (ns || []).forEach(n => n.close())).catch(() => {});
 }
 // חלון הטיימר: נפתח מיד, עם ספירה לאחור גדולה ומתי תגיע ההתראה
 let tmrOpen = null;
@@ -1591,10 +1627,19 @@ function renderTimerDlg(){
   $('tmr-title').textContent = '⏱ ' + t.title;
   $('tmr-left').textContent = left <= 0 ? 'הסתיים' : (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60);
   const mins = Math.max(1, Math.ceil(left / 6e4));
-  $('tmr-note').textContent = left <= 0 ? 'הזמן עבר' : `תגיע התראה בעוד ${mins === 1 ? 'דקה' : mins + ' דקות'} (ב־${ל.localTime(t.at)})` +
+  $('tmr-note').textContent = left <= 0 ? (t.stopped ? 'נעצר' : 'הזמן עבר') : `תגיע התראה בעוד ${mins === 1 ? 'דקה' : mins + ' דקות'} (ב־${ל.localTime(t.at)})` +
     (pushMode() ? ', גם אם תסגור את האפליקציה.' : '. המנוע לא פועל, אז רק כשהאפליקציה פתוחה.');
+  // נגמר: כפתור אחד גדול, "עצור"
+  $('tmr-cancel').hidden = left <= 0;
+  $('tmr-close').textContent = left <= 0 && !t.stopped ? '⏹ עצור' : 'סגירה';
+  $('dlg-timer').classList.toggle('ringing', left <= 0 && !t.stopped);
 }
-$('tmr-close').onclick = () => $('dlg-timer').close();
+$('tmr-close').onclick = () => {
+  const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen);
+  if(t && t.at <= Date.now()) stopAlarm(true);
+  $('dlg-timer').close();
+};
+$('dlg-timer').addEventListener('cancel', () => { if(alarm) stopAlarm(true); });
 $('dlg-timer').addEventListener('close', () => renderTimers());
 $('tmr-cancel').onclick = () => {
   const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen);
@@ -1629,8 +1674,9 @@ setInterval(() => {
   const now = Date.now();
   for(const t of list.filter(x => x.at <= now && !announced.has(x.id))){
     announced.add(t.id); store('משימות.טיימרים.הוכרזו', JSON.stringify([...announced].slice(-50)));
-    navigator.vibrate?.([600, 300, 600, 300, 600]);
-    toast('⏱ הטיימר הסתיים: ' + t.title, {ms: 8000});
+    // האפליקציה פתוחה (למשל במצב בישול): מצלצל ורוטט ברצף עד "עצור", כמו שעון מעורר
+    if(document.visibilityState === 'visible' && now - t.at < 3 * 6e4) startAlarm(t);
+    else toast('⏱ הטיימר הסתיים: ' + t.title, {ms: 8000});
     // בלי מנוע אין התראה מבחוץ: מציגים כאן (רק כשהאפליקציה פתוחה)
     if(!pushMode()) navigator.serviceWorker?.ready.then(reg => reg.showNotification('⏱ ' + t.title, {body: 'הזמן עבר', tag: 'timer-' + t.id,
       dir: 'rtl', lang: 'he', icon: 'icon-192.png', badge: 'badge-96.png', requireInteraction: true, vibrate: [600, 300, 600], data: {u: './'}})).catch(() => {});
@@ -4380,6 +4426,11 @@ function handleHash(){
     const occId = decodeURIComponent(h.slice(3)), f = ל.findOcc(data(), occId, Date.now());
     history.replaceState(null, '', location.pathname);
     if(f) openTask(f.task.id, occId); else toast('המשימה לא נמצאה', {err: true});
+  }else if(h.startsWith('#tm=')){
+    // נפתח מהתראת טיימר: עוצרים את הצלצולים ומראים את הטיימר
+    const id = decodeURIComponent(h.slice(4));
+    history.replaceState(null, '', location.pathname);
+    tmrOpen = id; stopAlarm(true); openTimer(id);
   }else if(h === '#meds'){
     history.replaceState(null, '', location.pathname); show('meds');
   }else if(h === '#new'){
