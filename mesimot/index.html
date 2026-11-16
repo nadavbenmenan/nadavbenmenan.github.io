@@ -1151,13 +1151,13 @@ async function syncFile(name){
 }
 async function loadTopics(){
   const t = storeJson(K.topics, null);
-  if(t?.ntfy) return t;
+  if(t?.ntfy && t.cmd_key) return t;
   if(D.config.ntfy) return {ntfy: D.config.ntfy, ntfy_cmd: D.config.ntfyCmd};
   try{
     const g = await gh('GET', KEYS_PATH);
     if(g){ const x = JSON.parse(from64(g.content || '')); store(K.topics, JSON.stringify(x)); return x; }
   }catch(e){}
-  return null;
+  return t?.ntfy ? t : null;
 }
 async function sync(){
   if(!token){ renderStatus(); return; }
@@ -1166,6 +1166,7 @@ async function sync(){
   try{
     await syncFile('config'); await syncFile('tasks');
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
+    await readCommands();
     await syncFile('occ');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     applyTheme();
@@ -1203,30 +1204,44 @@ async function ntfyPublish(topic, n, delaySec){
 async function scheduleNotifications(){
   const topics = await loadTopics();
   if(!topics?.ntfy) return;
-  const topic = topics.ntfy, now = Date.now();
+  const topic = topics.ntfy, now = Date.now(), engine = ל.engineAlive(inbox, now);
   const plan = ל.planNotifications(data(), now);
-  const want = new Map(plan.map(n => [n.id, n]));
   const sched = storeJson(K.sched, {});
-  const sig = n => `${topic}|${n.at}|${n.title}|${n.message}`;
-  for(const [id, s] of Object.entries(sched)){
-    if(want.has(id)) continue;
-    // עתידית שלא רצויה עוד: מוחקים. שכבר יצאה: מוחקים רק אם המופע נסגר (מנקה מהנייד)
-    let del = s.at > now;
-    if(!del && s.occId){ const f = ל.findOcc(data(), s.occId, now); del = !f || (f.occ.kind !== 'quota' && !ל.isOpen(f.occ, now)); }
-    try{
-      if(del && s.at > now - 3 * 864e5) await ntfyDelete(s.topic || topic, id);
-      if(del || s.at < now - 3 * 864e5) delete sched[id];
-    }catch(e){}
+  const d = ל.diffSchedule(sched, plan, data(), now);
+  d.drop.forEach(id => delete sched[id]);
+  // מוחקים מה שכבר לא רצוי (למשל אחרי "בוצע"), גם כשהמנוע פועל: כך נודניק לא מגיע בדקות עד הריצה הבאה שלו
+  for(const id of d.del){ try{ await ntfyDelete(topic, id); delete sched[id]; }catch(e){} }
+  if(engine){
+    // המנוע קובע (עם כפתורים). האפליקציה רק זוכרת את התכנון, למקרה שהמנוע יפסיק לרוץ
+    store(K.sched, JSON.stringify(Object.fromEntries(plan.map(n => [n.id, {at: n.at, sig: ל.notifSig(n), occId: n.occId}]))));
+    return;
   }
-  for(const n of plan){
-    if(sched[n.id]?.sig === sig(n)) continue;
+  // גיבוי: המנוע לא רץ ב-7 השעות האחרונות, אז האפליקציה קובעת בעצמה, בלי כפתורים
+  for(const n of d.pub){
     try{
       await ntfyDelete(topic, n.id);
       await ntfyPublish(topic, n, Math.round(n.at / 1000));
-      sched[n.id] = {sig: sig(n), at: n.at, occId: n.occId, topic};
+      sched[n.id] = {at: n.at, sig: ל.notifSig(n), occId: n.occId};
     }catch(e){ /* ננסה שוב בסנכרון הבא */ }
   }
   store(K.sched, JSON.stringify(sched));
+}
+/** לחיצות על כפתורים בהתראות, מאז הפעם הקודמת. כך המסך מעודכן מיד, גם לפני שהמנוע רץ. */
+async function readCommands(){
+  const topics = await loadTopics();
+  if(!topics?.ntfy_cmd || !topics.cmd_key) return;
+  const since = store(K.lastCmd) || '12h';
+  let r;
+  try{ r = await fetch(`${ntfyBase}${encodeURIComponent(topics.ntfy_cmd)}/json?poll=1&since=${encodeURIComponent(since)}`); }catch(e){ return; }
+  if(!r.ok) return;
+  const msgs = (await r.text()).split('\n').filter(Boolean).map(l => { try{ return JSON.parse(l); }catch(e){ return null; } })
+    .filter(m => m && m.event === 'message');
+  for(const m of msgs){
+    store(K.lastCmd, m.id);
+    let cmd; try{ cmd = JSON.parse(m.message); }catch(e){ continue; }
+    const rec = ל.applyCommand(data(), cmd, m.time * 1000, topics.cmd_key);
+    if(rec) saveRec(rec);
+  }
 }
 async function testNotification(){
   const topics = await loadTopics();
@@ -1312,7 +1327,15 @@ function calcUpdate(){
 function openSettings(){
   const c = D.config, topics = storeJson(K.topics, null);
   $('s-body').innerHTML = `
-    <div class="group" style="border:0;margin:0"><h3>שעות</h3>
+    <div class="group" style="border:0;margin:0"><h3>התראות</h3>
+      <div class="note">${ל.engineAlive(inbox, Date.now()) ? `✓ המנוע בגוגל פועל (תזמון אחרון ${esc(ל.localTime(ל.toMs(inbox.engine.lastFull)))}). ההתראות מגיעות עם כפתורים.`
+        : inbox.engine?.lastFull ? `המנוע לא רץ מאז ${esc(fullDate(ל.localDate(ל.toMs(inbox.engine.lastFull))))}. בינתיים האפליקציה קובעת את ההתראות, בלי כפתורים.`
+        : 'המנוע בגוגל עוד לא הותקן. בינתיים האפליקציה קובעת את ההתראות, בלי כפתורים.'}</div>
+      ${topics?.ntfy ? `<div class="note" style="margin-top:8px">באפליקציית ntfy בנייד, להירשם לערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
+        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button><button class="btn primary" id="s-test" type="button">שלח התראת בדיקה</button></div>`
+        : '<div class="note">שם הערוץ יופיע כאן אחרי החיבור לגיטהאב.</div>'}
+    </div>
+    <div class="group"><h3>שעות</h3>
       <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
         <div class="field"><label for="s-to">עד</label><input type="time" id="s-to" value="${esc(c.activeTo)}"></div></div>
       <div class="row"><div class="field"><label for="s-sum">שעת סיכום בוקר</label><input type="time" id="s-sum" value="${esc(c.summaryTime)}"></div>
@@ -1340,11 +1363,6 @@ function openSettings(){
       <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
       <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
       <div class="btns"><button class="btn" id="s-connect" type="button">${token ? 'החלפה' : 'חיבור'}</button><button class="btn" id="s-sync" type="button"${token ? '' : ' disabled'}>סנכרון עכשיו</button>${token ? '<button class="btn danger" id="s-disc" type="button">ניתוק</button>' : ''}</div>
-    </div>
-    <div class="group"><h3>התראות</h3>
-      ${topics?.ntfy ? `<div class="note">באפליקציית ntfy בנייד, להירשם לערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
-        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button><button class="btn" id="s-test" type="button">שלח התראת בדיקה</button></div>`
-        : '<div class="note">שם הערוץ יופיע כאן אחרי החיבור לגיטהאב.</div>'}
     </div>
     <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>`;
   renderDomRows(clone(D.domains.filter(x => !x.deleted)));
