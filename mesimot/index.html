@@ -228,7 +228,13 @@
   .rc-timers{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .rc-timers button{border:0;border-radius:999px;background:color-mix(in srgb, var(--accent) 14%, var(--card));color:var(--accent);
                     font-weight:600;font-size:14px;min-height:36px;padding:4px 12px}
-  .rc-meta{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border-radius:16px;margin-top:18px;text-align:center}
+  #timer-bar{position:fixed;right:12px;left:12px;bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:60;display:flex;flex-direction:column;gap:6px}
+  #timer-bar .tm{display:flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);border-radius:16px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+  #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
+  .rc-subh{font-weight:700;color:var(--accent);padding:12px 0 2px;border-bottom:1px solid var(--line)}
+  .rc-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));background:var(--card);border-radius:16px;margin-top:18px;text-align:center}
   .rc-meta div{padding:12px 4px}
   .rc-meta span{display:block;font-size:13px;color:var(--muted)}
   body.cooking .rc-step{font-size:20px}
@@ -446,12 +452,6 @@
     <button class="btn" id="ra-cancel">ביטול</button>
   </div>
 </div></dialog>
-<dialog id="dlg-rshop" aria-label="הוספה לקניות"><div class="dlg">
-  <h2>הוספה לקניות</h2>
-  <div class="note" style="margin-bottom:8px">מסומן = ייכנס לרשימת הקניות. אפשר לתקן את השם.</div>
-  <div id="rs-list"></div>
-  <div class="btns"><button class="btn" id="rs-cancel">ביטול</button><button class="btn primary" id="rs-ok">הוספה לקניות</button></div>
-</div></dialog>
 <dialog id="dlg-calc" class="full" aria-label="חשבונות הדייר">
   <div class="dlg-head">
     <button class="txt-btn" id="c-close">סגירה</button>
@@ -490,6 +490,8 @@ function store(k, v){
 const storeJson = (k, def) => { try{ return JSON.parse(store(k) || '') ?? def; }catch(e){ return def; } };
 
 let toastTimer = null;
+/** חלון פתוח (dialog) יושב מעל הכול. הודעה או טיימר צריכים להיות בתוכו, אחרת הם מאחוריו. */
+const topLayer = () => { const d = [...document.querySelectorAll('dialog[open]')]; return d[d.length - 1] || document.body; };
 function toast(text, opts){
   opts = opts || {};
   document.querySelectorAll('.toast').forEach(t => t.remove());
@@ -499,7 +501,7 @@ function toast(text, opts){
   t.setAttribute('role', 'status');
   t.innerHTML = `<span>${esc(text)}</span>` + (opts.undo ? '<button type="button">ביטול</button>' : '');
   if(opts.undo) t.querySelector('button').onclick = () => { t.remove(); opts.undo(); };
-  document.body.appendChild(t);
+  topLayer().appendChild(t);
   toastTimer = setTimeout(() => t.remove(), opts.ms || (opts.undo ? 5000 : 2600));
 }
 
@@ -940,15 +942,18 @@ function renderRecipe(){
     <div class="rc-hero"${picStyle(r)}>${safeImg(r.image) ? '' : recipeEmoji(r)}</div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
     ${ing.length ? `<div class="rc-sec"><h3>מצרכים <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
-      <div class="rc-box">${ing.map((x, i) => `<label class="rc-ing${rcGot.has(i) ? ' got' : ''}"><input type="checkbox" data-i="${i}"${rcGot.has(i) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div></div>` : ''}
-    ${steps.length ? `<div class="rc-sec"><h3>אופן ההכנה</h3><div class="rc-box">${steps.map((x, i) => {
-        const tm = ל.durationsIn(x);
+      <div class="rc-box">${ing.map((x, i) => /[:：]\s*$/.test(x) ? `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`
+        : `<label class="rc-ing${rcGot.has(i) ? ' got' : ''}"><input type="checkbox" data-i="${i}"${rcGot.has(i) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div></div>` : ''}
+    ${steps.length ? `<div class="rc-sec"><h3>אופן ההכנה</h3><div class="rc-box">${(() => { let num = 0; return steps.map(x => {
+        if(/[:：]\s*$/.test(x)) return `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`;
+        const tm = ל.durationsIn(x), i = num++;
         return `<div class="rc-step"><b>${i + 1}.</b>${esc(x)}${tm.length ? `<div class="rc-timers">${tm.map(t =>
-          `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}" aria-label="תזכורת בעוד ${esc(t.label)}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>`;
-      }).join('')}</div></div>` : ''}
+          `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}" aria-label="טיימר ${esc(t.label)}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>`;
+      }).join(''); })()}</div></div>` : ''}
     ${r.notes ? `<div class="rc-sec"><h3>הערות</h3><div class="rc-box" style="padding:12px;white-space:pre-wrap">${esc(r.notes)}</div></div>` : ''}
     ${safeImg(r.source) ? `<div style="margin-top:14px"><a href="${esc(r.source)}" target="_blank" rel="noopener">🔗 המתכון המקורי</a></div>` : ''}
-    ${r.prep || r.total || r.level ? `<div class="rc-meta"><div><span>זמן הכנה</span>${esc(r.prep || '—')}</div><div><span>זמן כולל</span>${esc(r.total || '—')}</div><div><span>רמת קושי</span>${esc(r.level || '—')}</div></div>` : ''}
+    ${(() => { const m = [['זמן הכנה', r.prep], ['זמן אפייה/בישול', r.cook], ['זמן כולל', r.total], ['רמת קושי', r.level], ['מנות', r.servings]].filter(x => x[1]);
+      return m.length ? `<div class="rc-meta">${m.map(([k, v]) => `<div><span>${k}</span>${esc(v)}</div>`).join('')}</div>` : ''; })()}
     <div class="btns" style="margin-top:20px">
       <button class="btn" type="button" id="r-wa">שליחה בוואטסאפ</button>
       ${'wakeLock' in navigator ? `<button class="btn${wake ? ' primary' : ''}" type="button" id="r-cook">${wake ? '✓ מצב בישול' : 'מצב בישול'}</button>` : ''}
@@ -958,7 +963,7 @@ function renderRecipe(){
     const i = +cb.dataset.i; cb.checked ? rcGot.add(i) : rcGot.delete(i); cb.closest('.rc-ing').classList.toggle('got', cb.checked);
   });
   $('r-body').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
-  if($('r-shop')) $('r-shop').onclick = () => openRecipeShop(r);
+  if($('r-shop')) $('r-shop').onclick = () => recipeToShop(r);
   $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(r)); if(!window.open(url, '_blank')) location.href = url; };
   if($('r-cook')) $('r-cook').onclick = toggleCooking;
   $('r-del').onclick = () => {
@@ -979,45 +984,74 @@ async function toggleCooking(){
 $('dlg-recipe').addEventListener('close', () => { if(wake){ wake.release().catch(() => {}); wake = null; document.body.classList.remove('cooking'); } });
 $('r-close').onclick = () => $('dlg-recipe').close();
 $('r-edit').onclick = () => { const r = recipeById(rcOpen); if(r) openRecipeEditor(r); };
-/** "⏱ 8-12 דקות": משימה עם שעה מדויקת, כך שההתראה מגיעה גם כשהאפליקציה סגורה. */
+/**
+ * "⏱ 8-12 דקות": פותח את הטיימר של הנייד (אפליקציית השעון), עם הזמן והשם כבר מכוונים.
+ * באנדרואיד: קישור intent של "קביעת טיימר". אם השעון לא נפתח תוך שנייה וחצי (או לא אנדרואיד): טיימר בתוך האפליקציה.
+ */
 function recipeTimer(r, minutes, label, step){
-  const at = Math.ceil((Date.now() + minutes * 6e4) / 6e4) * 6e4, date = ל.localDate(at), time = ל.localTime(at);
-  const t = saveTask({id: 't' + uid(), title: `${r.title}: שלב ${step} (${label})`, domain: 'home', priority: 'normal', kind: 'once',
-    once: {date}, time, exact: true, pre: [], nag: {mode: 'none'}, subtasks: [], notes: '', links: [], start: today(), archived: false, deleted: false});
-  toast(`⏱ תזכורת ${date === today() ? 'היום' : date === ל.addDays(today(), 1) ? 'מחר' : ל.shortDate(date)} ב־${time}`,
-    {undo: () => saveTask(Object.assign({}, t, {deleted: true}))});
+  const sec = Math.round(minutes * 60), msg = `${r.title}: שלב ${step}`;
+  if(!/Android/i.test(navigator.userAgent)) return appTimer(sec, msg);
+  let left = false;
+  const onHide = () => { left = true; };
+  const onVis = () => { if(document.visibilityState === 'hidden') left = true; };
+  document.addEventListener('visibilitychange', onVis);
+  addEventListener('blur', onHide);
+  location.href = `intent:#Intent;action=android.intent.action.SET_TIMER;i.android.intent.extra.alarm.LENGTH=${sec};` +
+    `S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(msg)};B.android.intent.extra.alarm.SKIP_UI=false;end`;
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', onVis); removeEventListener('blur', onHide);
+    if(!left) appTimer(sec, msg, true);
+  }, 1500);
 }
-// מצרכים → קניות
-function openRecipeShop(r){
-  const seen = new Set(), rows = [];
+// טיימר בתוך האפליקציה (גיבוי): פס בתחתית עם ספירה לאחור, ובסוף רטט והתראה
+let appTimers = [];
+function appTimer(sec, msg, fallback){
+  const t = {id: uid(), end: Date.now() + sec * 1000, msg};
+  appTimers.push(t);
+  renderTimers();
+  toast(fallback ? 'הטיימר של הנייד לא נפתח, אז הפעלתי טיימר באפליקציה' : `⏱ טיימר עד ${ל.localTime(t.end)}`, {ms: 3500});
+}
+function renderTimers(){
+  let bar = $('timer-bar');
+  if(!appTimers.length){ if(bar) bar.remove(); return; }
+  if(!bar || bar.parentNode !== topLayer()){
+    if(bar) bar.remove();
+    bar = document.createElement('div'); bar.id = 'timer-bar'; topLayer().appendChild(bar);
+    bar.onclick = e => { const b = e.target.closest('[data-x]'); if(b){ appTimers = appTimers.filter(x => x.id !== b.dataset.x); renderTimers(); } };
+  }
+  const now = Date.now(), fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+    return (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60); };
+  bar.innerHTML = appTimers.map(t => `<div class="tm"><span>⏱ ${fmt(t.end - now)}</span><span class="m">${esc(t.msg)}</span><button type="button" data-x="${t.id}" aria-label="ביטול טיימר">✕</button></div>`).join('');
+}
+setInterval(() => {
+  if(!appTimers.length) return;
+  const now = Date.now();
+  for(const t of appTimers.filter(x => x.end <= now)){
+    navigator.vibrate?.([400, 200, 400, 200, 400]);
+    navigator.serviceWorker?.ready.then(reg => reg.showNotification('⏱ הטיימר הסתיים', {body: t.msg, tag: 'timer-' + t.id, dir: 'rtl', lang: 'he',
+      icon: 'icon-192.png', badge: 'badge-96.png', requireInteraction: true, data: {u: './'}})).catch(() => {});
+    toast('⏱ הטיימר הסתיים: ' + t.msg, {ms: 8000});
+  }
+  appTimers = appTimers.filter(x => x.end > now);
+  renderTimers();
+}, 1000);
+/** "🛒 לקניות": כל המצרכים נכנסים לרשימת הקניות, כל אחד כמוצר (מה שכבר ברשימה לא נכנס פעמיים). */
+function recipeToShop(r){
+  const added = [];
   for(const x of r.ingredients || []){
     const name = ל.ingredientProduct(x);
     if(!name) continue;
-    const key = ל.canonName(name);
-    if(seen.has(key)) continue;
-    seen.add(key);
-    const inList = ל.shopList(D.file.shop.items).some(i => ל.canonName(i.name) === key);
-    rows.push({name: key, raw: x, inList});
+    const rec = ל.shopAdd(D.file.shop.items, name, nowIso());
+    if(rec){ D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, [rec])}; added.push(rec); }
   }
-  $('rs-list').innerHTML = rows.length ? rows.map((x, i) => `<div class="rc-ing"><input type="checkbox" data-i="${i}"${x.inList ? '' : ' checked'} aria-label="${esc(x.name)}">
-      <span style="flex:1"><input type="text" value="${esc(x.name)}" data-n="${i}" style="min-height:40px;padding:6px 10px" aria-label="שם המוצר">
-      <span class="note" style="display:block;margin-top:2px">${esc(x.raw)}${x.inList ? ' · כבר ברשימה' : ''}</span></span></div>`).join('')
-    : '<div class="empty">לא נמצאו מצרכים</div>';
-  $('dlg-rshop').showModal();
-}
-$('rs-cancel').onclick = () => $('dlg-rshop').close();
-$('rs-ok').onclick = () => {
-  let n = 0;
-  $('rs-list').querySelectorAll('input[type=checkbox]').forEach(cb => {
-    if(!cb.checked) return;
-    const name = $('rs-list').querySelector(`[data-n="${cb.dataset.i}"]`).value.trim();
-    const r = ל.shopAdd(D.file.shop.items, name, nowIso());
-    if(r){ D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, [r])}; n++; }
-  });
   persist('shop', true); changed();
-  $('dlg-rshop').close();
-  toast(n ? `🛒 נוספו ${n} מוצרים לקניות` : 'הכול כבר ברשימה');
-};
+  if(!added.length) return toast('כל המצרכים כבר ברשימת הקניות');
+  toast(`🛒 נוספו לקניות: ${added.map(x => x.name).join(', ')}`, {ms: 6000, undo: () => {
+    const t = nowIso();
+    D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, added.map(x => Object.assign({}, x, {active: false, count: Math.max(0, (x.count || 1) - 1), updatedAt: t})))};
+    persist('shop', true); changed();
+  }});
+}
 // עורך
 let rcEdit = null;
 function openRecipeEditor(r, paste){
@@ -1032,11 +1066,13 @@ function openRecipeEditor(r, paste){
     <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
       <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
     <div class="field"><label for="re-d">תיאור קצר</label><input type="text" id="re-d" value="${esc(rcEdit.desc)}"></div>
-    <div class="field"><label for="re-ing">מצרכים (שורה לכל מצרך)</label><textarea id="re-ing" style="min-height:140px">${esc((rcEdit.ingredients || []).join('\n'))}</textarea></div>
+    <div class="field"><label for="re-ing">מצרכים (שורה לכל מצרך. שורה שנגמרת ב־":" היא כותרת, למשל "לבצק:")</label><textarea id="re-ing" style="min-height:140px">${esc((rcEdit.ingredients || []).join('\n'))}</textarea></div>
     <div class="field"><label for="re-st">אופן ההכנה (שורה לכל שלב)</label><textarea id="re-st" style="min-height:180px">${esc((rcEdit.steps || []).join('\n'))}</textarea></div>
     <div class="field"><label for="re-n">הערות</label><textarea id="re-n">${esc(rcEdit.notes || '')}</textarea></div>
     <div class="row"><div class="field"><label for="re-prep">זמן הכנה</label><input type="text" id="re-prep" placeholder="חצי שעה" value="${esc(rcEdit.prep || '')}"></div>
-      <div class="field"><label for="re-tot">זמן כולל</label><input type="text" id="re-tot" placeholder="שעה" value="${esc(rcEdit.total || '')}"></div></div>
+      <div class="field"><label for="re-cook">זמן אפייה/בישול</label><input type="text" id="re-cook" placeholder="40 דקות" value="${esc(rcEdit.cook || '')}"></div></div>
+    <div class="row"><div class="field"><label for="re-tot">זמן כולל</label><input type="text" id="re-tot" placeholder="שעה" value="${esc(rcEdit.total || '')}"></div>
+      <div class="field"><label for="re-serv">מנות</label><input type="text" id="re-serv" placeholder="4" value="${esc(rcEdit.servings || '')}"></div></div>
     <div class="field"><label for="re-img">קישור לתמונה (לא חובה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
     <div class="field"><label for="re-src">קישור למקור (לא חובה)</label><input type="url" id="re-src" dir="ltr" placeholder="https://..." value="${esc(rcEdit.source || '')}"></div>`;
   if($('re-parse')) $('re-parse').onclick = () => {
@@ -1045,7 +1081,7 @@ function openRecipeEditor(r, paste){
     // הטקסט המודבק קובע הכול (גם בעריכה: "הדבקה מחדש")
     $('re-t').value = p.title || $('re-t').value; $('re-d').value = p.desc;
     $('re-ing').value = p.ingredients.join('\n'); $('re-st').value = p.steps.join('\n'); $('re-n').value = p.notes;
-    $('re-prep').value = p.prep; $('re-tot').value = p.total; $('re-src').value = p.source;
+    $('re-prep').value = p.prep; $('re-tot').value = p.total; $('re-src').value = p.source; $('re-cook').value = p.cook; $('re-serv').value = p.servings;
     if(p.level) $('re-lv').value = p.level;
     $('re-paste').closest('details').open = false; $('re-t').scrollIntoView({block: 'start'});
     toast(`נמצאו ${p.ingredients.length} מצרכים ו־${p.steps.length} שלבים. אפשר לתקן ולשמור`);
@@ -1059,7 +1095,7 @@ $('re-save').onclick = () => {
   if(!title) return toast('צריך שם למתכון', {err: true});
   const r = saveRecipe(Object.assign({}, rcEdit, {title, cat: $('re-cat').value, level: $('re-lv').value, desc: $('re-d').value.trim(),
     ingredients: lines('re-ing'), steps: lines('re-st'), notes: $('re-n').value.trim(), prep: $('re-prep').value.trim(),
-    total: $('re-tot').value.trim(), image: safeImg($('re-img').value.trim()), source: safeImg($('re-src').value.trim())}));
+    total: $('re-tot').value.trim(), cook: $('re-cook').value.trim(), servings: $('re-serv').value.trim(), image: safeImg($('re-img').value.trim()), source: safeImg($('re-src').value.trim())}));
   $('dlg-redit').close();
   openRecipe(r.id);
 };
