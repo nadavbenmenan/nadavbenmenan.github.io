@@ -747,6 +747,101 @@ function parseRecipeText(text){
   }
   return r;
 }
+/* ---------- סיווג ותמונות למתכונים ---------- */
+// קטגוריה לפי מילים בשם (ואם אין, במצרכים). הסדר חשוב: ספציפי קודם ("מרק עוף" = מרק, "סלט טונה" = סלט, "עוגת גבינה" = קינוח).
+const CAT_RULES = [
+  ['מרקים', ['מרק']],
+  ['סלטים וממרחים', ['סלט', 'מטבוחה', 'חומוס', 'ממרח', 'טחינה', 'באבא', 'מטבל', 'סלסה', 'צזיקי', 'גוואקמולי', 'פסטו', 'מיונז', 'רוטב']],
+  ['קינוחים ועוגות', ['עוגה', 'עוגת', 'עוגות', 'עוגיות', 'עוגייה', 'קינוח', 'מוס', 'פודינג', 'גלידה', 'בראוניז', 'מאפינס', 'קרם', 'טירמיסו', 'שוקולד', 'חטיף', 'כדורי שוקולד', 'רוגלך']],
+  ['מאפים ובצקים', ['לחם', 'חלה', 'חלות', 'פיצה', 'בצק', 'מאפה', 'מאפים', 'בורקס', 'פוקאצ׳ה', 'לחמניות', 'פיתות', 'פיתה', 'פשטידה', 'קיש', 'פאי', 'מלוואח', 'ג׳חנון', 'באגט', 'פוקצ׳ה', 'כעכים', 'בייגל']],
+  ['דגים', ['דג', 'דגים', 'סלמון', 'טונה', 'אמנון', 'לברק', 'דניס', 'שרימפס', 'בקלה', 'מושט', 'פילה דג', 'סושי']],
+  ['בשר ועוף', ['עוף', 'בשר', 'שניצל', 'קציצות', 'כדורי בשר', 'קבב', 'המבורגר', 'פרגיות', 'חזה', 'כבש', 'טלה', 'אנטריקוט', 'סטייק', 'צלי', 'גולש', 'פסטרמה', 'כנפיים', 'שווארמה', 'הודו', 'כבד', 'נקניק']],
+  ['תוספות', ['אורז', 'תפוחי אדמה', 'צ׳יפס', 'פירה', 'פתיתים', 'קוסקוס', 'מג׳דרה', 'בורגול', 'קינואה', 'ירקות צלויים', 'ירקות מוקפצים', 'אטריות']],
+  ['מנה עיקרית', ['שקשוקה', 'פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'ריזוטו', 'פטוצ׳יני', 'תבשיל', 'חביתה', 'פריטטה', 'מוסקה', 'ממולאים', 'קארי']],
+];
+const hasWord = (text, w) => { const t = ' ' + shopNorm(text).replace(/[^\u0590-\u05FFa-z0-9׳ ]/g, ' ') + ' ';
+  return w.includes(' ') ? t.includes(' ' + w + ' ') || t.includes(' ' + w) : t.split(' ').some(x => x === w || (x.length > 2 && sameWord(x, w)) || x.replace(/^[והבלמש]/, '') === w); };
+/** קטגוריה משוערת למתכון לפי השם, או '' אם לא ברור. */
+function guessRecipeCat(r){
+  for(const [cat, words] of CAT_RULES) if(words.some(w => hasWord(r.title || '', w))) return cat;
+  return '';
+}
+const recipeCat = r => r.cat || guessRecipeCat(r) || 'אחר';
+// תמונות (TheMealDB, 141 תמונות, נבדק שכולן נטענות). קבוצה לפי מילה בשם; בתוך קבוצה: כל מתכון מקבל תמונה אחרת.
+const IMG_BASE = 'https://www.themealdb.com/images/media/meals/';
+const RECIPE_IMAGES = {
+  pizza: ["wf49qs1763075222.jpg", "x0lk931587671540.jpg"],
+  salmon: ["1548772327.jpg", "xxyupu1468262513.jpg", "1549542994.jpg", "ikizdm1763760862.jpg", "prrirc1763781360.jpg", "xxrxux1503070723.jpg", "1550440197.jpg"],
+  fish: ["diuub11782687570.jpg", "jc6oub1763196663.jpg", "qqwhw51780093126.jpg", "r7mcjm1780261264.jpg", "4o4wh11761848573.jpg", "uvuyxu1503067369.jpg", "vayi021784668764.jpg", "nmtq3n1782772031.jpg"],
+  shrimp: ["usywpp1511189717.jpg", "dxs5t71782678369.jpg", "e2kcut1782591669.jpg", "4xcfai1763765676.jpg"],
+  chicken: ["vdwloy1713225718.jpg", "020z181619788503.jpg", "nmxec11782498644.jpg", "9ya6o71780262651.jpg", "sypxpx1515365095.jpg", "fk80jp1763280767.jpg", "uuuspp1511297945.jpg", "syqypv1486981727.jpg", "mp9z0i1782238092.jpg", "wruvqv1511880994.jpg"],
+  meatball: ["72fgzj1764109947.jpg", "8rfd4q1764112993.jpg", "lhqev81565090111.jpg", "gjjlzc1782496055.jpg", "lgmnff1763789847.jpg", "04axct1763793018.jpg"],
+  beef: ["13fg4j1764441982.jpg", "jgl9qq1764437635.jpg", "kgfh3q1763075438.jpg", "5tf8j11782236249.jpg", "m0p0j81765568742.jpg", "sytuqu1511553755.jpg"],
+  burger: ["44bzep1761848278.jpg", "k420tj1585565244.jpg"],
+  lamb: ["8xuvhj1763794991.jpg", "p9tebp1764118792.jpg", "ttfxxn1762773067.jpg", "jyylmo1763790808.jpg"],
+  pasta: ["0jv5gx1661040802.jpg", "uquqtu1511178042.jpg", "wtsvxx1511296896.jpg", "kpiu4t1782242131.jpg", "hbte551782770868.jpg", "vvtvtr1511180578.jpg", "llcbn01574260722.jpg"],
+  rice: ["5r5rvx1763287943.jpg", "j8c1d51782772399.jpg", "wuyd2h1765655837.jpg", "kw92t41604181871.jpg", "c6ghxm1763335584.jpg", "zg2b9l1760524940.jpg"],
+  soup: ["x2fw9e1560460636.jpg", "sqpqtp1515365614.jpg", "xxtsvx1511814083.jpg", "x0mreq1784577446.jpg", "7n8su21699013057.jpg", "xvrrux1511783685.jpg", "1brbso1763585098.jpg", "stpuws1511191310.jpg"],
+  salad: ["7ytdtz1784833420.jpg", "bqx8mc1782684286.jpg", "ji3mho1782499823.jpg", "zry07j1763779321.jpg", "fqpqml1764359125.jpg", "z458v91763817681.jpg", "5q88l31784664151.jpg"],
+  dip: ["gpon5u1763801180.jpg", "zub3s91764110535.jpg", "dlmh401760524897.jpg", "flrajf1762341295.jpg", "4o13oe1784396585.jpg"],
+  eggs: ["g373701551450225.jpg", "eo0yfb1763600916.jpg", "wpkfin1763597958.jpg", "30s7vf1763741844.jpg", "47y6ii1765658818.jpg"],
+  cake: ["tqrrsq1511723764.jpg", "c0gmo31766594751.jpg", "vrspxv1511722107.jpg", "wxyvqq1511723401.jpg", "qxuqtt1511724269.jpg", "wtqrqw1511639627.jpg", "urtqut1511723591.jpg"],
+  cookies: ["yleo1y1784839077.jpg", "sktequ1764447186.jpg", "1544384070.jpg", "txce0y1782494894.jpg", "qidask1779650423.jpg", "y75q5j1782685779.jpg"],
+  dessert: ["wkhg581762773124.jpg", "a4kgf21763075288.jpg", "q47rkb1762324620.jpg", "adxcbq1619787919.jpg", "xvsurr1511719182.jpg"],
+  bread: ["lmc6r51764365554.jpg", "54xzk31760524666.jpg", "fnfnhi1784671116.jpg", "hqaejl1695738653.jpg", "i8l2fu1763742525.jpg", "hem6gk1784664868.jpg"],
+  pie: ["ysxwuq1487323065.jpg", "yrstur1511816601.jpg", "stnxzp1784835840.jpg", "ruwpww1511817242.jpg", "qe8pf51576795532.jpg", "usuqtp1511385394.jpg"],
+  potato: ["1550441882.jpg", "sxrpws1511555907.jpg", "qywups1511796761.jpg"],
+  veg: ["3m8yae1763257951.jpg", "tbj1bs1764118062.jpg", "02s6gc1763799560.jpg", "urtpqw1487341253.jpg"],
+  breakfast: ["jvjnoh1780086318.jpg"],
+  side: ["grhn401765687086.jpg", "se5vhk1764114880.jpg", "o2cd4r1764113576.jpg", "ymk7gt1783803106.jpg"]
+};
+// סוג המנה (מרק, סלט, ממרח) לפני המרכיב: "סלט טונה" = סלט, "מרק עוף" = מרק
+const IMG_RULES = [['soup', ['מרק']], ['salad', ['סלט', 'מטבוחה']], ['dip', ['חומוס', 'באבא', 'ממרח', 'מטבל', 'טחינה', 'צזיקי', 'גוואקמולי']],
+  ['pizza', ['פיצה']], ['salmon', ['סלמון']], ['shrimp', ['שרימפס']], ['fish', ['דג', 'דגים', 'אמנון', 'טונה', 'לברק', 'דניס', 'בקלה', 'מושט']],
+  ['meatball', ['קציצות', 'כדורי בשר', 'כדורי', 'קבב', 'קופתה']], ['burger', ['המבורגר']], ['eggs', ['שקשוקה', 'חביתה', 'ביצים', 'פריטטה']],
+  ['cookies', ['עוגיות', 'עוגייה', 'בראוניז']], ['cake', ['עוגה', 'עוגת', 'עוגות', 'מאפינס']], ['dessert', ['קינוח', 'מוס', 'פודינג', 'גלידה', 'טירמיסו', 'שוקולד']],
+  ['pie', ['פשטידה', 'קיש', 'פאי', 'טארט', 'בורקס', 'מאפה']], ['bread', ['לחם', 'חלה', 'לחמניות', 'פיתות', 'פיתה', 'פוקאצ׳ה', 'בצק', 'באגט', 'מלוואח']],
+  ['pasta', ['פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'פטוצ׳יני', 'מקרוני']], ['rice', ['אורז', 'ריזוטו', 'מג׳דרה', 'פאייה']], ['lamb', ['כבש', 'טלה']],
+  ['chicken', ['עוף', 'שניצל', 'פרגיות', 'חזה', 'כנפיים', 'הודו']], ['beef', ['בשר', 'סטייק', 'אנטריקוט', 'צלי', 'גולש', 'פסטרמה', 'אסאדו']],
+  ['potato', ['תפוחי אדמה', 'צ׳יפס', 'פירה']], ['breakfast', ['פנקייק', 'בלינצ׳ס', 'קרפ']], ['veg', ['ירקות', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי']]];
+const CAT_IMG = {'מנה עיקרית': 'chicken', 'דגים': 'fish', 'בשר ועוף': 'beef', 'תוספות': 'side', 'סלטים וממרחים': 'salad', 'מרקים': 'soup',
+  'מאפים ובצקים': 'bread', 'קינוחים ועוגות': 'dessert', 'אחר': 'side'};
+function recipeImageGroup(r){
+  for(const [g, words] of IMG_RULES) if(words.some(w => hasWord(r.title || '', w))) return g;
+  return CAT_IMG[recipeCat(r)] || 'side';
+}
+/** {id: קישור לתמונה} לכל המתכונים: תמונה שהוזנה, ואם אין, אחת מהקבוצה המתאימה. שני מתכונים באותה קבוצה: תמונות שונות. */
+function recipeImages(recipes){
+  const out = {}, byGroup = {};
+  for(const r of recipes || []){
+    if(r.image){ out[r.id] = r.image; continue; }
+    const g = recipeImageGroup(r);
+    (byGroup[g] = byGroup[g] || []).push(r);
+  }
+  for(const [g, list] of Object.entries(byGroup)){
+    const pics = RECIPE_IMAGES[g] || RECIPE_IMAGES.side;
+    const start = parseInt(sha256(g).slice(0, 4), 16) % pics.length;
+    list.sort((a, b) => a.id.localeCompare(b.id)).forEach((r, i) => { out[r.id] = IMG_BASE + pics[(start + i) % pics.length] + '/medium'; });
+  }
+  return out;
+}
+
+/* ---------- טיימרים (התראה מהמנוע כשהזמן עובר) ---------- */
+// משימות/טיימרים.json: {v, timers: [{id, at, title, body, updatedAt, deleted}]}. האפליקציה כותבת, המנוע שולח בזמן.
+function mergeTimersFile(a, b, now){ return {v: 1, timers: mergeById(a?.timers, b?.timers, now)}; }
+const liveTimers = (file, now) => (file?.timers || []).filter(t => !t.deleted && t.at > now - 36e5).sort((a, b) => a.at - b.at);
+/** טיימרים שהגיע זמנם (עד 20 דקות אחורה) ועוד לא נשלחו, ומתי הבא. */
+function timersDue(file, now, sent){
+  const due = [], later = [];
+  for(const t of (file?.timers || [])){
+    if(t.deleted || sent['timer@' + t.id]) continue;
+    if(t.at > now + PUSH_LEAD) later.push(t.at);
+    else if(t.at > now - PUSH_BACK) due.push(t);
+  }
+  return {due, next: later.length ? Math.min(...later) : null};
+}
+const timerPayload = t => JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: t.body ? `עבר ${t.body}` : 'הזמן עבר', u: APP, tag: 'timer-' + t.id, ri: true, vib: true});
+
 /** המתכון כהודעה (וואטסאפ). */
 function recipeText(rc){
   const L = [`🍽️ *${rc.title}*`];
@@ -1405,7 +1500,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, RECIPE_CATS, mergeRecipesFile, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
