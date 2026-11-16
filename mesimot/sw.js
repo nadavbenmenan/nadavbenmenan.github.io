@@ -7,7 +7,7 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v3';
+const מטמון = 'mesimot-v4';
 const קבצים = ['./', 'index.html', 'ליבה.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
@@ -17,7 +17,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(מטמון).then(c => c.addAll(קבצים)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== מטמון).map(k => caches.delete(k))))
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== מטמון && k !== 'mesimot-img').map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
@@ -28,6 +28,11 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.match(e.request).then(ת => ת || fetch(e.request).then(ר => {
       const עותק = ר.clone(); caches.open(מטמון).then(c => c.put(e.request, עותק)); return ר;
     })));
+    return;
+  }
+  // תמונות של מצרכים ומתכונים: מהמטמון קודם, כדי שיופיעו גם בסופר בלי קליטה
+  if(u.origin === 'https://www.themealdb.com'){
+    e.respondWith(caches.open('mesimot-img').then(c => c.match(e.request).then(ת => ת || fetch(e.request).then(ר => { c.put(e.request, ר.clone()); return ר; }))));
     return;
   }
   if(u.origin !== location.origin) return;
