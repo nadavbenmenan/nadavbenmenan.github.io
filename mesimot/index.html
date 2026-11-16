@@ -977,6 +977,7 @@
 <script>
 'use strict';
 const ל = window.ליבה;
+const NATIVE = !!window.Capacitor?.isNativePlatform?.();   // בתוך אפליקציית האנדרואיד (APK)
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
 const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה',
@@ -1571,6 +1572,7 @@ const timerList = () => ל.liveTimers(D.file.timers, Date.now() - 6e4);
 function saveTimers(list){
   D.file.timers = {v: 1, timers: ל.mergeById(D.file.timers.timers, list)};
   persist('timers', true); changed();
+  if(NATIVE) nativeSchedule();
 }
 function recipeTimer(r, minutes, label, step){
   unlockAudio();
@@ -1600,6 +1602,7 @@ function beepBurst(){
 function startAlarm(t){
   stopAlarm(false);
   unlockAudio();
+  if(NATIVE){ alarm = {id: t.id, iv: null}; openTimer(t.id); return; }   // השעון המעורר של הטלפון כבר מצלצל
   alarm = {id: t.id, iv: setInterval(() => { beepBurst(); navigator.vibrate?.([500, 200, 500]); }, 1600)};
   beepBurst(); navigator.vibrate?.([500, 200, 500]);
   openTimer(t.id);
@@ -1608,6 +1611,7 @@ function startAlarm(t){
 function stopAlarm(mark){
   const id = alarm?.id ?? (mark ? tmrOpen : null);
   if(alarm){ clearInterval(alarm.iv); alarm = null; navigator.vibrate?.(0); }
+  if(NATIVE && id) NAlarm.cancel({id}).catch(() => {});
   if(!mark || !id) return;
   const t = (D.file.timers.timers || []).find(x => x.id === id);
   if(t && !t.stopped) saveTimers([Object.assign({}, t, {stopped: true, updatedAt: nowIso()})]);
@@ -2944,6 +2948,7 @@ async function ntfyPublish(topic, n, delaySec){
   if(!r.ok) throw new Error('ntfy ' + r.status);
 }
 async function scheduleNotifications(){
+  if(NATIVE) return nativeSchedule();   // באפליקציה המותקנת: התראות מהטלפון עצמו, בלי ntfy
   const topics = await loadTopics();
   if(!topics?.ntfy) return;
   const topic = topics.ntfy, now = Date.now();
@@ -4420,6 +4425,66 @@ document.addEventListener('visibilitychange', () => { if(document.visibilityStat
 סנכרן();
 
 }
+
+/* ---------- אפליקציית אנדרואיד (Capacitor): התראות מהטלפון עצמו ---------- */
+// באפליקציה המותקנת (APK) הדף הזה נטען בתוך WebView, ו-window.Capacitor קיים. אז:
+// - תזכורות משימות ותרופות: מתוזמנות בטלפון (LocalNotifications), כל סוג בערוץ משלו (אפשר להשתיק כל ערוץ בנפרד בהגדרות).
+// - טיימר מתכון: שעון מעורר אמיתי (Alarm, קוד נייטיב): צליל שעון מעורר שחוזר עד "עצור", ומסך מלא כשהטלפון נעול.
+// - בלי ntfy (שלא יגיע פעמיים).
+const NAlarm = NATIVE ? window.Capacitor.Plugins.Alarm : null, NLN = NATIVE ? window.Capacitor.Plugins.LocalNotifications : null;
+const intId = s => { let h = 0; for(const ch of String(s)) h = (h * 31 + ch.codePointAt(0)) | 0; return Math.abs(h) % 2000000000 + 1; };
+let nativeTimer = null;
+function nativeSchedule(){ clearTimeout(nativeTimer); nativeTimer = setTimeout(nativeScheduleNow, 300); }
+async function nativeScheduleNow(){
+  if(!NATIVE) return;
+  const now = Date.now(), timers = D.file.timers.timers || [];
+  // שעון מעורר לטיימרים של מתכון
+  const want = timers.filter(t => t.kind !== 'med' && !t.deleted && !t.stopped && t.at > now - 6e4);
+  const had = storeJson('משימות.שעונים', []);
+  for(const id of had) if(!want.some(t => t.id === id)) await NAlarm.cancel({id}).catch(() => {});
+  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר'}).catch(() => {});
+  store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
+  // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
+  const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), title: n.title, body: n.message || '', at: n.at,
+      channelId: 'reminders', extra: {u: n.click || ''}}))
+    .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), title: t.title, body: t.body || '',
+      at: t.at, channelId: 'meds', extra: {u: '#meds'}})));
+  const sig = JSON.stringify(list);
+  if(sig === store('משימות.מקומי')) return;
+  try{
+    const pend = await NLN.getPending();
+    if(pend?.notifications?.length) await NLN.cancel({notifications: pend.notifications.map(n => ({id: n.id}))});
+    if(list.length) await NLN.schedule({notifications: list.map(n => ({id: n.id, title: n.title, body: n.body, channelId: n.channelId,
+      smallIcon: 'ic_stat_notify', extra: n.extra, schedule: {at: new Date(n.at), allowWhileIdle: true}}))});
+    store('משימות.מקומי', sig);
+  }catch(e){ /* ננסה שוב בסנכרון הבא */ }
+}
+/** מה קרה כשהאפליקציה הייתה סגורה: טיימרים שנעצרו מההתראה, או פתיחה מהתראת טיימר. */
+async function nativeEvents(){
+  if(!NATIVE) return;
+  try{
+    const ev = await NAlarm.takeEvents();
+    const stopped = (ev.stopped || []).map(id => (D.file.timers.timers || []).find(x => x.id === id)).filter(t => t && !t.stopped);
+    if(stopped.length) saveTimers(stopped.map(t => Object.assign({}, t, {stopped: true, updatedAt: nowIso()})));
+    for(const t of stopped) announced.add(t.id);
+    if(ev.opened){ announced.add(ev.opened); tmrOpen = ev.opened; openTimer(ev.opened); }
+  }catch(e){}
+}
+async function nativeInit(){
+  if(!NATIVE) return;
+  document.documentElement.classList.add('native');
+  try{
+    await NLN.requestPermissions();
+    await NLN.createChannel({id: 'reminders', name: 'משימות', description: 'תזכורות למשימות', importance: 4, visibility: 1, vibration: true});
+    await NLN.createChannel({id: 'meds', name: 'תרופות', description: 'תזכורות לתרופות', importance: 4, visibility: 1, vibration: true});
+    NLN.addListener('localNotificationActionPerformed', a => { const u = a?.notification?.extra?.u || ''; const h = u.includes('#') ? u.slice(u.indexOf('#')) : '';
+      if(h){ location.hash = h; handleHash(); } });
+  }catch(e){}
+  await nativeEvents();
+  nativeSchedule();
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') nativeEvents(); });
+}
+
 function handleHash(){
   const h = location.hash;
   if(h.startsWith('#o=')){
@@ -4456,6 +4521,7 @@ store('משימות.נעילה', null); store('משימות.נעילה.ניסי�
 if(migrate()) renderAll();
 if(!store(K.onboard)) onboard(1);
 else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
+nativeInit();
 sync();
 </script>
 </body>
