@@ -207,6 +207,11 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
+  .doc-pics{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+  .doc-pics button{width:76px;height:76px;border-radius:12px;border:0;padding:0;background:var(--soft) center/cover no-repeat;font-size:12px;color:var(--muted)}
+  .doc-add{display:inline-flex;align-items:center;justify-content:center;width:100%;cursor:pointer}
+  .ph-view{display:grid;place-items:center;padding:12px;min-height:70vh}
+  .ph-view img{max-width:100%;max-height:80vh;border-radius:10px}
   .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .more-grid button{border:0;background:var(--card);border-radius:18px;padding:16px 12px;text-align:right;color:inherit;min-height:96px;display:flex;flex-direction:column;gap:4px}
   .more-grid .i{font-size:28px}
@@ -285,6 +290,10 @@
   #shop-list .t{font-size:17px}
   .pic{width:40px;height:40px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:22px;flex:none;
        border:0;padding:0;line-height:1}
+  .pic.photo{background:#fff;overflow:hidden}
+  .pic.photo img{width:100%;height:100%;object-fit:contain;padding:3px}
+  .pic.letter{background:color-mix(in srgb, var(--c) 18%, var(--card));color:var(--c);font-weight:700;font-size:19px}
+  .chip-img{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-inline-end:6px;background:#fff;border-radius:6px}
   .shop-name{display:flex;align-items:center;gap:12px;flex:1;min-width:0;border:0;background:transparent;text-align:right;padding:4px 0;color:inherit}
   .lbl.sug{margin-top:14px;display:block}
   #dlg-shopcat .opts button{min-height:48px}
@@ -361,7 +370,7 @@
 </main>
 <main class="screen" id="scr-birthdays" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
-  <h1 class="hello">ימי הולדת</h1>
+  <h1 class="hello">ימים מיוחדים</h1>
   <div id="bd-list" class="more-list"></div>
 </main>
 <main class="screen" id="scr-docs" hidden>
@@ -477,9 +486,11 @@
   <div class="dlg" id="r-body"></div>
 </dialog>
 <dialog id="dlg-bday" aria-label="יום הולדת"><div class="dlg">
-  <h2 id="bd-title">יום הולדת</h2>
-  <div class="field"><label for="bd-name">של מי</label><input type="text" id="bd-name" placeholder="אמא"></div>
-  <div class="field"><label for="bd-date">תאריך לידה</label><input type="date" id="bd-date"></div>
+  <h2 id="bd-title">יום מיוחד</h2>
+  <div class="opts" id="bd-kinds"></div>
+  <div class="field" id="bd-label-f" hidden><label for="bd-label">איזה יום</label><input type="text" id="bd-label" placeholder="למשל: יום השנה לדירה"></div>
+  <div class="field"><label for="bd-name" id="bd-name-l">של מי</label><input type="text" id="bd-name" placeholder="אמא"></div>
+  <div class="field"><label for="bd-date" id="bd-date-l">תאריך</label><input type="date" id="bd-date"></div>
   <label class="check-row"><input type="checkbox" id="bd-noyear"> השנה לא ידועה</label>
   <div class="note">תזכורת שבוע לפני, יום לפני, וביום עצמו ב־09:00.</div>
   <div class="btns"><button class="btn" id="bd-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="bd-cancel" type="button">ביטול</button><button class="btn primary" id="bd-ok" type="button">שמירה</button></div>
@@ -487,12 +498,20 @@
 <dialog id="dlg-doc" aria-label="מסמך"><div class="dlg">
   <h2 id="doc-title">מסמך</h2>
   <div class="opts" id="doc-types"></div>
-  <div class="field"><label for="doc-name">שם המסמך</label><input type="text" id="doc-name" placeholder="דרכון"></div>
+  <div class="field"><label for="doc-name">שם המסמך (כל שם שתרצה)</label><input type="text" id="doc-name" placeholder="למשל: רישיון לאופנוע, מנוי לחדר כושר"></div>
   <div class="field"><label for="doc-exp" id="doc-exp-lbl">בתוקף עד</label><input type="date" id="doc-exp"></div>
   <div class="field"><label for="doc-rem">תזכורת ראשונה</label><select id="doc-rem"><option value="90">3 חודשים לפני</option><option value="60">חודשיים לפני</option><option value="30" selected>חודש לפני</option><option value="14">שבועיים לפני</option><option value="7">שבוע לפני</option></select></div>
   <div class="field"><label for="doc-notes">הערות (לא חובה)</label><input type="text" id="doc-notes" placeholder="למשל: לחדש באתר משרד הפנים"></div>
+  <div class="field"><span class="lbl">תמונות של המסמך</span>
+    <div class="doc-pics" id="doc-pics"></div>
+    <label class="btn doc-add" for="doc-file">📷 הוספת תמונה</label><input type="file" id="doc-file" accept="image/*" multiple hidden>
+    <div class="note">נשמרות במאגר הפרטי שלך בגיטהאב, כמו שאר הנתונים. לא בשום מקום ציבורי.</div></div>
   <div class="btns"><button class="btn" id="doc-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="doc-cancel" type="button">ביטול</button><button class="btn primary" id="doc-ok" type="button">שמירה</button></div>
 </div></dialog>
+<dialog id="dlg-photo" class="full" aria-label="תמונה"><div class="dlg-head">
+    <button class="txt-btn" id="ph-close">סגירה</button><h2 id="ph-title">תמונה</h2><button class="txt-btn" id="ph-del" style="color:var(--red)">מחיקה</button></div>
+  <div class="ph-view"><img id="ph-img" alt=""></div>
+</dialog>
 <dialog id="dlg-img" aria-label="בחירת תמונה"><div class="dlg">
   <h2 id="im-title">בחירת תמונה</h2>
   <div class="img-pick" id="im-pick"></div>
@@ -873,7 +892,7 @@ function show(s){
   screen = s;
   for(const x of ['today', 'shop', 'recipes', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = s === 'shop' || s === 'more';
-  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום הולדת חדש', docs: 'מסמך חדש'}[s] || 'משימה חדשה');
+  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש'}[s] || 'משימה חדשה');
   const tab = ['today', 'shop', 'recipes'].includes(s) ? s : 'more';   // מסכים שנכנסים אליהם מ"עוד"
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === tab));
   renderAll(); scrollTo(0, 0);
@@ -904,6 +923,16 @@ function saveShop(r){
   D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, [r])};
   persist('shop', true); changed();
 }
+// תמונת מוצר: תמונה אמיתית אם יש, אחרת אמוג'י שמראה אותו, אחרת האות הראשונה בצבע המחלקה
+const CAT_COLOR = {veg: '#3F9D4F', bread: '#C08A3E', dry: '#9A6B3F', cans: '#C0392B', bake: '#8E6E53', morning: '#6D4C41', snack: '#D35400',
+  drink: '#2E86C1', dairy: '#5D8AA8', deli: '#B9770E', meat: '#A93226', frozen: '#48A9C5', clean: '#7D3C98', care: '#D4589A', other: '#7F8C8D'};
+const letterPic = x => `<span class="pic letter" style="--c:${CAT_COLOR[x.catId || x.cat] || '#7F8C8D'}">${esc((x.name || '?').replace(/^[^א-תA-Za-z0-9]+/, '').charAt(0))}</span>`;
+function prodPic(x){
+  const fallback = x.emoji ? `<span class="pic">${x.emoji}</span>` : letterPic(x);
+  if(!x.photo) return fallback;
+  // התמונה לא נטענה (בלי רשת וגם לא במטמון): חוזרים לאמוג'י או לאות
+  return `<span class="pic photo" data-fb="${esc(fallback)}"><img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.parentNode.outerHTML = this.parentNode.dataset.fb"></span>`;
+}
 function renderShop(){
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
   const sug = ל.shopSuggest(items, q, q ? 10 : 16);
@@ -912,11 +941,11 @@ function renderShop(){
   // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
   if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
   $('shop-sug-box').style.marginTop = q || !groups.length ? '' : '22px';
-  $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.emoji} ${esc(x.name)}</button>`).join('');
+  $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
   $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
     <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
       <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
-      <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}"><span class="pic">${x.emoji}</span><span class="t">${esc(x.name)}</span></button></div>`).join('')}</div></div>`).join('')
+      <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}">${prodPic(x)}<span class="t">${esc(x.name)}</span></button></div>`).join('')}</div></div>`).join('')
     : `<div class="empty" style="margin-top:16px">הרשימה ריקה</div>`;
 }
 // שליחה בוואטסאפ: נפתח וואטסאפ עם ההודעה מוכנה, ובוחרים למי לשלוח
@@ -1053,7 +1082,7 @@ function openRecipe(id){
   if(!$('dlg-recipe').open) $('dlg-recipe').showModal();
 }
 function renderRecipe(){
-  const r = recipeById(rcOpen);
+  const raw = recipeById(rcOpen), r = raw && ל.cleanRecipe(raw);   // חלק ריק לא מוצג
   if(!r){ $('dlg-recipe').close(); return; }
   rcImgs = ל.recipeImages(recipeList());
   $('r-title').textContent = r.title;
@@ -1273,7 +1302,7 @@ function renderMore(){
   const t = today(), bd = ל.birthdaysView(D.tasks, t), dc = ל.docsView(D.tasks, D.occ, t);
   const nextBd = bd[0], urgent = dc.filter(x => x.state === 'expired' || x.state === 'soon');
   const tiles = [
-    ['birthdays', '🎂', 'ימי הולדת', nextBd ? `${nextBd.task.person}: ${daysText(nextBd.inDays)}` : 'עוד לא נוספו'],
+    ['birthdays', '🎂', 'ימים מיוחדים', nextBd ? `${nextBd.emoji} ${nextBd.task.person || nextBd.label}: ${daysText(nextBd.inDays)}` : 'ימי הולדת, נישואין ועוד'],
     ['docs', '📄', 'מסמכים', urgent.length ? `${urgent.length} לחידוש בקרוב` : dc.length ? `${dc.length} בתוקף` : 'עוד לא נוספו'],
     ['calendar', '📅', 'לוח שנה', 'כל המשימות לפי תאריך'],
     ['domains', '🗂️', 'תחומים', 'משימות לפי תחום'],
@@ -1287,35 +1316,46 @@ function renderBirthdays(){
   const list = ל.birthdaysView(D.tasks, today());
   $('bd-list').innerHTML = list.length ? list.map(x => {
     const [, m, d] = x.next.split('-');
-    return `<button type="button" class="more-row${x.inDays === 0 ? ' today' : ''}" data-id="${esc(x.task.id)}"><span class="i">${x.inDays === 0 ? '🎉' : '🎂'}</span>
-      <span class="b"><span class="t" style="display:block">${esc(x.task.person)}</span><span class="s" style="display:block">${+d}.${+m}${x.age ? ` · ${x.inDays === 0 ? 'חוגג/ת' : 'יהיה/תהיה'} ${x.age}` : ''}</span></span>
+    const yrs = x.age ? (x.occasion === 'birthday' ? ` · ${x.inDays === 0 ? 'חוגג/ת' : 'יהיה/תהיה'} ${x.age}` : ` · ${x.age === 1 ? 'שנה' : x.age + ' שנים'}`) : '';
+    return `<button type="button" class="more-row${x.inDays === 0 ? ' today' : ''}" data-id="${esc(x.task.id)}"><span class="i">${x.inDays === 0 && x.occasion !== 'memorial' ? '🎉' : x.emoji}</span>
+      <span class="b"><span class="t" style="display:block">${esc(x.occasion === 'birthday' ? x.task.person : x.task.title)}</span><span class="s" style="display:block">${+d}.${+m}${yrs}</span></span>
       <span class="side">${daysText(x.inDays)}</span></button>`;
-  }).join('') : '<div class="empty">לוחצים + כדי להוסיף יום הולדת</div>';
+  }).join('') : '<div class="empty">לוחצים + כדי להוסיף יום הולדת, יום נישואין או כל יום אחר</div>';
 }
 $('bd-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openBday(b.dataset.id); };
-let bdEdit = null;
+let bdEdit = null, bdKind = 'birthday';
+function renderBdKind(){
+  $('bd-kinds').innerHTML = Object.entries(ל.OCCASIONS).map(([k, o]) => `<button type="button" data-k="${k}" class="${bdKind === k ? 'on' : ''}">${o.emoji} ${o.name}</button>`).join('');
+  $('bd-label-f').hidden = bdKind !== 'custom';
+  $('bd-name-l').textContent = {birthday: 'של מי', anniversary: 'של מי (לא חובה)', memorial: 'של מי', custom: 'של מי (לא חובה)'}[bdKind];
+  $('bd-name').placeholder = {birthday: 'אמא', anniversary: 'אבא ואמא', memorial: 'סבא', custom: ''}[bdKind];
+  $('bd-date-l').textContent = {birthday: 'תאריך לידה', anniversary: 'תאריך החתונה', memorial: 'תאריך', custom: 'תאריך'}[bdKind];
+}
+$('bd-kinds').onclick = e => { const b = e.target.closest('[data-k]'); if(b){ bdKind = b.dataset.k; renderBdKind(); } };
 function openBday(id){
   bdEdit = id ? taskById(id) : null;
-  $('bd-title').textContent = bdEdit ? 'עריכת יום הולדת' : 'יום הולדת חדש';
-  $('bd-name').value = bdEdit ? bdEdit.person : '';
+  bdKind = bdEdit?.occasion || 'birthday';
+  $('bd-title').textContent = bdEdit ? 'עריכה' : 'יום מיוחד חדש';
+  $('bd-name').value = bdEdit ? bdEdit.person || '' : '';
+  $('bd-label').value = bdEdit?.occasionLabel || '';
   const r = bdEdit?.schedule?.rule;
   $('bd-date').value = bdEdit ? `${bdEdit.birthYear || 2000}-${ל.pad(r.month)}-${ל.pad(r.day)}` : '';
   $('bd-noyear').checked = !!bdEdit && !bdEdit.birthYear;
   $('bd-del').hidden = !bdEdit;
+  renderBdKind();
   $('dlg-bday').showModal();
-  setTimeout(() => $('bd-name').focus(), 50);
 }
 $('bd-cancel').onclick = () => $('dlg-bday').close();
 $('bd-ok').onclick = () => {
-  const name = $('bd-name').value.trim(), date = $('bd-date').value;
-  if(!name || !date) return toast('צריך שם ותאריך', {err: true});
-  const t = ל.birthdayTask({id: bdEdit?.id, name, date, knowYear: !$('bd-noyear').checked}, nowIso());
+  const name = $('bd-name').value.trim(), date = $('bd-date').value, label = $('bd-label').value.trim();
+  if(!date || (bdKind === 'custom' ? !label && !name : (bdKind !== 'anniversary' && !name))) return toast(bdKind === 'custom' ? 'צריך שם ליום ותאריך' : 'צריך שם ותאריך', {err: true});
+  const t = ל.birthdayTask({id: bdEdit?.id, occasion: bdKind, label, name, date, knowYear: !$('bd-noyear').checked}, nowIso());
   saveTask(Object.assign({}, bdEdit || {}, t));
   $('dlg-bday').close();
-  toast(`🎂 נוסף: ${name}. תזכורת שבוע לפני ויום לפני`);
+  toast(`${ל.OCCASIONS[bdKind].emoji} נוסף: ${t.title}. תזכורת שבוע לפני ויום לפני`);
 };
 $('bd-del').onclick = () => {
-  if(!bdEdit || !confirm(`למחוק את יום ההולדת של ${bdEdit.person}?`)) return;
+  if(!bdEdit || !confirm(`למחוק את "${bdEdit.title}"?`)) return;
   saveTask(Object.assign({}, bdEdit, {deleted: true})); $('dlg-bday').close();
 };
 
@@ -1323,12 +1363,65 @@ function renderDocs(){
   const list = ל.docsView(D.tasks, D.occ, today());
   const label = {expired: 'פג תוקף', soon: 'לחדש בקרוב', ok: 'בתוקף', renewed: 'חודש'};
   $('doc-list').innerHTML = list.length ? list.map(x => `<button type="button" class="more-row ${x.state}" data-id="${esc(x.task.id)}"><span class="i">📄</span>
-      <span class="b"><span class="t" style="display:block">${esc(x.task.docName)}</span><span class="s" style="display:block">${label[x.state]} · עד ${esc(fullDate(x.expiry))}</span></span>
+      <span class="b"><span class="t" style="display:block">${esc(x.task.docName)}</span><span class="s" style="display:block">${label[x.state]} · עד ${esc(fullDate(x.expiry))}${(x.task.docImages || []).length ? ` · 📷 ${x.task.docImages.length}` : ''}</span></span>
       <span class="side">${x.state === 'renewed' ? '✓' : x.inDays < 0 ? 'פג' : daysText(x.inDays)}</span></button>`).join('')
     : '<div class="empty">לוחצים + כדי להוסיף מסמך (דרכון, רישיון, ביטוח...)</div>';
 }
 $('doc-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openDoc(b.dataset.id); };
-let docEdit = null;
+let docEdit = null, docPics = [], docNewId = null;
+// תמונות של מסמכים: מוקטנות במכשיר (עד 1600 פיקסלים, JPEG), ונשמרות ב-משימות/מסמכים/<מזהה>/ במאגר הפרטי
+const picCache = {};
+async function rawFile(path){
+  if(picCache[path]) return picCache[path];
+  const r = await fetch(api(path) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
+  if(!r.ok) throw new Error('github ' + r.status);
+  return picCache[path] = URL.createObjectURL(await r.blob());
+}
+async function shrink(file){
+  const img = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.82));
+}
+const blobTo64 = b => new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(b); });
+function renderDocPics(){
+  $('doc-pics').innerHTML = docPics.map((p, i) => `<button type="button" data-i="${i}" aria-label="תמונה ${i + 1}">…</button>`).join('');
+  docPics.forEach((p, i) => rawFile(p.path).then(u => { const b = $('doc-pics').querySelector(`[data-i="${i}"]`); if(b){ b.textContent = ''; b.style.backgroundImage = `url('${u}')`; } })
+    .catch(() => { const b = $('doc-pics').querySelector(`[data-i="${i}"]`); if(b) b.textContent = 'בלי רשת'; }));
+}
+$('doc-file').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if(!token) return toast('צריך חיבור לגיטהאב כדי לשמור תמונות', {err: true});
+  for(const f of files){
+    try{
+      toast('מעלה תמונה...', {ms: 8000});
+      const blob = await shrink(f), id = uid(), path = `משימות/מסמכים/${docNewId}/${id}.jpg`;
+      await gh('PUT', path, {message: 'משימות: תמונה של מסמך', branch: BRANCH, content: await blobTo64(blob)});
+      picCache[path] = URL.createObjectURL(blob);
+      docPics.push({id, path, addedAt: nowIso()});
+      renderDocPics();
+      toast('✓ התמונה נשמרה');
+    }catch(err){ toast('שמירת התמונה נכשלה. צריך רשת', {err: true}); }
+  }
+  // מסמך קיים: נשמר מיד (גם בלי ללחוץ "שמירה")
+  if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
+};
+let phOpen = null;
+$('doc-pics').onclick = async e => {
+  const b = e.target.closest('[data-i]'); if(!b) return;
+  phOpen = +b.dataset.i;
+  $('ph-title').textContent = $('doc-name').value || 'מסמך';
+  try{ $('ph-img').src = await rawFile(docPics[phOpen].path); }catch(err){ return toast('אין רשת', {err: true}); }
+  $('dlg-photo').showModal();
+};
+$('ph-close').onclick = () => $('dlg-photo').close();
+$('ph-del').onclick = async () => {
+  if(!confirm('למחוק את התמונה?')) return;
+  const p = docPics[phOpen];
+  try{ const g = await gh('GET', p.path); if(g) await gh('DELETE', p.path, {message: 'משימות: מחיקת תמונה של מסמך', branch: BRANCH, sha: g.sha}); }catch(err){}
+  docPics.splice(phOpen, 1); renderDocPics(); $('dlg-photo').close();
+  if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
+};
 function openDoc(id){
   docEdit = id ? taskById(id) : null;
   $('doc-title').textContent = docEdit ? docEdit.docName : 'מסמך חדש';
@@ -1337,18 +1430,22 @@ function openDoc(id){
   $('doc-exp-lbl').textContent = docEdit ? 'בתוקף עד (אחרי חידוש: התאריך החדש)' : 'בתוקף עד';
   $('doc-rem').value = String(docEdit?.remindDays || 30);
   $('doc-notes').value = docEdit?.notes || '';
-  $('doc-types').innerHTML = docEdit ? '' : ל.DOC_TYPES.map(n => `<button type="button" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  $('doc-types').innerHTML = docEdit ? '' : ל.DOC_TYPES.map(n => `<button type="button" data-n="${esc(n)}">${esc(n)}</button>`).join('') + '<button type="button" data-n="">✏️ שם אחר</button>';
+  docPics = (docEdit?.docImages || []).slice();
+  docNewId = docEdit ? docEdit.id : 'doc' + uid();
+  renderDocPics();
   $('doc-types').hidden = !!docEdit;
   $('doc-del').hidden = !docEdit;
   $('dlg-doc').showModal();
 }
 $('doc-types').onclick = e => { const b = e.target.closest('[data-n]'); if(!b) return; $('doc-name').value = b.dataset.n;
+  if(!b.dataset.n) $('doc-name').focus();
   $('doc-types').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
 $('doc-cancel').onclick = () => $('dlg-doc').close();
 $('doc-ok').onclick = () => {
   const name = $('doc-name').value.trim(), expiry = $('doc-exp').value;
   if(!name || !expiry) return toast('צריך שם ותאריך תוקף', {err: true});
-  const t = ל.docTask({id: docEdit?.id, name, expiry, remindDays: +$('doc-rem').value, notes: $('doc-notes').value.trim()}, nowIso());
+  const t = Object.assign(ל.docTask({id: docNewId, name, expiry, remindDays: +$('doc-rem').value, notes: $('doc-notes').value.trim()}, nowIso()), {docImages: docPics});
   const renewed = docEdit && docEdit.once.date !== expiry;
   saveTask(Object.assign({}, docEdit || {}, t));
   $('dlg-doc').close();
