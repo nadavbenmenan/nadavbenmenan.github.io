@@ -585,6 +585,7 @@ const UNITS = 'כוסות|כוס|כפות|כף|כפיות|כפית|גרם|גר׳
 const UNIT_RE = new RegExp(`^(?:(?:${UNITS})(?=\\s|$)\\s*(?:של\\s+)?)+`);
 /** מצרך במתכון → שם המוצר לקניות. "2 3/4 כוסות מים קרים (650 מ"ל)" → "מים"; "3 שיני שום כתושות" → "שום". */
 function ingredientProduct(line){
+  if(/[:：]\s*$/.test(String(line || ''))) return null;   // כותרת משנה ("לבצק:")
   let s = shopNorm(String(line || '').replace(/\([^)]*\)/g, ' ').replace(/[*•▪·]/g, ' '));
   s = s.split(/[,;:]| או | \/ /)[0];
   // כמויות בהתחלה: מספרים, שברים, טווחים, ואחריהם יחידות
@@ -622,56 +623,129 @@ function durationsIn(text){
   return out;
 }
 const isDurationOnly = l => { const d = durationsIn(l); return d.length > 0 && l.replace(DUR_RE, '').replace(/[\s\-–,.:]/g, '') === ''; };
-const LEVELS = {'קל': 'קל', 'קלה': 'קל', 'פשוט': 'קל', 'בינוני': 'בינוני', 'בינונית': 'בינוני', 'מאתגר': 'מאתגר', 'קשה': 'מאתגר', 'מורכב': 'מאתגר'};
-/**
- * טקסט מודבק (מאתר, מוואטסאפ, מאפליקציה אחרת) → מתכון. מזהה כותרות: מצרכים, אופן ההכנה, הערות, זמן הכנה, זמן כולל,
- * רמת קושי, קישור למקור. שורות שהן רק משך ("5 דקות", כפתורי טיימר שהועתקו) לא נהיות שלבים. מה שאחרי הקישור: לא נכנס.
+/*
+ * פירוק מתכון מודבק: הכללים (כל אחד נבדק בבדיקות/מתכונים/, על מתכונים אמיתיים מכמה מקורות).
+ *  1. ניקוי: סימוני עיצוב (** __ #), אמוג'י, תבליטים (• - * ▪ ✓ ☐), מספור (1. 1) (1) "שלב 1:"), רווחים כפולים, שורות כפולות.
+ *  2. כותרות חלקים, גם עם נקודתיים, אמוג'י, "ל-4 מנות" או באנגלית: מצרכים / אופן ההכנה / הערות.
+ *  3. כותרת עם תוכן באותה שורה ("מצרכים: קמח, מים, מלח"): התוכן נכנס לחלק.
+ *  4. פרטים, בשורה אחת ("זמן הכנה: 15 דקות") או בשתיים (כותרת ואז ערך): זמן הכנה, זמן בישול/אפייה, זמן כולל, רמת קושי,
+ *     מנות, קישור למקור. "מאת", "צילום", "כשרות" וכדומה: מדלגים.
+ *  5. כותרות משנה בתוך חלק ("לבצק:", "הכנת הרוטב:"): נשמרות כשורה שנגמרת בנקודתיים, ולא נכנסות לקניות.
+ *  6. שלבים ממוספרים: שורה בלי מספר היא המשך של השלב הקודם. מספר לבד בשורה ("1.") מתחבר לשורה שאחריו.
+ *  7. שורה שהיא רק משך ("5 דקות", כפתור טיימר שהועתק) לא נהיית שלב. הזמן מזוהה מתוך השלב עצמו.
+ *  8. שורות של אתרים ואפליקציות: דירוג (★), "הדפסה", "שתפו", "מצב בישול", "בתיאבון": מדלגים. "תגובות", "מתכונים נוספים": עוצרים.
+ *  9. אחרי הפרטים שבסוף (זמנים, קושי, קישור): שורות לא מוכרות (שם הכותב וכו') לא נכנסות.
+ * 10. קישור (http) בכל מקום: קישור למקור, ולא טקסט.
+ * 11. שם: השורה הראשונה. אם היא תיאור ארוך: השם נגזר מתחילתו ("סלט מטבוחה של עגבניות..." → "סלט מטבוחה").
+ * 12. מצרכים בשורה אחת מופרדים בפסיקים ("כפית פפריקה, כפית כמון, מלח"): כל אחד בנפרד.
+ * 13. בלי כותרות בכלל: שורה קצרה או שמתחילה בכמות = מצרך; שורה ארוכה = שלב.
  */
+const LEVELS = {'קל': 'קל', 'קלה': 'קל', 'פשוט': 'קל', 'פשוטה': 'קל', 'easy': 'קל', 'בינוני': 'בינוני', 'בינונית': 'בינוני', 'medium': 'בינוני',
+  'מאתגר': 'מאתגר', 'מאתגרת': 'מאתגר', 'קשה': 'מאתגר', 'מורכב': 'מאתגר', 'מורכבת': 'מאתגר', 'hard': 'מאתגר'};
+const RX = {
+  junkMark: /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️​-‏‪-‮*_#~`>|]/gu,
+  // מספור "1." ולא מספר עשרוני "1.5"
+  bullet: /^(?:[-–—•●▪▫◦·✓✔☐☑□■◆○*+]|\d{1,2}\s*[.)](?![\d/])|\(\d{1,2}\)|[א-י]\s*[.)](?=\s)|שלב\s*\d+\s*[:.)-]?)\s*/,
+  numbered: /^(?:\d{1,2}\s*[.)](?![\d/])|\(\d{1,2}\)|שלב\s*\d+)/,
+  numOnly: /^(?:\d{1,2}\s*[.)]?|שלב\s*\d+\s*[:.]?)$/,
+  ing: /^(?:רשימת\s+)?ה?(מצרכים|מרכיבים|רכיבים|חומרים|מה צריך|ingredients)(?:\s.{0,25})?$/i,
+  steps: /^(?:אופן\s+ה?הכנה|הוראות(?:\s+ה?הכנה)?|ה?הכנה|שלבי\s+ה?הכנה|דרך\s+ה?הכנה|כך\s+מכינים|איך\s+מכינים|instructions|directions|method|preparation)(?:\s.{0,20})?$/i,
+  notes: /^(?:הערות|הערה|טיפים|טיפ|טיפים והערות|הערות וטיפים|notes?|tips?)$/i,
+  junk: /^(?:הדפסה|הדפס|שתפו|שתף|שיתוף|שמור|שמרו|שמירה|לייק|אהבתי|מצב בישול|הוספה לרשימה|הוספה לקניות|דירוג|פרסומת|בתיאבון.*|לחצו כאן.*|קראו עוד.*|print|share|save|jump to recipe)$/i,
+  rating: /[★☆⭐]|^\d(?:\.\d)?\s*\(\d+\s*(?:דירוגים|ratings?)\)/,
+  stop: /^(?:תגובות|מתכונים נוספים|מתכונים דומים|עוד מתכונים|אולי יעניין|הירשמו|comments|related)/i,
+};
+const META = [[/^(?:זמן\s+ה?הכנה|זמן\s+עבודה|prep\s*time)$/i, 'prep'], [/^(?:זמן\s+ה?(?:אפייה|בישול)|cook\s*time|bake\s*time)$/i, 'cook'],
+  [/^(?:זמן\s+כולל(?:\s+להכנה)?|סה["״]?כ\s+זמן|total\s*time)$/i, 'total'], [/^(?:רמת\s+ה?קושי|דרגת\s+קושי|קושי|difficulty)$/i, 'level'],
+  [/^(?:מספר\s+מנות|מנות|כמות|תפוקה|סועדים|servings|yield)$/i, 'servings'], [/^(?:קישור\s+למקור|מקור|לינק|קישור|source)$/i, 'source'],
+  [/^(?:מאת|כותב|צילום|סגנון|כשרות|מטבח|קטגוריה|תגיות|author)$/i, 'skip']];
+const QTY_START = new RegExp(`^(?:[\\d½¼¾⅛⅓⅔]|(?:${UNITS})(?=\\s))`);
 function parseRecipeText(text){
-  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
-  const r = {title: '', desc: '', ingredients: [], steps: [], notes: '', prep: '', total: '', level: '', source: ''};
-  const notes = [], before = [];
-  let part = null, field = null;
-  const META = [[/^(זמן הכנה|זמן עבודה|זמן ההכנה)$/, 'prep'], [/^(זמן כולל|זמן כולל להכנה|סה״כ זמן|סה"כ זמן)$/, 'total'],
-    [/^(רמת קושי|רמת הקושי|דרגת קושי|קושי)$/, 'level'], [/^(קישור למקור|מקור|לינק|קישור)$/, 'source'], [/^(מנות|כמות|תפוקה)$/, 'skip']];
-  const SECTIONS = [[/^(מצרכים|מרכיבים|רכיבים|חומרים|מה צריך)( ל.*| עבור.*)?$/, 'ing'],
-    [/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות ההכנה|הוראות|הכנה|שלבי הכנה|שלבי ההכנה|דרך ההכנה)$/, 'steps'],
-    [/^(הערות|הערה|טיפים|טיפ|טיפים והערות)$/, 'notes']];
-  for(const raw of lines){
-    // "כותרת: ערך" באותה שורה, או כותרת ואז ערך בשורה הבאה
+  const r = {title: '', desc: '', ingredients: [], steps: [], notes: '', prep: '', cook: '', total: '', level: '', servings: '', source: ''};
+  const notes = [], before = [], seen = new Set();
+  let part = null, field = null, numbered = false, joinNext = false;
+  const key = l => l.replace(RX.junkMark, '').replace(/[:：\-–—.]+\s*$/, '').replace(/\s+/g, ' ').trim();
+  const setMeta = (f, v) => {
+    v = v.trim();
+    if(!v || f === 'skip') return;
+    if(f === 'level') r.level = LEVELS[key(v).toLowerCase()] || r.level;
+    else if(f === 'source'){ const u = /https?:\/\/\S+/.exec(v); if(u) r.source = u[0]; }
+    else r[f] = key(v).slice(0, 30);
+  };
+  const isSub = l => /[:：]$/.test(l) && key(l).length <= 25 && !/\d/.test(l);
+  for(let raw of String(text || '').split(/\r?\n/)){
+    raw = raw.replace(/\*\*|__/g, '').replace(/\s+/g, ' ').trim();
+    if(!raw) continue;
+    // 10. קישור
+    const url = /https?:\/\/\S+/.exec(raw);
+    if(url){ if(!r.source) r.source = url[0]; raw = raw.replace(url[0], '').trim(); if(!key(raw)) continue; }
+    const k = key(raw);
+    if(!k) continue;
+    // 8. אתרים ואפליקציות
+    if(RX.stop.test(k)) break;
+    if(RX.junk.test(k) || RX.rating.test(raw)) continue;
+    // 4. פרטים (שורה אחת או שתיים)
     const mm = /^([^:：]{2,24})[:：]\s*(.*)$/.exec(raw);
-    const head = (mm ? mm[1] : raw).trim(), rest = mm ? mm[2].trim() : '';
-    const sec = SECTIONS.find(([re]) => re.test(head)), meta = META.find(([re]) => re.test(head));
-    if(sec && (mm || raw.length < 30)){ part = sec[1]; field = null; if(rest) raw === rest || (part === 'notes' ? notes.push(rest) : null); continue; }
-    if(meta && (mm || raw.length < 30)){ part = 'meta'; field = meta[1]; if(rest){ setMeta(r, field, rest); field = null; } continue; }
-    if(field){ setMeta(r, field, raw); field = null; continue; }
-    if(part === 'meta' || part === 'end'){ if(r.source) part = 'end'; continue; }   // שם הכותב, כפתורים שהועתקו
-    const clean = raw.replace(/^(?:[-*•▪·]|\d+\s*[.)]|\(\d+\))\s*/, '').trim();
-    if(!clean) continue;
-    if(part === 'ing') r.ingredients.push(clean);
-    else if(part === 'steps'){ if(!isDurationOnly(clean)) r.steps.push(clean); }
-    else if(part === 'notes') notes.push(clean);
-    else before.push(clean);
+    const head = key(mm ? mm[1] : raw), rest = mm ? mm[2].trim() : '';
+    const meta = META.find(([re]) => re.test(head));
+    if(meta && (mm || raw.length < 30)){
+      if(rest) setMeta(meta[1], rest); else field = meta[1];
+      if(r.steps.length || r.ingredients.length) part = 'tail';   // 9. פרטים בסוף: מה שאחריהם לא נכנס
+      continue;
+    }
+    if(field){ const f = field; field = null; if(raw.length <= 40){ setMeta(f, raw); continue; } }
+    // 2-3. כותרות חלקים
+    const sec = RX.ing.test(head) ? 'ing' : RX.steps.test(head) ? 'steps' : RX.notes.test(head) ? 'notes' : null;
+    if(sec && head.length <= 35){
+      part = sec; numbered = false; joinNext = false;
+      if(rest) raw = rest; else continue;
+    }else if(part === 'tail') continue;
+    if(seen.has(raw)) continue;   // 1. שורה כפולה
+    seen.add(raw);
+    if(part === 'ing'){
+      if(isSub(raw)){ r.ingredients.push(key(raw) + ':'); continue; }
+      const c = raw.replace(RX.bullet, '').replace(RX.junkMark, '').trim();
+      if(!c) continue;
+      const pieces = c.split(/\s*,\s*/);
+      // 12. כמה מצרכים בשורה אחת
+      if(pieces.length >= 3 && pieces.every(x => x && x.length <= 25)) r.ingredients.push(...pieces);
+      else r.ingredients.push(c);
+    }else if(part === 'steps'){
+      if(RX.numOnly.test(key(raw)) || RX.numOnly.test(raw)){ joinNext = true; numbered = true; continue; }   // 6. "1." לבד
+      if(isSub(raw)){ r.steps.push(key(raw) + ':'); continue; }
+      const isNum = RX.numbered.test(raw);
+      const c = raw.replace(RX.bullet, '').replace(RX.junkMark, '').trim();
+      if(!c || isDurationOnly(c)) continue;   // 7.
+      if(isNum) numbered = true;
+      const prev = r.steps[r.steps.length - 1];
+      if(!joinNext && !isNum && numbered && prev && !/:$/.test(prev)) r.steps[r.steps.length - 1] = prev + ' ' + c;   // 6. המשך
+      else r.steps.push(c);
+      joinNext = false;
+    }else if(part === 'notes'){
+      const c = raw.replace(RX.bullet, '').replace(RX.junkMark, '').trim();
+      if(c) notes.push(c);
+    }else{
+      const c = raw.replace(RX.junkMark, '').replace(/\s+/g, ' ').trim();
+      if(c) before.push(c);
+    }
   }
-  // שם: שורה קצרה ראשונה. אם הראשונה היא תיאור ארוך, השם נגזר ממנו ("סלט מטבוחה של עגבניות..." → "סלט מטבוחה")
+  r.notes = notes.join('\n');
+  // 13. בלי כותרות בכלל
+  if(!r.ingredients.length && !r.steps.length && before.length > 1){
+    const [first, ...others] = before;
+    before.length = 0; before.push(first);
+    for(const l of others){
+      const c = l.replace(RX.bullet, '').trim();
+      (QTY_START.test(c) || (c.length <= 30 && !/[.!]$/.test(c)) ? r.ingredients : r.steps).push(c);
+    }
+  }
+  // 11. שם ותיאור
   if(before.length && before[0].length <= 45 && !/[.!]$/.test(before[0])){ r.title = before.shift(); r.desc = before.join(' '); }
   else if(before.length){
     r.desc = before.join(' ');
     r.title = before[0].split(/ של | עם | ש(?=[א-ת]+ )|,|\.| - | – /)[0].split(' ').slice(0, 4).join(' ').trim();
   }
-  r.notes = notes.join('\n');
-  // בלי כותרות בכלל: שורות קצרות = מצרכים, ארוכות = שלבים
-  if(!r.ingredients.length && !r.steps.length && before.length > 1){
-    r.ingredients = []; r.steps = [];
-    for(const l of before.slice(r.title === before[0] ? 1 : 0)) (l.length <= 40 ? r.ingredients : r.steps).push(l);
-    r.desc = '';
-  }
   return r;
-}
-function setMeta(r, field, v){
-  if(field === 'level') r.level = LEVELS[v.trim()] || r.level;
-  else if(field === 'source'){ const u = /https?:\/\/\S+/.exec(v); if(u) r.source = u[0]; }
-  else if(field === 'prep' || field === 'total') r[field] = v.trim().slice(0, 30);
 }
 /** המתכון כהודעה (וואטסאפ). */
 function recipeText(rc){
