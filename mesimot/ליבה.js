@@ -687,7 +687,7 @@ const SHOP_CAT = Object.fromEntries(SHOP_CATS.map(c => [c.id, c]));
 const SHOP_POPULAR = {
   veg: 'עגבניות|🍅 מלפפונים|🥒 בצל|🧅 תפוחי אדמה|🥔 גזר|🥕 לימון|🍋 בננות|🍌 תפוחים|🍎 פלפל אדום|🫑 אבוקדו|🥑 שום|🧄 חסה|🥬 ' +
        'בטטה|🍠 עגבניות שרי|🍅 פטרוזיליה|🌿 כוסברה|🌿 שמיר|🌿 נענע|🌿 קישואים|🥒 חצילים|🍆 כרוב|🥬 ברוקולי|🥦 כרובית|🥦 תפוזים|🍊 ' +
-       'קלמנטינות|🍊 אגסים|🍐 ענבים|🍇 אבטיח|🍉 מלון|🍈 תותים|🍓 פטריות|🍄 בצל ירוק|🧅 תירס|🌽 ג׳ינג׳ר|🫚 פלפל חריף|🌶️ סלק| אפרסקים|🍑 מנגו|🥭 קיווי|🥝',
+       'קלמנטינות|🍊 אגסים|🍐 ענבים|🍇 אבטיח|🍉 מלון|🍈 תותים|🍓 פטריות|🍄 בצל ירוק|🧅 תירס|🌽 ג׳ינג׳ר|🫚 פלפל חריף|🌶️ סלק| אפרסקים|🍑 מנגו|🥭 קיווי|🥝 אננס|🍍 רימונים|🍎 שזיפים|🍑 דובדבנים|🍒 קוקוס|🥥 ארטישוק| פומלה|🍊 אפרסמון|🍊 תרד|🥬 ארוגולה|🥬 סלרי|🥬',
   bread: 'לחם|🍞 פיתות|🫓 לחמניות|🥖 חלה|🍞 באגט|🥖 טורטיות|🫓 לחם מלא|🍞 קרואסון|🥐 עוגה|🍰 לחמניות המבורגר|🍔 פירורי לחם|🍞',
   dry: 'אורז|🍚 פסטה|🍝 ספגטי|🍝 עדשים|🫘 חומוס יבש|🫘 שעועית|🫘 קוסקוס|🍚 בורגול|🌾 קינואה|🌾 פתיתים|🍚 שיבולת שועל|🌾 אטריות|🍜 נודלס|🍜',
   cans: 'רסק עגבניות|🥫 טונה|🐟 תירס בקופסה|🌽 חומוס בקופסה|🥫 זיתים|🫒 מלפפונים חמוצים|🥒 רוטב עגבניות|🥫 קטשופ|🍅 מיונז|🥫 חרדל|🥫 ' +
@@ -718,49 +718,93 @@ for(const [cat, s] of Object.entries(SHOP_POPULAR))
   });
 // מילים שמזהות מחלקה גם כשהמוצר לא ברשימה (למשל "גבינת עזים" = חלב). לא מוצעות בהצעות.
 const SHOP_WORDS = {
-  veg: 'ירק ירקות פרי פירות תפוח עגבני מלפפון פלפל בצל חסה תפוז נקטרינה שזיף אפרסמון רימון פומלה אננס דובדבן ' +
-       'פטריה פטריות ארוגולה תרד סלרי צנון קולורבי דלעת לוביה במיה שמיר עלי',
-  bread: 'לחם לחמניה לחמניות פיתה מאפה מאפים בייגל עוגה עוגת עוגות חלות',
-  dry: 'אורז פסטה עדשים שעועית גריסים פתיתים אטריות קוסקוס קמח',
-  cans: 'שימורי שימורים קופסה רוטב ממרח ריבה חמוצים',
-  bake: 'תבלין תבלינים אבקת שמן תמצית שוקולד צ׳יפס אגוזי',
-  morning: 'קפה תה דגני',
-  snack: 'חטיף חטיפים שוקולד ממתק ממתקים עוגיות',
-  drink: 'מיץ משקה משקאות בקבוק יין בירה וודקה ערק סודה מים',
-  dairy: 'חלב גבינה גבינת גבינות יוגורט שמנת מעדן מעדני ביצה ביצים',
-  deli: 'סלט סלטים נקניק',
-  meat: 'עוף בשר דג דגים פילה שניצל קציצות כנפיים לבבות',
-  frozen: 'קפוא קפואה קפואים',
-  clean: 'ניקוי ניקיון מנקה כביסה כלים אשפה ספוג',
-  care: 'שמפו סבון קרם תרופה תרופות ויטמין ויטמינים טיפות',
+  veg: 'ירק פרי תפוח עגבני מלפפון פלפל בצל חסה נקטרינה שזיף דובדבן פטריה צנון קולורבי דלעת לוביה במיה שמיר עלי ' +
+       'נבטים פירות ירקות שעועית_ירוקה אפרסק משמש תאנה אוכמניות פסיפלורה ליים אשכולית בזיליקום רוזמרין טימין מרווה ' +
+       'כרישה שומר חזרת צנונית ליצ׳י פפאיה גויאבה',
+  bread: 'לחם לחמניה פיתה מאפה בייגל עוגה עוגות בורקס_טרי רוגלך מאפין קרואסונים לאפה פוקאצ׳ה בריוש',
+  dry: 'אורז בסמטי פסטה עדשים גריסים פתיתים אטריות קוסקוס פנה פוזילי לזניה פירה_מוכן גרגירי',
+  cans: 'שימורים קופסה רוטב ממרח ריבה חמוצים פסטו שימורי חלפיניו צלפים קטשופ',
+  bake: 'תבלין תבלינים אבקת שמן תמצית קמח אגוזי פקאן קשיו בוטנים שומשום פרג קינמון אורגנו פטרוזיליה_יבשה ' +
+        'ג׳לטין סוכרזית ממתיק סילאן סירופ קוקוס_טחון פירורים',
+  morning: 'קפה תה דגני נס אספרסו קפסולה',
+  snack: 'חטיף ממתק ממתקים שוקולד עוגיה עוגיות וופל ופלים מסטיק סוכריה מרשמלו חלבה דובונים בייגלה פרינגלס דוריטוס ' +
+         'אפרופו תפוצ׳יפס קליק כיף_כף',
+  drink: 'מיץ משקה בקבוק יין בירה וודקה ערק ויסקי סודה מים שתיה שתייה קולה ספרייט פאנטה פריגת ספרינג תפוזינה ' +
+         'אנרגיה לימונדה סיידר נביעות',
+  dairy: 'חלב גבינה יוגורט שמנת מעדן ביצה ביצים קצפת בולגרית פטה צפתית עמק תנובה טרה יופלה דנונה קוטג׳ גאודה ' +
+         'חלומי ברי קממבר חמאה לבן אקטיביה',
+  deli: 'סלט נקניק פסטרמה סלמי שווארמה_מוכנה ממרחים פלאפל קובה',
+  meat: 'עוף בשר דג פילה שניצל קציצה כנפיים לבבות אנטריקוט פרגית אסאדו אונטריב צלעות כבש טלה סינטה ' +
+        'נתחי שוק טחון בקר הודו פילה_דג לברק דניס מוסר טונה_טרייה קרפיון שרימפס',
+  frozen: 'קפוא קפואה קפואים גלידה ארטיק פיצה בצק מלוואח ג׳חנון כופתאות פלמני',
+  clean: 'ניקוי ניקיון מנקה כביסה כלים אשפה זבל ספוג מטלית סמרטוט מגב מטאטא אקונומיקה מסיר שקית שקיות ' +
+         'נייר מפית מפיות כוס_חד חד_פעמי סוללה נורה גפרורים נרות מרכך_כביסה פרסיל סנו כלור מבריק אלומיניום תבנית',
+  care: 'שמפו סבון קרם תרופה ויטמין טיפות גילוח דאודורנט בושם תחבושת טמפון פלסטר מגבונים_לחים ' +
+        'משחה קונדישנר ג׳ל לק אקמול נורופן אדוויל מסכה תחליב צמר_גפן קיסם',
 };
-const SHOP_WORD_CAT = {};
-for(const [cat, s] of Object.entries(SHOP_WORDS)) s.split(/\s+/).forEach(w => { SHOP_WORD_CAT[w] = cat; });
-const SHOP_BY_NAME = Object.fromEntries(SHOP_CATALOG.map(x => [x.name, x]));
 const shopNorm = s => String(s || '').trim().replace(/\s+/g, ' ').replace(/['"`׳״]/g, '׳').toLowerCase();
+// השוואת מילים בעברית: יחיד ורבים, ה/ת בסוף ואותיות סופיות נחשבים אותה מילה.
+// בננה = בננות, עגבניה = עגבניות, ביצה = ביצים, פיתה = פיתות, גבינה = גבינת, שקית = שקיות, לימון = לימונים.
+const FINALS = {'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ'};
+const SUFFIXES = ['יות', 'יימ', 'ימ', 'ות', 'יה', 'ית', 'ה', 'ת', 'י'];   // אחרי המרת אותיות סופיות (ם→מ)
+function wordStems(w){
+  w = w.replace(/[ךםןףץ]/g, c => FINALS[c]);
+  const out = new Set([w]);
+  for(const suf of SUFFIXES) if(w.endsWith(suf) && w.length - suf.length >= 2) out.add(w.slice(0, -suf.length));
+  return out;
+}
+const sameWord = (a, b) => { if(a === b) return true; const sa = wordStems(a); for(const x of wordStems(b)) if(sa.has(x)) return true; return false; };
+// מילה עם ו/ה בהתחלה ("והבננות") נבדקת גם בלעדיהן
+const wordForms = w => w.startsWith('וה') && w.length > 4 ? [w, w.slice(1), w.slice(2)] : w.length > 3 && /^[וה]/.test(w) ? [w, w.slice(1)] : [w];
+/** כמה טוב שם הרשימה (מילים) מתאים לשם שהוקלד. 0 = לא מתאים. כל מילה ברשימה חייבת להופיע בשם. */
+function phraseScore(inWords, words){
+  let score = 0;
+  for(let i = 0; i < words.length; i++){
+    let best = 0;
+    for(let j = 0; j < inWords.length; j++) for(const f of wordForms(inWords[j])){
+      const v = f === words[i] ? 3 : sameWord(f, words[i]) ? 2 : 0;
+      best = Math.max(best, v ? v * Math.min(f.length, words[i].length) + (j === i ? 1 : 0) : 0);
+    }
+    if(!best) return 0;
+    score += best;
+  }
+  return score;
+}
+const SHOP_MATCH = SHOP_CATALOG.map(x => ({words: x.name.split(' '), cat: x.cat, emoji: x.emoji, entry: x}))
+  .concat(Object.entries(SHOP_WORDS).flatMap(([cat, ws]) => ws.split(/\s+/).map(w => ({words: w.split('_'), cat, emoji: null, word: true}))));
+/** ההתאמה הטובה ביותר ברשימה: צירוף ארוך ומדויק קודם ("שמנת" = שמנת ולא שמן; "בצל ירוק" לפני "בצל"). */
+function shopMatch(name){
+  const inWords = shopNorm(name).split(' ').filter(Boolean);
+  let best = null, bestScore = 0;
+  for(const m of SHOP_MATCH){
+    const sc = phraseScore(inWords, m.words) - (m.word ? 0.5 : 0);   // שוויון: מוצר מהרשימה לפני מילת מפתח
+    if(sc > bestScore){ best = m; bestScore = sc; }
+  }
+  return best;
+}
+/** מפתח השוואה: אותו מוצר בכתיב אחר (בננה / בננות) מקבל אותו מפתח */
+const shopStemKey = name => shopNorm(name).split(' ').map(w => [...wordStems(w)].sort((a, b) => a.length - b.length)[0]).join(' ');
+const sameProduct = (a, b) => {
+  const x = shopNorm(a).split(' '), y = shopNorm(b).split(' ');
+  return x.length === y.length && x.every((w, i) => sameWord(w, y[i]));
+};
 
 /** מחלקה ואמוג'י למוצר: בחירה ידנית קודם, אחר כך הרשימה הנפוצה, אחר כך לפי מילה בשם. */
 function shopInfo(nameOrItem){
-  const item = typeof nameOrItem === 'object' ? nameOrItem : null, name = shopNorm(item ? item.name : nameOrItem);
+  const item = typeof nameOrItem === 'object' ? nameOrItem : null;
   const catOf = id => SHOP_CAT[id] || SHOP_CAT.other;
-  let hit = SHOP_BY_NAME[name] || null;
-  if(!hit){
-    // הצירוף הארוך ביותר מהרשימה שמופיע בתחילת השם ("חלב 3%", "עגבניות שרי מתוקות")
-    let best = null;
-    for(const x of SHOP_CATALOG) if((name === x.name || name.startsWith(x.name + ' ')) && (!best || x.name.length > best.name.length)) best = x;
-    hit = best;
-  }
-  let cat = hit ? hit.cat : null, emoji = hit ? hit.emoji : null;
-  if(!cat){
-    const words = name.split(' ');
-    for(const w of words){
-      const c = SHOP_WORD_CAT[w] || SHOP_WORD_CAT[w.replace(/^[והבלמש](?=..)/, '')];
-      if(c){ cat = c; break; }
-    }
-  }
+  const name = item ? item.name : nameOrItem, m = shopMatch(name);
+  let cat = m ? m.cat : 'other';
   if(item && item.cat && SHOP_CAT[item.cat]) cat = item.cat;
-  cat = cat || 'other';
-  return {cat, emoji: emoji || catOf(cat).emoji, catName: catOf(cat).name, order: catOf(cat).order};
+  // תמונה: מהמוצר שהתאים. אם התאימה מילת מפתח ("ביצה"), מחפשים מוצר מהרשימה באותה מחלקה ("ביצים" 🥚)
+  let emoji = m && m.emoji && m.cat === cat ? m.emoji : null;
+  if(!emoji){
+    const inWords = shopNorm(name).split(' ').filter(Boolean);
+    let bs = 0;
+    for(const x of SHOP_MATCH) if(!x.word && x.cat === cat){ const sc = phraseScore(inWords, x.words); if(sc > bs){ bs = sc; emoji = x.emoji; } }
+  }
+  emoji = emoji || catOf(cat).emoji;
+  return {cat, emoji, catName: catOf(cat).name, order: catOf(cat).order};
 }
 
 // כל מוצר הוא רשומה אחת לתמיד: active = ברשימה עכשיו. count = כמה פעמים הוסף (לסדר ההצעות).
@@ -769,9 +813,11 @@ const shopId = name => 'p-' + sha256(shopKey(name)).slice(0, 10);
 function shopAdd(items, name, nowIso){
   const clean = String(name || '').trim().replace(/\s+/g, ' ');
   if(!clean) return null;
-  const id = shopId(clean), cur = (items || []).find(x => x.id === id && !x.deleted);
+  const live = (items || []).filter(x => !x.deleted);
+  // אותו מוצר בכתיב אחר ("בננות" כשיש "בננה"): אותה רשומה, כדי שלא יהיו כפילויות וההיסטוריה תישמר
+  const cur = live.find(x => x.id === shopId(clean)) || live.find(x => sameProduct(x.name, clean));
   if(cur && cur.active) return null;
-  const r = {id, name: cur ? cur.name : clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
+  const r = {id: cur ? cur.id : shopId(clean), name: cur ? cur.name : clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
     boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
   if(cur && cur.cat) r.cat = cur.cat;
   return r;
@@ -781,12 +827,17 @@ function shopSetCat(item, cat, nowIso){ return Object.assign({}, item, {cat: SHO
 /** הצעות: קודם מוצרים מהעבר (הפופולריים קודם), ואחריהם מוצרים נפוצים מהרשימה המובנית. עם טקסט: רק מה שמכיל אותו. */
 function shopSuggest(items, query, limit){
   const q = shopKey(query), mine = (items || []).filter(x => !x.deleted);
-  const known = new Set(mine.map(x => shopKey(x.name)));
-  const past = mine.filter(x => !x.active && (!q || shopKey(x.name).includes(q)))
+  const known = new Set(mine.map(x => shopStemKey(x.name)));
+  const qWords = q.split(' ').filter(Boolean);
+  // מתאים להקלדה: מכיל את הטקסט, או אותן מילים בכתיב אחר ("בננה" מוצא "בננות")
+  const fits = name => { const n = shopKey(name), w = n.split(' ');
+    return n.includes(q) || qWords.every(a => w.some(b => sameWord(a, b))); };
+  const past = mine.filter(x => !x.active && (!q || fits(x.name)))
     .sort((a, b) => (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name));
   // מהרשימה המובנית: לסירוגין בין המחלקות, כדי שבהתחלה יופיע מגוון ולא רק ירקות
   // ברשימה המובנית: רק מילה שמתחילה במה שהוקלד ("גב" = גבינה, לא עגבניות)
-  const cat = SHOP_CATALOG.filter(x => !known.has(x.name) && (!q || x.name.startsWith(q) || x.name.includes(' ' + q)))
+  const cat = SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name)) &&
+      (!q || x.name.startsWith(q) || x.name.includes(' ' + q) || qWords.every(a => x.name.split(' ').some(b => sameWord(a, b)))))
     .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
     .map(x => ({name: x.name, catalog: true}));
   return past.concat(cat).slice(0, limit || 12).map(x => Object.assign({}, x, {emoji: shopInfo(x).emoji}));
@@ -949,7 +1000,7 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopInfo, mergeShopFile,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopInfo, shopMatch, sameWord, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
