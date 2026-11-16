@@ -972,6 +972,217 @@ function docsView(tasks, occ, today){
   }).sort((a, b) => ({expired: 0, soon: 1, ok: 2, renewed: 3}[a.state] - {expired: 0, soon: 1, ok: 2, renewed: 3}[b.state]) || a.inDays - b.inDays);
 }
 
+/* ---------- חישוב קלוריות ---------- */
+// משימות/קלוריות.json: {v, foods, entries, acts, recipes, meals, weights, settings}. כל רשימה ממוזגת לפי id (מאוחר מנצח).
+// foods: מאכלים אישיים, וגם תיקון של מאכל מהמאגר (אותו id). entries: מה נאכל {date, meal, foodId, name, qty, unit, grams, kcal, manual}.
+// acts: פעילות {date, type, km, level, minutes, kcal, manual}. meals: ארוחות קבועות {name, items}. weights: {date, kg}.
+// הקלוריות נשמרות ברשומה ברגע ההוספה, כך שתיקון מאוחר של מאכל לא משנה היסטוריה.
+// מאגר: קלוריות ל-100 גרם (מבושל כשרלוונטי), לפי טבלאות תזונה מקובלות (USDA ומשרד הבריאות). יחידות: "שם:גרמים", הראשונה ברירת מחדל.
+const FOOD_DB = `לחם לבן|265|פרוסה:30
+לחם מלא|247|פרוסה:35
+פיתה|275|יחידה:90,חצי:45
+לחמניה|280|יחידה:70
+חלה|290|פרוסה:40
+לאפה|280|יחידה:120
+טוסט גבינה|280|יחידה:150
+אורז לבן מבושל|130|כוס:160,כף:15,מנה:200
+אורז מלא מבושל|112|כוס:195,מנה:200
+פסטה מבושלת|158|כוס:140,מנה:200
+קוסקוס מבושל|112|כוס:157,מנה:200
+פתיתים מבושלים|160|כוס:150,מנה:200
+בורגול מבושל|83|כוס:182,מנה:200
+קינואה מבושלת|120|כוס:185,מנה:200
+נודלס מבושלים|138|מנה:200,כוס:160
+מג׳דרה|150|מנה:250,כוס:200
+תפוח אדמה מבושל|87|יחידה:150
+פירה|106|כוס:210,כף:30
+צ׳יפס|312|מנה:120
+בטטה אפויה|90|יחידה:150
+שיבולת שועל|389|כף:8,כוס:80
+קורנפלקס|357|כוס:30
+גרנולה|470|כף:12,כוס:100
+ביצה|143|יחידה:55
+ביצה קשה|155|יחידה:50
+חביתה|196|ביצה אחת:65
+שקשוקה|110|מנה:300
+חלב 3%|60|כוס:240,כף:15
+חלב 1%|42|כוס:240,כף:15
+יוגורט 3%|61|גביע:200
+יוגורט יווני|97|גביע:150,כף:20
+קוטג׳ 5%|95|כף:30,גביע:250
+גבינה לבנה 5%|98|כף:30,גביע:250
+גבינה צהובה|350|פרוסה:20
+גבינה בולגרית|260|קובייה:30
+גבינת שמנת|250|כף:20
+שמנת חמוצה|162|כף:15
+חמאה|717|כפית:5,כף:14
+מעדן חלב|120|גביע:125
+חזה עוף צלוי|165|מנה:150
+שניצל עוף|260|יחידה:120
+שוק עוף צלוי|190|יחידה:100
+פרגית צלויה|180|יחידה:100
+עוף בתנור|200|מנה:200
+בשר טחון מבושל|250|מנה:150
+קציצות בשר|230|יחידה:50
+סטייק|270|מנה:200
+המבורגר|250|קציצה:150
+נקניקייה|290|יחידה:50
+שווארמה|230|מנה:200
+קבב|260|יחידה:60
+פסטרמה|150|פרוסה:15
+חזה הודו פרוס|105|פרוסה:15
+טונה במים|116|קופסה:120
+טונה בשמן|200|קופסה:120
+סלמון אפוי|206|מנה:150
+דג לבן אפוי|128|מנה:150
+סושי|150|יחידה:25
+חומוס|177|כף:30,מנה:150
+טחינה מוכנה|250|כף:20
+טחינה גולמית|595|כף:15
+פלאפל|333|כדור:17
+סביח|200|מנה:350
+סלט ירקות|25|מנה:150
+סלט ירקות עם שמן|70|מנה:150
+עגבנייה|18|יחידה:120
+מלפפון|15|יחידה:100
+גזר|41|יחידה:70
+פלפל|31|יחידה:150
+חסה|15|כוס:50
+אבוקדו|160|יחידה:150,כף:15
+ירקות מבושלים|50|מנה:150
+עדשים מבושלות|116|כוס:200
+חומוס גרגרים מבושלים|164|כוס:164
+מרק עוף|35|קערה:350
+מרק עדשים|80|קערה:350
+מרק ירקות|40|קערה:350
+תפוח|52|יחידה:180
+בננה|89|יחידה:120
+תפוז|47|יחידה:150
+קלמנטינה|53|יחידה:75
+אגס|57|יחידה:170
+ענבים|69|כוס:150
+אבטיח|30|פלח:300
+מלון|34|פלח:200
+תות|32|כוס:150
+מנגו|60|יחידה:300
+תמר מג׳הול|277|יחידה:24
+שקדים|579|חופן:30
+אגוזי מלך|654|חופן:30
+בוטנים|567|חופן:30
+גרעינים|584|חופן:25
+במבה|534|שקית:80,שקית קטנה:25
+ביסלי|490|שקית:70
+שוקולד חלב|535|קובייה:5,חפיסה:100
+עוגיות|480|יחידה:10
+עוגה|400|פרוסה:70
+גלידה|207|כדור:65
+פופקורן|387|כוס:8
+חטיף אנרגיה|400|יחידה:40
+פיצה|266|משולש:110
+בורקס|380|יחידה:90
+מלאווח|320|יחידה:125
+קפה שחור|2|כוס:240
+קפה הפוך|50|כוס:240
+תה|1|כוס:240
+סוכר|387|כפית:5
+דבש|304|כפית:7,כף:21
+ריבה|250|כפית:7,כף:20
+שמן זית|884|כפית:5,כף:13
+מיונז|680|כף:14
+קטשופ|112|כף:17
+מיץ תפוזים|45|כוס:240
+קולה|42|פחית:330,כוס:240
+בירה|43|בקבוק:330
+יין|85|כוס:150`;
+const FOODS = FOOD_DB.split('\n').map((l, i) => {
+  const [name, k, units] = l.split('|');
+  return {id: 'f-' + sha256(name).slice(0, 8), name, kcal100: +k, units: units.split(',').map(u => { const [n, g] = u.split(':'); return {name: n, g: +g}; }), rank: i, builtin: true};
+});
+const MEALS = [['breakfast', 'בוקר', '🍳'], ['lunch', 'צהריים', '🍲'], ['dinner', 'ערב', '🥗'], ['snack', 'נשנושים', '🍎']];
+// פעילות: MET (פעילות/מנוחה), לפי ה-Compendium of Physical Activities. קלוריות = MET × משקל × שעות.
+const ACTIVITIES = {
+  bike: {name: 'רכיבה על אופניים', emoji: '🚴', by: 'km', levels: [['נינוח (כ-14 קמ״ש)', 14, 4.0], ['בינוני (כ-18 קמ״ש)', 18, 6.8], ['מהיר (כ-21 קמ״ש)', 21, 8.0], ['מאוד מהיר (25+ קמ״ש)', 25, 10.0]]},
+  walk: {name: 'הליכה', emoji: '🚶', by: 'km', levels: [['איטית (3 קמ״ש)', 3.2, 2.8], ['רגילה (5 קמ״ש)', 4.8, 3.5], ['מהירה (5.5 קמ״ש)', 5.6, 4.3], ['מאוד מהירה (6.5 קמ״ש)', 6.4, 5.0]]},
+  run: {name: 'ריצה', emoji: '🏃', by: 'km', levels: [['קלה (8 קמ״ש)', 8, 8.3], ['בינונית (10 קמ״ש)', 10, 9.8], ['מהירה (12 קמ״ש)', 12, 11.5]]},
+  strength: {name: 'אימון כוח', emoji: '🏋️', by: 'min', quick: [20, 40, 60], levels: [['קל', 0, 3.5], ['בינוני', 0, 5.0], ['מאומץ', 0, 6.0]]},
+  swim: {name: 'שחייה', emoji: '🏊', by: 'min', quick: [20, 30, 45], levels: [['נינוחה', 0, 5.8], ['בינונית', 0, 8.3], ['מאומצת', 0, 9.8]]},
+  other: {name: 'פעילות אחרת', emoji: '⚡', by: 'min', quick: [20, 30, 60], levels: [['קלה', 0, 3.0], ['בינונית', 0, 5.0], ['מאומצת', 0, 7.5]]},
+};
+const CAL_DEFAULTS = {height: 168, weight: 87, goal: 2000};
+function mergeCaloriesFile(a, b, now){
+  const out = {v: 1};
+  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings']) out[k] = mergeById(a?.[k], b?.[k], now);
+  return out;
+}
+const live = l => (l || []).filter(x => !x.deleted);
+/** כל המאכלים: המאגר + אישיים. מאכל אישי עם id של מאכל מהמאגר = תיקון שלו. */
+function calFoods(file){
+  const mine = new Map(live(file?.foods).map(f => [f.id, f]));
+  const out = FOODS.map(f => mine.has(f.id) ? Object.assign({}, f, mine.get(f.id), {builtin: true, corrected: true}) : f);
+  for(const f of mine.values()) if(!FOODS.some(b => b.id === f.id)) out.push(Object.assign({rank: 1000}, f));
+  for(const r of live(file?.recipes)) out.push(Object.assign({rank: 900}, recipeFood(r)));   // מתכונים אישיים = מאכלים
+  return out;
+}
+/** גרמים לכמות ויחידה. "גרם" תמיד אפשרי. */
+function foodGrams(food, qty, unit){
+  if(!unit || unit === 'גרם') return +qty || 0;
+  const u = (food.units || []).find(x => x.name === unit);
+  return (+qty || 0) * (u ? u.g : 100);
+}
+const foodKcal = (food, qty, unit) => Math.round(foodGrams(food, qty, unit) * (+food.kcal100 || 0) / 100);
+/** הצעות: מה שנאכל הכי הרבה קודם, ואז המאגר. עם טקסט: רק מה שמתאים (גם יחיד/רבים). */
+function foodSuggest(file, query, limit){
+  const q = shopNorm(query), count = {};
+  for(const e of live(file?.entries)) if(e.foodId) count[e.foodId] = (count[e.foodId] || 0) + 1;
+  const fits = f => { if(!q) return true; const n = shopNorm(f.name); return n.startsWith(q) || n.includes(' ' + q) || q.split(' ').every(a => n.split(' ').some(b => sameWord(a, b) || b.startsWith(a))); };
+  return calFoods(file).filter(fits)
+    .sort((a, b) => (count[b.id] || 0) - (count[a.id] || 0) || (q ? +!shopNorm(a.name).startsWith(q) - +!shopNorm(b.name).startsWith(q) : 0) || a.rank - b.rank)
+    .slice(0, limit || 12).map(f => Object.assign({}, f, {uses: count[f.id] || 0}));
+}
+function calSettings(file){
+  const s = live(file?.settings).find(x => x.id === 'settings') || {};
+  return Object.assign({}, CAL_DEFAULTS, s);
+}
+/** המשקל בתאריך: העדכון האחרון עד אותו יום (ואם אין, משקל ההתחלה). */
+function weightOn(file, date){
+  const w = live(file?.weights).filter(x => x.date <= date).sort((a, b) => b.date.localeCompare(a.date) || (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0];
+  return w ? +w.kg : calSettings(file).weight;
+}
+/** קלוריות משוערות לפעילות. km: לפי מרחק ומהירות; min: לפי דקות. */
+function activityKcal(a, weight){
+  const def = ACTIVITIES[a.type] || ACTIVITIES.other, lv = def.levels[Math.min(def.levels.length - 1, Math.max(0, +a.level || 0))];
+  const hours = def.by === 'km' ? (+a.km || 0) / lv[1] : (+a.minutes || 0) / 60;
+  return Math.round(lv[2] * weight * hours);
+}
+const activityMinutes = a => { const def = ACTIVITIES[a.type] || ACTIVITIES.other; return def.by === 'km' ? Math.round((+a.km || 0) / def.levels[+a.level || 0][1] * 60) : +a.minutes || 0; };
+/** סיכום יום: נאכל, נשרף, יעד, נותר (יעד פחות נאכל: הפעילות לא מתווספת ליעד), ולפי ארוחות. */
+function calDay(file, date){
+  const st = calSettings(file), entries = live(file?.entries).filter(e => e.date === date), acts = live(file?.acts).filter(a => a.date === date);
+  const meals = MEALS.map(([id, name, emoji]) => { const items = entries.filter(e => e.meal === id).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
+    return {id, name, emoji, items, kcal: items.reduce((s, e) => s + (+e.kcal || 0), 0)}; });
+  const eaten = meals.reduce((s, m) => s + m.kcal, 0), burned = acts.reduce((s, a) => s + (+a.kcal || 0), 0);
+  return {date, goal: +st.goal, eaten, burned, remaining: +st.goal - eaten, pct: st.goal ? Math.min(100, Math.round(eaten / st.goal * 100)) : 0,
+    over: eaten > st.goal, meals, acts, weight: weightOn(file, date)};
+}
+/** היסטוריה: ימים שיש בהם משהו, מהחדש לישן. */
+function calHistory(file, limit){
+  const days = new Set([...live(file?.entries).map(e => e.date), ...live(file?.acts).map(a => a.date)]);
+  return [...days].sort().reverse().slice(0, limit || 60).map(d => { const x = calDay(file, d); return {date: d, eaten: x.eaten, burned: x.burned, goal: x.goal}; });
+}
+/** רשומת אכילה ממאכל. */
+function calEntry(food, o, nowIso){
+  const grams = foodGrams(food, o.qty, o.unit), kcal = o.kcal != null && o.kcal !== '' ? Math.round(+o.kcal) : foodKcal(food, o.qty, o.unit);
+  return {id: o.id || 'e' + sha256(food.id + nowIso + Math.random()).slice(0, 10), date: o.date, meal: o.meal, foodId: food.id, name: food.name,
+    qty: +o.qty, unit: o.unit, grams, kcal, manual: o.kcal != null && o.kcal !== '' && Math.round(+o.kcal) !== foodKcal(food, o.qty, o.unit),
+    addedAt: o.addedAt || nowIso, updatedAt: nowIso, deleted: false};
+}
+/** מתכון אישי → מאכל: סך הקלוריות של המרכיבים, מחולק למנות. */
+function recipeFood(r){
+  const total = (r.items || []).reduce((s, i) => s + (+i.kcal || 0), 0), grams = (r.items || []).reduce((s, i) => s + (+i.grams || 0), 0), n = Math.max(1, +r.servings || 1);
+  return {id: r.id, name: r.name, kcal100: grams ? Math.round(total / grams * 100) : 0, units: [{name: 'מנה', g: grams ? Math.round(grams / n) : 100}],
+    total, perServing: Math.round(total / n), recipe: true, updatedAt: r.updatedAt, deleted: r.deleted};
+}
+
 /* ---------- יומן גוגל דרך המנוע ---------- */
 // משימה עם calendar: true נכנסת ליומן גוגל של נדב. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
 // מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
@@ -1682,7 +1893,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
