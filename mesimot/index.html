@@ -125,9 +125,12 @@
   #fab{position:fixed;left:18px;bottom:calc(env(safe-area-inset-bottom) + 84px);width:60px;height:60px;border-radius:18px;
        border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;z-index:5;
        box-shadow:0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent)}
+  /* הסרגל נגלל ימינה ושמאלה: כל המסכים בו, בלי "עוד". רואים כחמישה וחצי, כדי שיהיה ברור שיש עוד */
   nav{position:fixed;right:0;left:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;
-      justify-content:space-around;padding:4px 6px calc(env(safe-area-inset-bottom) + 4px);z-index:4}
-  nav button{flex:1;max-width:120px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
+      padding:4px 6px calc(env(safe-area-inset-bottom) + 4px);z-index:4;overflow-x:auto;overscroll-behavior-x:contain;
+      scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  nav::-webkit-scrollbar{display:none}
+  nav button{flex:0 0 70px;scroll-snap-align:start;white-space:nowrap;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
              gap:2px;padding:6px 0;font-size:12px;color:var(--muted);min-height:56px;border-radius:14px}
   nav button.on{color:var(--accent);font-weight:600}
 
@@ -252,6 +255,7 @@
   .kc-kcal input{width:110px;font-size:20px;font-weight:700;text-align:center}
   .kc-kcal .note{flex-basis:100%}
   .kc-rec-sum{margin-top:14px;background:var(--soft);border-radius:14px;padding:12px;font-size:16px}
+  .back-more{display:none !important}
   .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .more-grid button{border:0;background:var(--card);border-radius:18px;padding:16px 12px;text-align:right;color:inherit;min-height:96px;display:flex;flex-direction:column;gap:4px}
   .more-grid .i{font-size:28px}
@@ -444,7 +448,11 @@
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
   <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-5.6-3.6-7.6-.4 1.6-1.3 2.8-2.4 3.4.1-3.3-1.2-6.4-4-8.8.2 3.6-1.6 5.6-3.2 7.6C4.6 11.3 5 13.4 5 15c0 4.2 3 7 7 7z"/></svg>קלוריות</button>
-  <button data-scr="more"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>עוד</button>
+  <button data-scr="birthdays"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16v-7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M4 16c2 1.3 4 1.3 5.3 0s4-1.3 5.4 0 3.3 1.3 5.3 0"/><path d="M12 12V8M12 5.5c-.8-.8-.8-2 0-3 .8 1 .8 2.2 0 3z"/></svg>ימים מיוחדים</button>
+  <button data-scr="docs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>מסמכים</button>
+  <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
+  <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>תחומים</button>
+  <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
 </nav>
 
 <!-- ===== מסך משימה ===== -->
@@ -993,8 +1001,9 @@ function show(s){
   for(const x of ['today', 'shop', 'recipes', 'kcal', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal';
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש'}[s] || 'משימה חדשה');
-  const tab = ['today', 'shop', 'recipes', 'kcal'].includes(s) ? s : 'more';   // מסכים שנכנסים אליהם מ"עוד"
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === tab));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
+  const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
+  if(on) on.scrollIntoView({inline: 'nearest', block: 'nearest'});
   renderAll(); scrollTo(0, 0);
 }
 function renderAll(){
@@ -1406,7 +1415,18 @@ function saveK(kind, recs){
 }
 const kNum = n => Math.round(+n || 0).toLocaleString('he-IL');
 function kDayLabel(d){ const t = today(); return d === t ? 'היום' : d === ל.addDays(t, -1) ? 'אתמול' : `${dayName(d)}, ${ל.shortDate(d)}`; }
+// המאגר המורחב (כ-4,400 מאכלים, מאגר התזונה הלאומי) נטען רק כשנכנסים לקלוריות, כדי לא להאט את פתיחת האפליקציה
+let foodDb = null;
+function loadFoodDb(){
+  return foodDb || (foodDb = new Promise(res => {
+    const sc = document.createElement('script'); sc.src = 'מאכלים.js';
+    sc.onload = () => { ל.addFoodDb(self.MAAKHALIM); res(true); if($('dlg-kfood').open && !kf?.food) renderKFood(); };
+    sc.onerror = () => { foodDb = null; res(false); };
+    document.head.appendChild(sc);
+  }));
+}
 function renderKcal(){
+  loadFoodDb();
   if(!kcDate) kcDate = today();
   const x = ל.calDay(KF(), kcDate);
   $('kc-day').textContent = kDayLabel(kcDate) + (kcDate === today() ? '' : ' ↩');
@@ -1466,7 +1486,7 @@ function openKFood(o){
 }
 function renderKFood(){
   $('kf-meal').innerHTML = ל.MEALS.map(([id, n, e]) => `<button type="button" data-m="${id}" class="${kf.meal === id ? 'on' : ''}">${e} ${n}</button>`).join('');
-  const sug = kf.food && !$('kf-q').value ? [] : ל.foodSuggest(KF(), $('kf-q').value, $('kf-q').value ? 10 : 8);
+  const sug = kf.food && !$('kf-q').value ? [] : ל.foodSuggest(KF(), $('kf-q').value, $('kf-q').value ? 40 : 8);
   $('kf-sug').innerHTML = sug.map(f => { const u = f.units[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${esc(f.name)}${f.uses ? ' ⭐' : ''}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
     + ($('kf-q').value && !sug.length ? `<div class="empty">"${esc($('kf-q').value)}" לא במאגר. אפשר להוסיף למטה</div>` : '');
   $('kf-sel').hidden = !kf.food;
