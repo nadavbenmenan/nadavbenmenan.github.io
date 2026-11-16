@@ -272,8 +272,8 @@
   .up-row .foot{flex-basis:100%;display:flex;align-items:center;gap:12px}
   .up-row .bar{flex:1;height:6px;border-radius:6px;background:var(--soft);overflow:hidden}
   .up-row .bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
-  .up-row.late .bar i{background:var(--red)} .up-row.late .side{color:var(--red)}
-  .up-row.due .bar i, .up-row.soon .bar i{background:#E07A1F} .up-row.due .side, .up-row.soon .side{color:#C2410C}
+  .up-row.st-late .bar i{background:var(--red)} .up-row.st-late .side{color:var(--red)}
+  .up-row.st-due .bar i, .up-row.st-soon .bar i{background:#E07A1F} .up-row.st-due .side, .up-row.st-soon .side{color:#C2410C}
   .up-done{border:0;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:600;min-height:40px;padding:6px 12px;flex:none}
   .more-row .side{font-size:13px;font-weight:600;flex:none;text-align:center;min-width:56px}
   .more-row.expired{background:var(--red-soft)} .more-row.expired .side{color:var(--red)}
@@ -1768,7 +1768,7 @@ function renderUpkeep(){
   const ago = n => n === 0 ? 'היום' : n === 1 ? 'אתמול' : n >= 60 ? `לפני ${Math.round(n / 30.4)} חודשים` : `לפני ${n} ימים`;
   const side = x => x.state === 'unknown' ? 'מתי לאחרונה?' : x.left < 0 ? `באיחור ${-x.left === 1 ? 'יום' : -x.left + ' ימים'}`
     : x.state === 'due' ? 'הגיע הזמן' : x.toMin > 1 && x.toMin < x.left ? `בעוד ${x.toMin}-${x.left} ימים` : daysText(x.left);
-  $('up-list').innerHTML = list.length ? list.map(x => `<div class="more-row up-row ${x.state}" data-id="${esc(x.task.id)}" role="button" tabindex="0">
+  $('up-list').innerHTML = list.length ? list.map(x => `<div class="more-row up-row st-${x.state}" data-id="${esc(x.task.id)}" role="button" tabindex="0">
       <span class="i">${x.task.emoji || '🔧'}</span>
       <span class="b"><span class="t" style="display:block">${esc(x.task.title)}</span><span class="s" style="display:block">כל ${esc(x.every)}${x.last ? ` · אחרון: ${ago(x.sinceDays)}` : ''}</span></span>
       <span class="side">${side(x)}</span>
