@@ -853,6 +853,13 @@ function shopGroups(items){
   }
   return Object.values(g).sort((a, b) => a.order - b.order);
 }
+/** הרשימה כהודעת וואטסאפ: אותה חלוקה למחלקות ובאותו סדר. *כוכביות* = מודגש בוואטסאפ. */
+function shopText(items){
+  const groups = shopGroups(items), n = groups.reduce((s, g) => s + g.items.length, 0);
+  if(!n) return '';
+  return `🛒 *רשימת קניות* (${n})\n\n` +
+    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `▫️ ${x.emoji} ${x.name}`).join('\n')).join('\n\n');
+}
 function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
 
 /* ---------- חשבונות הדייר ---------- */
@@ -1000,7 +1007,7 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopInfo, shopMatch, sameWord, mergeShopFile,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
