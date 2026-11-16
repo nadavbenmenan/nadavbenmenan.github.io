@@ -884,19 +884,33 @@ function recipeImages(recipes){
 /* ---------- טיימרים (התראה מהמנוע כשהזמן עובר) ---------- */
 // משימות/טיימרים.json: {v, timers: [{id, at, title, body, updatedAt, deleted}]}. האפליקציה כותבת, המנוע שולח בזמן.
 function mergeTimersFile(a, b, now){ return {v: 1, timers: mergeById(a?.timers, b?.timers, now)}; }
-const liveTimers = (file, now) => (file?.timers || []).filter(t => !t.deleted && t.kind !== 'med' && t.at > now - 36e5).sort((a, b) => a.at - b.at);
-/** טיימרים שהגיע זמנם (עד 20 דקות אחורה) ועוד לא נשלחו, ומתי הבא. */
+const liveTimers = (file, now) => (file?.timers || []).filter(t => !t.deleted && !t.stopped && t.kind !== 'med' && t.at > now - 36e5).sort((a, b) => a.at - b.at);
+/* טיימר של מתכון "מצלצל" עד שעוצרים: Web Push לא יכול להשמיע צליל מתמשך, ולכן ההתראה חוזרת כל דקה, עד 5 פעמים,
+   עם צליל ורטט בכל פעם (אותו tag, renotify), עד ש"⏹ עצור" (stopped: true). תזכורת תרופה (kind: 'med'): פעם אחת. */
+const TIMER_RINGS = 5, TIMER_RING_GAP = 60e3;
+/** טיימרים שהגיע זמנם (עד 20 דקות אחורה) ועוד לא נשלחו, ומתי הבא. צלצול חוזר: מזהה <id>~<n>, והאחרון שהגיע בלבד. */
 function timersDue(file, now, sent){
   const due = [], later = [];
   for(const t of (file?.timers || [])){
-    if(t.deleted || sent['timer@' + t.id]) continue;
-    if(t.at > now + PUSH_LEAD) later.push(t.at);
-    else if(t.at > now - PUSH_BACK) due.push(t);
+    if(t.deleted || t.stopped) continue;
+    const rings = t.kind === 'med' ? 1 : TIMER_RINGS, vid = n => n ? `${t.id}~${n}` : t.id;
+    let pick = null;
+    for(let n = 0; n < rings; n++){
+      const at = t.at + n * TIMER_RING_GAP;
+      if(at > now + PUSH_LEAD){ later.push(at); break; }
+      if(at > now - PUSH_BACK) pick = n;
+    }
+    if(pick == null) continue;
+    let done = false;
+    for(let n = pick; n < rings; n++) if(sent['timer@' + vid(n)]) done = true;   // כבר צלצל (או צלצול מאוחר יותר)
+    if(!done) due.push(Object.assign({}, t, {id: vid(pick), base: t.id, ring: pick + 1, rings}));
   }
   return {due, next: later.length ? Math.min(...later) : null};
 }
 // תזכורות תרופות (kind: 'med') יושבות באותו קובץ: התראה רגילה, שפותחת את מסך התרופות
 const timerPayload = t => t.kind === 'med' ? JSON.stringify({t: t.title, b: t.body || '', u: APP + '#meds', tag: 'med-' + t.id})
+  : t.base ? JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: (t.body ? `עבר ${t.body}` : 'הזמן עבר') + (t.ring > 1 ? ` · צלצול ${t.ring} מתוך ${t.rings}` : ''),
+      u: APP + '#tm=' + encodeURIComponent(t.base), tag: 'timer-' + t.base, ri: true, vib: true, stop: t.base})
   : JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: t.body ? `עבר ${t.body}` : 'הזמן עבר', u: APP, tag: 'timer-' + t.id, ri: true, vib: true});
 
 /** ערך ריק בפועל: "", "—", "-", "אין", "לא צוין"... */
