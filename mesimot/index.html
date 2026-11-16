@@ -1313,6 +1313,8 @@ async function sync(){
     if(err.code === 401) toast('האסימון אינו תקף. אפשר לחבר מחדש בהגדרות', {err: true});
   }finally{
     syncing = false; renderAll();
+    // ההגדרות פתוחות: מעדכנים רק את שורת המנוע (בלי לדרוס מה שנדב מקליד שם)
+    if($('dlg-settings').open && $('s-engine')) $('s-engine').innerHTML = engineText();
     if(again){ again = false; sync(); }
   }
 }
