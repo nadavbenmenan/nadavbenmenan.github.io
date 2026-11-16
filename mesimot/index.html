@@ -207,6 +207,11 @@
   .cal .ds{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
   .cal .ds i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 
+  .cal-tog{flex:none!important;width:52px;padding:0;display:grid;place-items:center;color:var(--muted)}
+  .cal-tog[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+  .cal-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .cal-row .btn{display:inline-flex;align-items:center;gap:8px;flex:none}
+  .cal-row .note{flex:1}
   .shop-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
   #shop-wa{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;color:#1a8f4c;font-size:14px}
   #shop-wa[hidden]{display:none}
@@ -326,8 +331,8 @@
   <div class="field"><span class="lbl">חוזר</span><div class="opts" id="q-rep"></div></div>
   <div class="field"><label for="q-time">שעה להתראה (לא חובה)</label><input type="time" id="q-time"></div>
   <div class="field"><span class="lbl">תחום</span><div class="opts" id="q-domain"></div></div>
-  <label class="check-row" id="q-cal-row"><input type="checkbox" id="q-cal"> להוסיף גם ליומן גוגל</label>
   <div class="btns">
+    <button class="btn cal-tog" id="q-cal" type="button" aria-pressed="false" aria-label="גם ביומן גוגל" title="גם ביומן גוגל"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg></button>
     <button class="btn" id="q-more">עוד אפשרויות</button>
     <button class="btn primary" id="q-save">הוספה</button>
   </div>
@@ -401,7 +406,7 @@ const ל = window.ליבה;
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
 const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה',
-           push: 'משימות.דחיפה', device: 'משימות.מכשיר', toCal: 'משימות.ליומן'};
+           push: 'משימות.דחיפה', device: 'משימות.מכשיר', toCal: 'משימות.ליומן', cal: 'משימות.יומן'};
 const SUBS_PATH = 'משימות/מנויים.json';    // המכשירים שנרשמו להתראות ישירות
 
 /* ---------- עזר ---------- */
@@ -958,7 +963,7 @@ function renderTaskPage(){
       ${t.kind === 'email' && t.email?.amount != null ? `<div><span class="k">סכום</span><span class="v">${esc(t.email.amount)} ₪</span></div>` : ''}
     </div>
     ${t.calc ? `<button class="btn" id="tp-calc" type="button" style="width:100%;margin-top:14px">מחשבון לדייר</button>` : ''}
-    ${o && o.due ? `<button class="btn" id="tp-cal" type="button" style="width:100%;margin-top:10px">📅 הוספה ליומן גוגל (${esc(ל.shortDate(o.due))})</button>` : ''}
+    ${calRow(raw)}
     ${subs}
     ${t.notes || links.length ? `<div class="sec"><h2>הערות וקישורים</h2><div class="card">${t.notes ? `<div style="white-space:pre-wrap">${esc(t.notes)}</div>` : ''}
       ${links.length ? `<div class="links" style="margin-top:${t.notes ? 10 : 0}px">${links.map(u => `<div><a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${esc(u === t.email?.threadUrl ? 'פתיחת המייל' : u)}</a></div>`).join('')}</div>` : ''}</div></div>` : ''}
@@ -969,7 +974,11 @@ function renderTaskPage(){
   $('tp-done').style.opacity = open ? '' : '.45';
   $('tp-body').querySelectorAll('[data-sub]').forEach(cb => cb.onchange = () => { if(o) saveRec(ל.toggleSub(o, cb.dataset.sub, nowIso())); });
   if($('tp-calc')) $('tp-calc').onclick = () => openCalc(t.calc, t.email?.amount);
-  if($('tp-cal')) $('tp-cal').onclick = () => openCalendar(ל.calendarFor(t, o));
+  if($('tp-cal')) $('tp-cal').onclick = () => {
+    const cur = taskById(raw.id);
+    saveTask(Object.assign({}, cur, {calendar: !cur.calendar}));
+    toast(!cur.calendar ? '📅 ייכנס ליומן גוגל בדקות הקרובות' : 'יוסר מיומן גוגל בדקות הקרובות');
+  };
   const lastOk = $('tp-last-ok');
   if(lastOk) lastOk.onclick = () => {
     const v = $('tp-last').value; if(!v) return;
@@ -1019,7 +1028,7 @@ let quick = {when: 'today', domain: 'personal'};
 function openQuick(){
   quick = {when: 'today', date: null, repeat: '', repTouched: false, domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal'), touched: false};
   $('q-title').value = ''; $('q-time').value = '';
-  $('q-cal').checked = store(K.toCal) === '1';   // נזכר בבחירה האחרונה
+  quick.cal = store(K.toCal) === '1';   // נזכר בבחירה האחרונה
   renderQuick();
   $('dlg-quick').showModal();
   setTimeout(() => $('q-title').focus(), 50);
@@ -1038,7 +1047,9 @@ function renderQuick(){
   $('q-rep').innerHTML = reps.map(([k, v]) => `<button type="button" data-r="${k}" class="${quick.repeat === k ? 'on' : ''}">${esc(v)}</button>`).join('');
   $('q-domain').innerHTML = visibleDomains().map(x => `<button type="button" data-d="${esc(x.id)}" class="${quick.domain === x.id ? 'on' : ''}"><span class="dot" style="--c:${esc(x.color)}"></span> ${esc(x.name)}</button>`).join('');
   const time = $('q-time').value, date = quickDate();
-  $('q-cal-row').hidden = !date && !quick.repeat;   // בלי תאריך אין מה לשים ביומן
+  const calOk = !!date || !!quick.repeat;   // בלי תאריך אין מה לשים ביומן
+  $('q-cal').disabled = !calOk; $('q-cal').style.opacity = calOk ? '' : '.4';
+  $('q-cal').setAttribute('aria-pressed', String(calOk && quick.cal));
   const dd = date || today(), dayTxt = dd === today() ? 'היום' : dd === ל.addDays(today(), 1) ? 'מחר' : `ב${dayName(dd)} ${ל.shortDate(dd)}`;
   $('q-line').textContent = quick.repeat ? `🔁 ${ל.repeatText(quick.repeat)}, החל מ${dayTxt === 'היום' || dayTxt === 'מחר' ? dayTxt : dayTxt.slice(1)}${time ? ` ב־${time}` : ''}`
     : time && date ? `🔔 התראה ${dayTxt} ב־${time}` : '';
@@ -1056,6 +1067,7 @@ $('q-title').addEventListener('input', () => {
 });
 $('q-time').addEventListener('input', () => { quick.touched = true; if(quick.when === 'none') quick.when = 'today'; renderQuick(); });
 $('q-when').onclick = e => { const b = e.target.closest('[data-w]'); if(b){ quick.touched = true; quick.when = b.dataset.w; if(quick.when === 'none') $('q-time').value = ''; renderQuick(); } };
+$('q-cal').onclick = () => { quick.cal = !quick.cal; renderQuick(); toast(quick.cal ? '📅 ייכנס גם ליומן גוגל' : 'בלי יומן', {ms: 1500}); };
 $('q-rep').onclick = e => { const b = e.target.closest('[data-r]'); if(b){ quick.repTouched = true; quick.repeat = b.dataset.r; if(quick.repeat && quick.when === 'none') quick.when = 'today'; renderQuick(); } };
 $('q-domain').onclick = e => { const b = e.target.closest('[data-d]'); if(b){ quick.domain = b.dataset.d; renderQuick(); } };
 function quickTask(){
@@ -1081,24 +1093,33 @@ function quickTask(){
 }
 $('q-save').onclick = () => {
   if(!$('q-title').value.trim()) return toast('כתוב מה צריך לעשות', {err: true});
-  const t = saveTask(quickTask());
-  store(K.toCal, $('q-cal').checked ? '1' : '0');
-  // נפתח בלחיצה עצמה (אחרת הדפדפן חוסם חלון חדש)
-  const first = t.kind === 'once' ? t.once.date : t.kind === 'schedule' ? t.start : null;
-  if($('q-cal').checked && first) openCalendar(ל.calendarUrl({title: ל.displayTitle(t), date: first, time: t.exact ? t.time : null,
-    rrule: t.kind === 'schedule' ? ל.rruleOf(t.schedule.rule) : null,
-    details: 'ממשימות: ' + ל.APP + '#o=' + encodeURIComponent(`${t.id}-${ל.compact(first)}`)}));
+  const qt = quickTask();
+  if(quick.cal && qt.kind !== 'inbox') qt.calendar = true;   // המנוע ייצור את האירוע ביומן גוגל
+  const t = saveTask(qt);
+  store(K.toCal, quick.cal ? '1' : '0');
   $('dlg-quick').close();
-  if(t.kind === 'schedule') toast(`נוספה משימה קבועה: ${t.title}, ${ל.repeatText(quick.repeat)}`);
+  if(t.kind === 'schedule') toast(`נוספה משימה קבועה: ${t.title}, ${ל.repeatText(quick.repeat)}${t.calendar ? '. 📅 גם ביומן' : ''}`);
+  else if(t.calendar) toast(`נוספה: ${t.title}. 📅 תיכנס ליומן גוגל בדקות הקרובות`);
   else toast(t.exact ? `נוספה: ${t.title}. התראה ${t.once.date === today() ? 'היום' : t.once.date === ל.addDays(today(), 1) ? 'מחר' : ל.shortDate(t.once.date)} ב־${t.time}` : `נוספה: ${t.title}`);
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
 $('fab').onclick = openQuick;
-/** יומן גוגל: בנייד נפתח באפליקציית היומן או בדפדפן, עם אירוע ממולא. שומרים שם. */
-function openCalendar(url){
-  if(!url) return;
-  if(!window.open(url, '_blank')) location.href = url;
+/* ---------- יומן גוגל ---------- */
+// כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
+let calFile = storeJson(K.cal, {events: []});
+const CAL_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg>';
+function calRow(raw){
+  const kindOk = raw.kind === 'once' || raw.kind === 'schedule' || raw.kind === 'afterDone';
+  if(!kindOk) return '';
+  const now = Date.now(), spec = ל.calendarSpec(Object.assign({}, raw, {calendar: true}), data(), now);
+  const ev = (calFile.events || []).find(e => e.id === raw.id && !e.deleted);
+  let st;
+  if(raw.calendar) st = ev && spec && ev.sig === ל.calendarSpec(raw, data(), now)?.sig ? `✓ ביומן גוגל${ev.date ? ' (' + ל.shortDate(ev.date) + (spec.rule ? ', חוזר' : '') + ')' : ''}`
+    : !ל.engineAlive(inbox, now) ? 'יתווסף כשהמנוע בגוגל ירוץ' : 'יתווסף ליומן בדקות הקרובות';
+  else st = ev ? 'יוסר מהיומן בדקות הקרובות' : spec ? '' : 'אין תאריך קרוב';
+  return `<div class="cal-row"><button class="btn cal-tog" id="tp-cal" type="button" aria-pressed="${!!raw.calendar}" aria-label="ביומן גוגל"${spec ? '' : ' disabled style="opacity:.4"'}>${CAL_ICON}</button>
+    <span class="note">${esc(st || 'להוסיף ליומן גוגל')}</span></div>`;
 }
 
 /* ---------- עורך משימה ---------- */
@@ -1336,6 +1357,8 @@ async function sync(){
     await readPending();
     await syncFile('occ'); await syncFile('shop');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
+    if(D.tasks.some(t => t.calendar) || (calFile.events || []).length)
+      try{ const c = await readFile({path: 'משימות/יומן.json'}); if(c){ calFile = c; store(K.cal, JSON.stringify(c)); } }catch(e){}
     applyTheme();
     await scheduleNotifications();
     await ensurePush();
