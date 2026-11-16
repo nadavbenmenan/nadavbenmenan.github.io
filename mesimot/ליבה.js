@@ -160,7 +160,9 @@ function afterDoneInfo(task, idx, today){
   const recs = (idx.byTask.get(task.id) || []).filter(r => /-n\d+$/.test(r.id));
   const closed = recs.filter(r => r.status === 'done' || r.status === 'skipped');
   const closedDate = r => r.doneAt ? localDate(toMs(r.doneAt)) : r.due;
-  const baseline = maxStr(task.afterDone?.lastDone, ...closed.map(closedDate));
+  // תאריך אחרון שהוזן ביד (lastSetAt) גובר על סימונים שנעשו לפניו, כדי שאפשר יהיה לתקן אחורה
+  const setAt = task.afterDone?.lastSetAt, counted = setAt ? closed.filter(r => (r.doneAt || r.updatedAt || '') > setAt) : closed;
+  const baseline = maxStr(task.afterDone?.lastDone, ...counted.map(closedDate));
   const n = Math.max(0, ...closed.map(r => +r.id.match(/-n(\d+)$/)[1])) + 1;
   const base = baseline || task.start;
   const min = +task.afterDone?.minDays || 0, max = +task.afterDone?.maxDays || min;
@@ -950,6 +952,32 @@ function docTask(o, nowIso){
     domain: 'personal', priority: 'high', kind: 'once', once: {date: o.expiry}, time: '10:00', remindDays: before,
     pre: [...new Set([before, 7].filter(x => x <= before))].sort((a, b) => b - a), nag: {mode: 'weekly'}, doneLabel: 'חידשתי',
     subtasks: [], notes: o.notes || '', links: [], start: localDate(Date.parse(nowIso)), archived: false, deleted: false, updatedAt: nowIso};
+}
+/* ---------- תחזוקה שוטפת ---------- */
+// דברים שמחליפים או עושים כל פרק זמן (מברשת שיניים, מסנן מים, סכין גילוח, תספורת). אלה משימות "ממועד הביצוע" (afterDone)
+// עם upkeep: true, כך שההתראות, "החלפתי" וההיסטוריה עובדים כמו בכל משימה. min/max בימים: טווח (תספורת 21-30) או מדויק.
+const UPKEEP_EVERY = [[7, 7, 'שבוע'], [14, 14, 'שבועיים'], [21, 30, '3-4 שבועות'], [30, 30, 'חודש'], [60, 60, 'חודשיים'],
+  [90, 90, '3 חודשים'], [180, 180, 'חצי שנה'], [365, 365, 'שנה']];
+function everyText(min, max){
+  const f = UPKEEP_EVERY.find(([a, b]) => a === +min && b === +max);
+  return f ? f[2] : +min === +max ? `${min} ימים` : `${min}-${max} ימים`;
+}
+function upkeepTask(o, nowIso){
+  const min = Math.max(1, +o.min || 30), max = Math.max(min, +o.max || min);
+  return {id: o.id || 'up' + sha256((o.name || '') + nowIso).slice(0, 10), title: (o.name || '').trim(), upkeep: true, emoji: o.emoji || '🔧',
+    domain: o.domain || 'home', priority: 'normal', kind: 'afterDone', afterDone: {minDays: min, maxDays: max, lastDone: o.lastDone || null},
+    soft: min !== max, time: o.time || '10:00', pre: [], nag: {mode: 'daily', from: 'max'}, doneLabel: o.doneLabel || 'החלפתי',
+    subtasks: [], notes: o.notes || '', links: [], start: o.lastDone || localDate(Date.parse(nowIso)), archived: false, deleted: false, updatedAt: nowIso};
+}
+/** מצב כל פריט: {task, last, sinceDays, minDate, maxDate, left (ימים עד המועד), state: late/due/soon/ok/unknown, pct, every}. הדחוף קודם. */
+function upkeepView(tasks, occ, today){
+  const idx = indexOcc(occ), order = {late: 0, due: 1, soon: 2, unknown: 3, ok: 4};
+  return (tasks || []).filter(t => t.upkeep && !t.deleted && !t.archived && t.kind === 'afterDone').map(t => {
+    const a = afterDoneInfo(t, idx, today), left = diffDays(a.maxDate, today), toMin = diffDays(a.minDate, today);
+    const state = a.needsLast ? 'unknown' : left < 0 ? 'late' : toMin <= 0 && a.min !== a.max ? 'due' : left <= 3 ? 'soon' : 'ok';
+    return {task: t, last: a.lastDone, sinceDays: a.lastDone ? diffDays(today, a.lastDone) : null, minDate: a.minDate, maxDate: a.maxDate,
+      left, toMin, state, pct: a.needsLast ? 0 : Math.max(0, Math.min(100, Math.round(a.day / (a.max || 1) * 100))), every: everyText(a.min, a.max)};
+  }).sort((x, y) => order[x.state] - order[y.state] || x.left - y.left);
 }
 /** ימי הולדת לפי הקרוב: {task, next, inDays, age (בן כמה יהיה, אם השנה ידועה)} */
 function birthdaysView(tasks, today){
@@ -1812,10 +1840,11 @@ function tenantText(b){
 /** מחזיר משימות לעדכן ותצורה חדשה, או null כשאין מה לעשות. */
 function migrate(data, today, nowIso){
   const cfg = config(data.config), tasks = data.tasks || [], v = +cfg.seedV || 1;
-  if(v >= 4) return null;
+  if(v >= 5) return null;
   const seed = initialData(today), byId = id => tasks.find(t => t.id === id), seedRule = id => seed.config.mailRules.find(r => r.id === id);
   const out = [];
   let rules = (cfg.mailRules || []).slice();
+  if(v < 4){
   if(v < 2){
     const old = byId('arnona');
     if(old && !old.deleted) out.push(Object.assign({}, old, {deleted: true, updatedAt: nowIso}));
@@ -1834,16 +1863,28 @@ function migrate(data, today, nowIso){
   // גרסה 4: מברשת שיניים ומסננת
   for(const t of seed.tasks.filter(x => x.id === 'toothbrush' || x.id === 'filter'))
     if(!byId(t.id)) out.push(Object.assign({}, t, {updatedAt: nowIso}));
-  return {tasks: out, config: Object.assign({}, cfg, {seedV: 4, mailRules: rules, updatedAt: nowIso})};
+  }
+  // גרסה 5: לשונית תחזוקה. מברשת, מסנן ותספורת עוברים אליה (בלי לאבד את מה שכבר סומן), ונוסף סכין גילוח
+  for(const [id, extra] of Object.entries(UPKEEP_MARKS)){
+    const cur = out.find(t => t.id === id) || byId(id);
+    if(!cur || cur.deleted || cur.upkeep) continue;
+    const nt = Object.assign({}, cur, extra, {title: cur.title === 'החלפת מסננת' ? 'החלפת מסנן מים' : cur.title, updatedAt: nowIso});
+    const i = out.indexOf(cur); if(i >= 0) out[i] = nt; else out.push(nt);
+  }
+  if(!byId('razor')) out.push(Object.assign({}, seed.tasks.find(t => t.id === 'razor'), {updatedAt: nowIso}));
+  return {tasks: out, config: Object.assign({}, cfg, {seedV: 5, mailRules: rules, updatedAt: nowIso})};
 }
 
 /** תזכורות החלפה (16.11.2026): חודש מההחלפה האחרונה, חודשיים למסננת. "החלפתי" מתחיל את הספירה מחדש. */
 const REPLACE_TASKS = today => [
-  {id: 'toothbrush', title: 'החלפת מברשת שיניים', domain: 'health', kind: 'afterDone',
+  {id: 'toothbrush', title: 'החלפת מברשת שיניים', domain: 'health', kind: 'afterDone', upkeep: true, emoji: '🪥',
    afterDone: {minDays: 30, maxDays: 30, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
-  {id: 'filter', title: 'החלפת מסננת', domain: 'home', kind: 'afterDone',
+  {id: 'filter', title: 'החלפת מסנן מים', domain: 'home', kind: 'afterDone', upkeep: true, emoji: '💧',
+   afterDone: {minDays: 60, maxDays: 60, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
+  {id: 'razor', title: 'החלפת סכין גילוח', domain: 'personal', kind: 'afterDone', upkeep: true, emoji: '🪒',
    afterDone: {minDays: 60, maxDays: 60, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
 ];
+const UPKEEP_MARKS = {toothbrush: {upkeep: true, emoji: '🪥'}, filter: {upkeep: true, emoji: '💧'}, haircut: {upkeep: true, emoji: '💇'}};
 const TOKEN_NOTES = 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה, 90 יום. להדביק בשני מקומות: 1) באפליקציה: ⋮ ← גיטהאב וסנכרון ← החלפת אסימון (זה גם מסמן את המשימה כבוצעה). 2) במנוע: script.google.com ← הפרויקט ← הגדרות הפרויקט ← Script properties ← GH_TOKEN.';
 
 /* ---------- נתונים התחלתיים (סעיף 5 באפיון) ---------- */
@@ -1873,7 +1914,7 @@ function initialData(today){
         time: '17:00', nag: {mode: 'none'}}),
       T({id: 'haircut', title: 'תספורת', domain: 'personal', kind: 'afterDone',
         afterDone: {minDays: 21, maxDays: 30, lastDone: null}, soft: true, nag: {mode: 'daily', from: 'max'},
-        doneLabel: 'הסתפרתי', subtasks: [{id: 's1', text: 'לקבוע תור'}]}),
+        doneLabel: 'הסתפרתי', subtasks: [{id: 's1', text: 'לקבוע תור'}], upkeep: true, emoji: '💇'}),
       T({id: 'rent', title: 'חידוש שכר דירה', domain: 'home', priority: 'high', kind: 'once',
         once: {date: '2026-11-30'}, pre: [14, 7, 3, 1], notes: 'החוזה שלי כשוכר.'}),
       T({id: 'token', title: 'חידוש אסימון גיטהאב', domain: 'personal', priority: 'high', kind: 'afterDone',
@@ -1883,7 +1924,7 @@ function initialData(today){
     ],
     domains: DOMAINS.map(d => Object.assign({hidden: false, updatedAt: ''}, d)),
     config: Object.assign({}, DEFAULT_CONFIG, {
-      seedV: 4,
+      seedV: 5,
       mailRules: [
         {id: 'elec', enabled: true, from: 'noreplys@iec.co.il', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
           priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'elec',
@@ -1909,7 +1950,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
