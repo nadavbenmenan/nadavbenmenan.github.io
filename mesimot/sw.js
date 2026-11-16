@@ -7,8 +7,8 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v4';
-const קבצים = ['./', 'index.html', 'ליבה.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
+const מטמון = 'mesimot-v5';
+const קבצים = ['./', 'index.html', 'ליבה.js', 'מאכלים.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
 const PATHS = {tasks: 'משימות/משימות.json', occ: 'משימות/פעמים.json', config: 'משימות/תצורה.json'};
