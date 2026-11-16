@@ -181,6 +181,9 @@ function occurrencesOf(task, idx, today, until){
       const from = maxStr(task.start, addDays(today, -LOOKBACK));
       const list = ruleDates(task.schedule?.rule || {type: 'daily'}, from, until)
         .map(d => occFrom(task, `${task.id}-${compact(d)}`, d, idx));
+      // dayOnly (ימי הולדת): יום שעבר ולא סומן לא נשאר "באיחור", פשוט עובר
+      if(task.missPolicy === 'dayOnly')
+        for(const o of list) if(o.due < today && (o.status === 'open' || o.status === 'snoozed')) o.status = 'missed';
       if(task.missPolicy === 'replace'){
         // פעם שהגיעה פעם חדשה אחריה (עד היום) ולא סומנה נחשבת "פוספסה"
         const reached = list.filter(o => o.due <= today);
@@ -876,6 +879,43 @@ function recipeText(rc, img){
   return L.join('\n');
 }
 
+/* ---------- ימי הולדת ומסמכים ---------- */
+// שניהם משימות רגילות (כך שההתראות, לוח השנה וההיסטוריה עובדים בלי שינוי), עם special לזיהוי.
+// יום הולדת: כל שנה באותו יום, תזכורת שבוע ויום לפני. מסמך: חד-פעמית בתאריך פקיעת התוקף, תזכורת מראש, ונודניק שבועי אם פג.
+const DOC_TYPES = ['דרכון', 'תעודת זהות', 'רישיון נהיגה', 'טסט לרכב', 'ביטוח רכב', 'ביטוח דירה', 'ביטוח בריאות', 'כרטיס אשראי', 'ויזה', 'מנוי', 'אחריות למוצר'];
+function birthdayTask(o, nowIso){
+  const [y, m, d] = o.date.split('-').map(Number);
+  return {id: o.id || 'bd' + sha256(o.name + o.date + nowIso).slice(0, 10), title: `יום הולדת ל${o.name}`, special: 'birthday', person: o.name,
+    birthYear: o.knowYear === false ? null : y, domain: 'personal', priority: 'normal', kind: 'schedule',
+    schedule: {rule: {type: 'yearly', month: m, day: d}}, start: `2000-${pad(m)}-${pad(d)}`, missPolicy: 'dayOnly', time: o.time || '09:00',
+    pre: [7, 1], nag: {mode: 'none'}, doneLabel: 'בירכתי', subtasks: [], notes: o.notes || '', links: [], archived: false, deleted: false, updatedAt: nowIso};
+}
+function docTask(o, nowIso){
+  const before = +o.remindDays || 30;
+  return {id: o.id || 'doc' + sha256(o.name + o.expiry + nowIso).slice(0, 10), title: `חידוש ${o.name}`, special: 'doc', docName: o.name,
+    domain: 'personal', priority: 'high', kind: 'once', once: {date: o.expiry}, time: '10:00', remindDays: before,
+    pre: [...new Set([before, 7].filter(x => x <= before))].sort((a, b) => b - a), nag: {mode: 'weekly'}, doneLabel: 'חידשתי',
+    subtasks: [], notes: o.notes || '', links: [], start: localDate(Date.parse(nowIso)), archived: false, deleted: false, updatedAt: nowIso};
+}
+/** ימי הולדת לפי הקרוב: {task, next, inDays, age (בן כמה יהיה, אם השנה ידועה)} */
+function birthdaysView(tasks, today){
+  return (tasks || []).filter(t => t.special === 'birthday' && !t.deleted).map(t => {
+    const r = t.schedule.rule, y = +today.slice(0, 4);
+    let next = `${y}-${pad(r.month)}-${pad(Math.min(r.day, daysInMonth(y, r.month)))}`;
+    if(next < today) next = `${y + 1}-${pad(r.month)}-${pad(Math.min(r.day, daysInMonth(y + 1, r.month)))}`;
+    return {task: t, next, inDays: diffDays(next, today), age: t.birthYear ? +next.slice(0, 4) - t.birthYear : null};
+  }).sort((a, b) => a.inDays - b.inDays || a.task.person.localeCompare(b.task.person, 'he'));
+}
+/** מסמכים לפי פקיעת התוקף: {task, expiry, inDays, state: 'ok' | 'soon' | 'expired' | 'renewed'} */
+function docsView(tasks, occ, today){
+  const idx = indexOcc(occ);
+  return (tasks || []).filter(t => t.special === 'doc' && !t.deleted).map(t => {
+    const expiry = t.once.date, rec = idx.byId.get(`${t.id}-${compact(expiry)}`), inDays = diffDays(expiry, today);
+    const state = rec && rec.status === 'done' ? 'renewed' : inDays < 0 ? 'expired' : inDays <= (t.remindDays || 30) ? 'soon' : 'ok';
+    return {task: t, expiry, inDays, state};
+  }).sort((a, b) => ({expired: 0, soon: 1, ok: 2, renewed: 3}[a.state] - {expired: 0, soon: 1, ok: 2, renewed: 3}[b.state]) || a.inDays - b.inDays);
+}
+
 /* ---------- יומן גוגל דרך המנוע ---------- */
 // משימה עם calendar: true נכנסת ליומן גוגל של נדב. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
 // מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
@@ -1524,7 +1564,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, DOC_TYPES, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
