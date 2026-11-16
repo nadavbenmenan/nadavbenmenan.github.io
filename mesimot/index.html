@@ -230,6 +230,7 @@
                     font-weight:600;font-size:14px;min-height:36px;padding:4px 12px}
   #timer-bar{position:fixed;right:12px;left:12px;bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:60;display:flex;flex-direction:column;gap:6px}
   #timer-bar .tm{display:flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);border-radius:16px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  #timer-bar .tm.done{background:var(--accent);color:var(--on-accent)}
   #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
@@ -512,6 +513,8 @@ const FILES = {
            merge: (a, b) => ל.mergeTasksFile(a, b), msg: 'עדכון משימות'},
   occ:    {path: 'משימות/פעמים.json', cache: 'משימות.פעמים', pending: 'משימות.פעמים.ממתין', sha: null,
            merge: (a, b) => ל.mergeOccFile(a, b), msg: 'עדכון ביצועים'},
+  timers: {path: 'משימות/טיימרים.json', cache: 'משימות.טיימרים', pending: 'משימות.טיימרים.ממתין', sha: null,
+           merge: (a, b) => ל.mergeTimersFile(a, b), msg: 'טיימר'},
   recipes: {path: 'משימות/מתכונים.json', cache: 'משימות.מתכונים', pending: 'משימות.מתכונים.ממתין', sha: null,
            merge: (a, b) => ל.mergeRecipesFile(a, b), msg: 'עדכון מתכונים'},
   shop:   {path: 'משימות/קניות.json', cache: 'משימות.קניות', pending: 'משימות.קניות.ממתין', sha: null,
@@ -526,6 +529,7 @@ const D = {
     occ: FILES.occ.merge(storeJson(FILES.occ.cache, null) || {occ: []}, null),
     config: ל.mergeConfig(storeJson(FILES.config.cache, null) || seed.config),
     shop: FILES.shop.merge(storeJson(FILES.shop.cache, null) || {items: []}, null),
+    timers: FILES.timers.merge(storeJson(FILES.timers.cache, null) || {timers: []}, null),
     recipes: FILES.recipes.merge(storeJson(FILES.recipes.cache, null) || {recipes: []}, null),
   },
   get tasks(){ return this.file.tasks.tasks; },
@@ -907,18 +911,22 @@ function recipeEmoji(r){
   return m && m.emoji || '🍽️';
 }
 const safeImg = u => /^https:\/\/[^\s"'()<>]+$/.test(u || '') ? u : '';
-const picStyle = r => safeImg(r.image) ? ` style="background-image:url('${esc(r.image)}')"` : '';
+let rcImgs = {};
+const picUrl = r => safeImg(r.image) || safeImg(rcImgs[r.id]);
+// ברשימה: תמונה קטנה (13KB במקום 230KB)
+const picStyle = (r, small) => { const u = picUrl(r); return u ? ` style="background-image:url('${esc(small ? u.replace(/\/medium$/, '/small') : u)}')"` : ''; };
 let rcCat = '';
 function renderRecipes(){
   const q = ל.shopKey($('rc-q').value), all = recipeList();
-  const used = ל.RECIPE_CATS.filter(c => all.some(r => r.cat === c));
+  rcImgs = ל.recipeImages(all);
+  const used = ל.RECIPE_CATS.filter(c => all.some(r => ל.recipeCat(r) === c));
   $('rc-cats').innerHTML = [['', 'הכול'], ...used.map(c => [c, c])].map(([k, v]) => `<button type="button" data-c="${esc(k)}" class="${rcCat === k ? 'on' : ''}">${esc(v)}</button>`).join('');
   $('rc-cats').hidden = used.length < 2;
-  const list = all.filter(r => (!rcCat || r.cat === rcCat) && (!q || ל.shopKey([r.title, r.desc, ...(r.ingredients || [])].join(' ')).includes(q)))
+  const list = all.filter(r => (!rcCat || ל.recipeCat(r) === rcCat) && (!q || ל.shopKey([r.title, r.desc, ...(r.ingredients || [])].join(' ')).includes(q)))
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'he'));
   $('rc-list').innerHTML = list.length ? list.map(r => `<button class="rc-item" type="button" data-r="${esc(r.id)}">
-      <span class="rc-pic"${picStyle(r)}>${safeImg(r.image) ? '' : recipeEmoji(r)}</span>
-      <span><span class="t">${esc(r.title)}</span><span class="s" style="display:block">${esc([r.cat, r.total && '⏱ ' + r.total, (r.ingredients || []).length + ' מצרכים'].filter(Boolean).join(' · '))}</span></span></button>`).join('')
+      <span class="rc-pic"${picStyle(r, true)}>${picUrl(r) ? '' : recipeEmoji(r)}</span>
+      <span><span class="t">${esc(r.title)}</span><span class="s" style="display:block">${esc([ל.recipeCat(r), r.total && '⏱ ' + r.total, (r.ingredients || []).length + ' מצרכים'].filter(Boolean).join(' · '))}</span></span></button>`).join('')
     : `<div class="empty">${all.length ? 'לא נמצא מתכון' : 'אין עדיין מתכונים. לוחצים + כדי להוסיף'}</div>`;
 }
 $('rc-q').addEventListener('input', renderRecipes);
@@ -936,10 +944,11 @@ function openRecipe(id){
 function renderRecipe(){
   const r = recipeById(rcOpen);
   if(!r){ $('dlg-recipe').close(); return; }
+  rcImgs = ל.recipeImages(recipeList());
   $('r-title').textContent = r.title;
   const ing = r.ingredients || [], steps = r.steps || [];
   $('r-body').innerHTML = `
-    <div class="rc-hero"${picStyle(r)}>${safeImg(r.image) ? '' : recipeEmoji(r)}</div>
+    <div class="rc-hero"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}</div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
     ${ing.length ? `<div class="rc-sec"><h3>מצרכים <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
       <div class="rc-box">${ing.map((x, i) => /[:：]\s*$/.test(x) ? `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`
@@ -985,54 +994,56 @@ $('dlg-recipe').addEventListener('close', () => { if(wake){ wake.release().catch
 $('r-close').onclick = () => $('dlg-recipe').close();
 $('r-edit').onclick = () => { const r = recipeById(rcOpen); if(r) openRecipeEditor(r); };
 /**
- * "⏱ 8-12 דקות": פותח את הטיימר של הנייד (אפליקציית השעון), עם הזמן והשם כבר מכוונים.
- * באנדרואיד: קישור intent של "קביעת טיימר". אם השעון לא נפתח תוך שנייה וחצי (או לא אנדרואיד): טיימר בתוך האפליקציה.
+ * "⏱ 8-12 דקות": טיימר שנשמר במאגר (משימות/טיימרים.json). המנוע בגוגל שולח התראה בולטת כשהזמן עובר,
+ * גם כשהאפליקציה סגורה. רענון לא מוחק אותו. בזמן שהאפליקציה פתוחה: פס עם ספירה לאחור, ובסוף רטט.
  */
+const timerList = () => ל.liveTimers(D.file.timers, Date.now() - 6e4);
+function saveTimers(list){
+  D.file.timers = {v: 1, timers: ל.mergeById(D.file.timers.timers, list)};
+  persist('timers', true); changed();
+}
 function recipeTimer(r, minutes, label, step){
-  const sec = Math.round(minutes * 60), msg = `${r.title}: שלב ${step}`;
-  if(!/Android/i.test(navigator.userAgent)) return appTimer(sec, msg);
-  let left = false;
-  const onHide = () => { left = true; };
-  const onVis = () => { if(document.visibilityState === 'hidden') left = true; };
-  document.addEventListener('visibilitychange', onVis);
-  addEventListener('blur', onHide);
-  location.href = `intent:#Intent;action=android.intent.action.SET_TIMER;i.android.intent.extra.alarm.LENGTH=${sec};` +
-    `S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(msg)};B.android.intent.extra.alarm.SKIP_UI=false;end`;
-  setTimeout(() => {
-    document.removeEventListener('visibilitychange', onVis); removeEventListener('blur', onHide);
-    if(!left) appTimer(sec, msg, true);
-  }, 1500);
-}
-// טיימר בתוך האפליקציה (גיבוי): פס בתחתית עם ספירה לאחור, ובסוף רטט והתראה
-let appTimers = [];
-function appTimer(sec, msg, fallback){
-  const t = {id: uid(), end: Date.now() + sec * 1000, msg};
-  appTimers.push(t);
+  const now = Date.now(), t = {id: 'tm' + uid(), at: now + Math.round(minutes * 60) * 1000, title: `${r.title}: שלב ${step}`, body: label,
+    updatedAt: nowIso(), deleted: false};
+  // ניקיון: טיימרים שנגמרו לפני יותר מיום
+  const old = (D.file.timers.timers || []).filter(x => !x.deleted && x.at < now - 864e5).map(x => Object.assign({}, x, {deleted: true, updatedAt: nowIso()}));
+  saveTimers([t, ...old]);
   renderTimers();
-  toast(fallback ? 'הטיימר של הנייד לא נפתח, אז הפעלתי טיימר באפליקציה' : `⏱ טיימר עד ${ל.localTime(t.end)}`, {ms: 3500});
+  const engine = pushMode();
+  toast(`⏱ טיימר ${label}: עד ${ל.localTime(t.at)}${engine ? '. ההתראה תגיע גם אם האפליקציה סגורה' : '. ההתראה רק כשהאפליקציה פתוחה (המנוע לא פועל)'}`, {ms: 4500});
 }
+const announced = new Set(storeJson('משימות.טיימרים.הוכרזו', []));
 function renderTimers(){
   let bar = $('timer-bar');
-  if(!appTimers.length){ if(bar) bar.remove(); return; }
+  const list = timerList();
+  if(!list.length){ if(bar) bar.remove(); return; }
   if(!bar || bar.parentNode !== topLayer()){
     if(bar) bar.remove();
     bar = document.createElement('div'); bar.id = 'timer-bar'; topLayer().appendChild(bar);
-    bar.onclick = e => { const b = e.target.closest('[data-x]'); if(b){ appTimers = appTimers.filter(x => x.id !== b.dataset.x); renderTimers(); } };
+    bar.onclick = e => {
+      const b = e.target.closest('[data-x]'); if(!b) return;
+      const t = (D.file.timers.timers || []).find(x => x.id === b.dataset.x);
+      if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
+      renderTimers();
+    };
   }
   const now = Date.now(), fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
     return (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60); };
-  bar.innerHTML = appTimers.map(t => `<div class="tm"><span>⏱ ${fmt(t.end - now)}</span><span class="m">${esc(t.msg)}</span><button type="button" data-x="${t.id}" aria-label="ביטול טיימר">✕</button></div>`).join('');
+  bar.innerHTML = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
+    <button type="button" data-x="${esc(t.id)}" aria-label="${t.at <= now ? 'סגירה' : 'ביטול טיימר'}">✕</button></div>`).join('');
 }
 setInterval(() => {
-  if(!appTimers.length) return;
+  const list = timerList();
+  if(!list.length && !$('timer-bar')) return;
   const now = Date.now();
-  for(const t of appTimers.filter(x => x.end <= now)){
-    navigator.vibrate?.([400, 200, 400, 200, 400]);
-    navigator.serviceWorker?.ready.then(reg => reg.showNotification('⏱ הטיימר הסתיים', {body: t.msg, tag: 'timer-' + t.id, dir: 'rtl', lang: 'he',
-      icon: 'icon-192.png', badge: 'badge-96.png', requireInteraction: true, data: {u: './'}})).catch(() => {});
-    toast('⏱ הטיימר הסתיים: ' + t.msg, {ms: 8000});
+  for(const t of list.filter(x => x.at <= now && !announced.has(x.id))){
+    announced.add(t.id); store('משימות.טיימרים.הוכרזו', JSON.stringify([...announced].slice(-50)));
+    navigator.vibrate?.([600, 300, 600, 300, 600]);
+    toast('⏱ הטיימר הסתיים: ' + t.title, {ms: 8000});
+    // בלי מנוע אין התראה מבחוץ: מציגים כאן (רק כשהאפליקציה פתוחה)
+    if(!pushMode()) navigator.serviceWorker?.ready.then(reg => reg.showNotification('⏱ ' + t.title, {body: 'הזמן עבר', tag: 'timer-' + t.id,
+      dir: 'rtl', lang: 'he', icon: 'icon-192.png', badge: 'badge-96.png', requireInteraction: true, vibrate: [600, 300, 600], data: {u: './'}})).catch(() => {});
   }
-  appTimers = appTimers.filter(x => x.end > now);
   renderTimers();
 }, 1000);
 /** "🛒 לקניות": כל המצרכים נכנסים לרשימת הקניות, כל אחד כמוצר (מה שכבר ברשימה לא נכנס פעמיים). */
@@ -1073,7 +1084,7 @@ function openRecipeEditor(r, paste){
       <div class="field"><label for="re-cook">זמן אפייה/בישול</label><input type="text" id="re-cook" placeholder="40 דקות" value="${esc(rcEdit.cook || '')}"></div></div>
     <div class="row"><div class="field"><label for="re-tot">זמן כולל</label><input type="text" id="re-tot" placeholder="שעה" value="${esc(rcEdit.total || '')}"></div>
       <div class="field"><label for="re-serv">מנות</label><input type="text" id="re-serv" placeholder="4" value="${esc(rcEdit.servings || '')}"></div></div>
-    <div class="field"><label for="re-img">קישור לתמונה (לא חובה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
+    <div class="field"><label for="re-img">קישור לתמונה (לא חובה. בלי קישור: תמונה מתאימה לפי שם המנה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
     <div class="field"><label for="re-src">קישור למקור (לא חובה)</label><input type="url" id="re-src" dir="ltr" placeholder="https://..." value="${esc(rcEdit.source || '')}"></div>`;
   if($('re-parse')) $('re-parse').onclick = () => {
     const p = ל.parseRecipeText($('re-paste').value);
@@ -1083,6 +1094,7 @@ function openRecipeEditor(r, paste){
     $('re-ing').value = p.ingredients.join('\n'); $('re-st').value = p.steps.join('\n'); $('re-n').value = p.notes;
     $('re-prep').value = p.prep; $('re-tot').value = p.total; $('re-src').value = p.source; $('re-cook').value = p.cook; $('re-serv').value = p.servings;
     if(p.level) $('re-lv').value = p.level;
+    if(!$('re-cat').value) $('re-cat').value = ל.guessRecipeCat({title: $('re-t').value});
     $('re-paste').closest('details').open = false; $('re-t').scrollIntoView({block: 'start'});
     toast(`נמצאו ${p.ingredients.length} מצרכים ו־${p.steps.length} שלבים. אפשר לתקן ולשמור`);
   };
@@ -1093,7 +1105,8 @@ $('re-save').onclick = () => {
   const lines = id => $(id).value.split('\n').map(x => x.trim()).filter(Boolean);
   const title = $('re-t').value.trim();
   if(!title) return toast('צריך שם למתכון', {err: true});
-  const r = saveRecipe(Object.assign({}, rcEdit, {title, cat: $('re-cat').value, level: $('re-lv').value, desc: $('re-d').value.trim(),
+  // בלי קטגוריה: לפי השם ("סלט מטבוחה" → סלטים וממרחים)
+  const r = saveRecipe(Object.assign({}, rcEdit, {title, cat: $('re-cat').value || ל.guessRecipeCat({title}), level: $('re-lv').value, desc: $('re-d').value.trim(),
     ingredients: lines('re-ing'), steps: lines('re-st'), notes: $('re-n').value.trim(), prep: $('re-prep').value.trim(),
     total: $('re-tot').value.trim(), cook: $('re-cook').value.trim(), servings: $('re-serv').value.trim(), image: safeImg($('re-img').value.trim()), source: safeImg($('re-src').value.trim())}));
   $('dlg-redit').close();
@@ -1645,7 +1658,7 @@ async function sync(){
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
     await readPending();
-    await syncFile('occ'); await syncFile('shop'); await syncFile('recipes');
+    await syncFile('occ'); await syncFile('shop'); await syncFile('recipes'); await syncFile('timers');
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     if(D.tasks.some(t => t.calendar) || (calFile.events || []).length)
       try{ const c = await readFile({path: 'משימות/יומן.json'}); if(c){ calFile = c; store(K.cal, JSON.stringify(c)); } }catch(e){}
