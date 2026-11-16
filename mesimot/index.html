@@ -255,6 +255,134 @@
   .kc-kcal input{width:110px;font-size:20px;font-weight:700;text-align:center}
   .kc-kcal .note{flex-basis:100%}
   .kc-rec-sum{margin-top:14px;background:var(--soft);border-radius:14px;padding:12px;font-size:16px}
+  /* תרופות: הועבר מאפליקציית מעקב התרופות. הצבעים ממופים לעיצוב של משימות */
+  .meds{--נייבי:var(--accent);--צפחה:var(--muted);--דיו:var(--text);--נייר:var(--bg);--לוח:var(--card);--קו:var(--line);--קו-רך:var(--line);
+    --כחול:var(--accent);--כחול-נייר:color-mix(in srgb,var(--accent) 9%,var(--card));--כחול-קו:color-mix(in srgb,var(--accent) 35%,var(--card));
+    --אפור:var(--muted);--אפור-נייר:var(--card);--אפור-קו:var(--line);
+    --אדום:var(--red);--אדום-נייר:var(--red-soft);--אדום-קו:color-mix(in srgb,var(--red) 35%,var(--card));
+    --ירוק:#137a48;--ירוק-נייר:color-mix(in srgb,#137a48 9%,var(--card));--ירוק-קו:color-mix(in srgb,#137a48 35%,var(--card));
+    --טבעת:color-mix(in srgb,var(--accent) 25%,transparent)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .meds{--ירוק:#5ccf98}}
+  :root[data-theme=dark] .meds{--ירוק:#5ccf98}
+  .meds .תפריט{position:absolute;top:56px;left:0;z-index:20;background:var(--לוח);border:1px solid var(--קו);
+         border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);min-width:210px;overflow:hidden}
+  .meds .תפריט button{display:block;width:100%;text-align:right;border:none;border-radius:0;min-height:48px;
+                font-weight:600;background:none}
+  .meds .תפריט button+button{border-top:1px solid var(--קו-רך)}
+  .meds .מצב-סנכרון{font-size:12px;color:var(--צפחה);margin:10px 0 0;display:flex;gap:8px;align-items:center}
+  .meds .כרטיס{border:1.5px solid var(--אפור-קו);background:var(--אפור-נייר);border-radius:16px;
+         padding:14px 16px;margin-top:14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .meds .כרטיס.כחול{border-color:var(--כחול-קו);background:var(--כחול-נייר)}
+  .meds .כרטיס.אדום{border-color:var(--אדום-קו);background:var(--אדום-נייר)}
+  .meds .כרטיס.ירוק{border-color:var(--ירוק-קו);background:var(--ירוק-נייר)}
+  .meds .ראש-כרטיס{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+  .meds .ראש-כרטיס h2{margin:0;font-size:19px;font-weight:800}
+  .meds .כרטיס.כחול h2{color:var(--כחול)}
+  .meds .כרטיס.אדום h2{color:var(--אדום)}
+  .meds .כרטיס.ירוק h2{color:var(--ירוק)}
+  .meds .תת{font-size:13px;color:var(--צפחה)}
+  .meds .סטטוס{font-size:14px;margin:2px 0 10px;min-height:21px}
+  .meds .סטטוס.אדום{color:var(--אדום);font-weight:700}
+  .meds .סטטוס.כחול{color:var(--כחול);font-weight:600}
+  .meds .סטטוס.ירוק{color:var(--ירוק);font-weight:600}
+  .meds .השפעה{margin:-4px 0 12px}
+  .meds .השפעה .שלב{font-size:14px;font-weight:600;color:var(--כחול);margin-bottom:6px}
+  .meds .פס{position:relative;height:10px;border-radius:999px}
+  .meds .פס i{position:absolute;top:-4px;width:3px;height:18px;border-radius:2px;background:var(--דיו);
+        transform:translateX(50%)}
+  .meds .תוויות{display:flex;justify-content:space-between;font-size:11px;color:var(--צפחה);margin-top:4px}
+  .meds .מגבלה{font-size:13px;color:var(--צפחה);margin:-4px 0 10px}
+  .meds .מגבלה.אדום{color:var(--אדום);font-weight:700}
+  .meds .הערת-השפעה{font-size:11px;color:var(--צפחה);margin-top:8px}
+  .meds .רשומה .טווח{display:block;font-size:12px;color:var(--צפחה)}
+  .meds .כפתורים{display:flex;gap:10px;flex-wrap:wrap}
+  .meds .כפתורים button{flex:1}
+  .meds button{font:700 16px/1 inherit;font-family:inherit;border-radius:12px;padding:14px 16px;
+         min-height:52px;border:1px solid var(--קו);background:var(--לוח);color:var(--דיו);cursor:pointer}
+  .meds button:active{transform:scale(.98)}
+  .meds button:disabled{opacity:.4;cursor:default}
+  .meds .ראשי{background:var(--נייבי);border-color:var(--נייבי);color:#fff}
+  .meds .ראשי{color:#10141b}
+  .meds .סכנה{color:var(--אדום);border-color:var(--אדום-קו)}
+  .meds .קטן{min-height:40px;padding:9px 14px;font-size:14px}
+  .meds h3{font-size:15px;margin:26px 0 8px;display:flex;align-items:center;gap:8px}
+  .meds h3 .גמיש{flex:1}
+  .meds .רשומה{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--לוח);
+         border:1px solid var(--קו);border-radius:12px;margin-bottom:8px;cursor:pointer}
+  .meds .רשומה .שעה{font-weight:800;min-width:46px}
+  .meds .רשומה .שם{flex:1;min-width:0}
+  .meds .רשומה .סיווג{font-size:12px;color:var(--צפחה);border:1px solid var(--קו);border-radius:999px;padding:2px 9px}
+  .meds .ריק{color:var(--צפחה);font-size:14px;padding:6px 2px}
+  .meds /* לוח שנה */
+  .ניווט-חודש{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .meds .ניווט-חודש b{flex:1;text-align:center}
+  .meds .רשת{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .meds .רשת .כותרת-יום{font-size:12px;color:var(--צפחה);text-align:center;padding:2px 0}
+  .meds .יום{aspect-ratio:1/1;border-radius:10px;border:1px solid var(--קו);background:var(--לוח);
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+       font-weight:700;font-size:14px;cursor:pointer;padding:0;min-height:0}
+  .meds .יום.כבוי{opacity:.3;cursor:default;background:transparent}
+  .meds .יום.נבחר{border-color:var(--נייבי);box-shadow:0 0 0 2px var(--טבעת)}
+  .meds .יום.היום{color:var(--כחול)}
+  .meds .נקודות{display:flex;gap:2px;height:7px}
+  .meds .נקודות i{width:7px;height:7px;border-radius:50%}
+  .meds .מקרא{display:flex;gap:14px;font-size:12px;color:var(--צפחה);margin-top:8px;flex-wrap:wrap}
+  .meds .מקרא i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px}
+  .meds /* חלונית */
+  .תוך{padding:18px}
+  .meds .תוך h2{margin:0 0 14px;font-size:18px}
+  .meds .תוך h4{margin:18px 0 8px;font-size:14px;color:var(--נייבי);border-top:1px solid var(--קו-רך);padding-top:14px}
+  .meds .שדה{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+  .meds .זוג{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .meds .שלישייה{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .meds .רביעייה{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .meds label{font-size:12px;font-weight:600;color:var(--צפחה)}
+  .meds .רמז{font-size:12px;color:var(--צפחה);margin:-4px 0 10px}
+  .meds input,.meds select{font:400 16px/1.3 inherit;font-family:inherit;color:var(--דיו);background:var(--לוח);
+    border:1px solid var(--קו);border-radius:10px;padding:11px 12px;width:100%;min-height:46px;min-width:0}
+  .meds input[type=color]{padding:4px;height:46px}
+  .meds input[type=checkbox]{width:22px;height:22px;min-height:0;margin:0}
+  .meds .תיבה{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:600;color:var(--דיו);margin-bottom:12px}
+  .meds input:focus,.meds select:focus{outline:none;border-color:var(--נייבי);box-shadow:0 0 0 3px var(--טבעת)}
+  .meds .מונה-כמות{display:flex;gap:8px;align-items:center}
+  .meds .מונה-כמות button{min-width:52px;font-size:22px}
+  .meds .מונה-כמות input{text-align:center;font-weight:800;font-size:18px}
+  .meds .אזהרה{background:var(--אדום-נייר);border:1px solid var(--אדום-קו);color:var(--אדום);
+         border-radius:10px;padding:9px 12px;font-size:14px;font-weight:600;margin-bottom:12px}
+  .meds .שורת-כפתורים{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
+  .meds .שורת-כפתורים .ראשי{flex:1}
+  .meds .הסבר{font-size:14px;line-height:1.6}
+  .meds .הסבר ol{padding-inline-start:20px;margin:8px 0}
+  .meds .הסבר a{color:var(--כחול)}
+  .meds .שורה-עריכה{border:1px solid var(--קו);border-radius:12px;padding:10px;margin-bottom:8px;position:relative}
+  .meds .שורה-עריכה .הסר{position:absolute;top:6px;left:6px;min-height:30px;min-width:30px;padding:0;font-size:16px;border:none;background:none;color:var(--אדום)}
+  .meds .שורה-עריכה .שדה{margin-bottom:0}
+  .meds .שורה-עריכה .כותרת-שורה{font-size:12px;font-weight:700;color:var(--צפחה);margin-bottom:6px}
+  .meds .הוסף{width:100%;min-height:42px;font-size:14px;border-style:dashed}
+  .meds .פריט-תרופה{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--קו-רך)}
+  .meds .פריט-תרופה span{flex:1;font-weight:600}
+  .meds .פריט-תרופה i{width:10px;height:10px;border-radius:50%}
+  .meds .פריט-תרופה small{color:var(--צפחה);font-weight:400}
+  /* התאמות לעיצוב של משימות */
+  .meds button{font:600 16px/1.2 inherit;border:0;background:var(--soft);border-radius:14px}
+  .meds .ראשי{background:var(--accent);color:var(--on-accent)}
+  .meds .סכנה{color:var(--red);background:var(--soft)}
+  .meds .כרטיס{border-radius:18px;padding:14px;margin-top:10px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .meds .כפתורים button{background:var(--card);border:1px solid var(--line)}
+  .meds .כרטיס.אפור .כפתורים button{background:var(--soft);border-color:transparent}
+  .meds .רשומה{border:0;border-radius:16px}
+  .meds .יום{border:0;background:var(--card)}
+  .meds h3{font-size:17px;font-weight:600;margin:22px 4px 8px}
+  .meds .תוך h4{color:var(--text)}
+  .meds .שורה-עריכה .הסר{background:none}
+  .meds .הוסף{border:1px dashed var(--line);background:transparent}
+  .meds .מלאי{display:flex;align-items:center;gap:6px;width:100%;margin:0 0 10px;padding:8px 12px;min-height:40px;font-size:14px;font-weight:600;
+    background:color-mix(in srgb,var(--card) 70%,transparent);color:var(--muted);text-align:right}
+  .meds .מלאי.נמוך{color:var(--red);background:var(--red-soft)}
+  .meds .ראש-מסך{display:flex;align-items:center;justify-content:space-between}
+  #scr-meds{position:relative}
+  .meds .תפריט{top:60px}
+
   .back-more{display:none !important}
   .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .more-grid button{border:0;background:var(--card);border-radius:18px;padding:16px 12px;text-align:right;color:inherit;min-height:96px;display:flex;flex-direction:column;gap:4px}
@@ -428,9 +556,172 @@
   <h1 class="hello">עוד</h1>
   <div class="more-grid" id="more-grid"></div>
 </main>
+<main class="screen meds" id="scr-meds" hidden>
+  <div class="ראש-מסך"><h1 class="hello">תרופות</h1><button class="icon-btn" id="ת-כפתור-תפריט" type="button" aria-label="תפריט תרופות"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div>
+  <div class="תפריט" id="ת-תפריט" hidden>
+    <button id="ת-תפריט-כללי">⚙ הגדרות כלליות</button>
+    <button id="ת-תפריט-הוספה">＋ הוספת תרופה</button>
+    <button id="ת-תפריט-חיבור">☁ סנכרון לגיטהאב</button>
+  </div>
+  <div class="מצב-סנכרון"><span id="ת-מצב-סנכרון"></span></div>
+
+  <div id="ת-כרטיסים"></div>
+  <div class="הערת-השפעה" id="ת-הערת-השפעה"></div>
+
+  <h3><span class="גמיש" id="ת-כותרת-יום">היום</span>
+      <button class="קטן" id="ת-כפתור-לוח" aria-label="לוח שנה">📅</button></h3>
+  <div id="ת-לוח-שנה" hidden>
+    <div class="ניווט-חודש">
+      <button class="קטן" id="ת-חודש-קודם">›</button><b id="ת-שם-חודש"></b><button class="קטן" id="ת-חודש-הבא">‹</button>
+    </div>
+    <div class="רשת" id="ת-רשת"></div>
+    <div class="מקרא" id="ת-מקרא"></div>
+  </div>
+  <div id="ת-רשימה" style="margin-top:10px"></div>
+
+</main>
+<dialog class="meds" id="ת-חלונית">
+  <form class="תוך" method="dialog" id="ת-טופס">
+    <h2 id="ת-כותרת-חלונית">רישום תרופה</h2>
+    <input type="hidden" id="ת-מזהה">
+    <div class="שדה"><label for="ת-תרופה">תרופה</label><select id="ת-תרופה"></select></div>
+    <div class="שדה"><label for="ת-כמות" id="ת-תווית-כמות">כמות</label>
+      <div class="מונה-כמות"><button type="button" id="ת-פחות">−</button>
+        <input id="ת-כמות" type="number" min="1" inputmode="decimal" step="any">
+        <select id="ת-יחידה" style="width:auto"></select>
+        <button type="button" id="ת-יותר">+</button></div></div>
+    <div class="זוג">
+      <div class="שדה"><label for="ת-תאריך">תאריך</label><input id="ת-תאריך" type="date"></div>
+      <div class="שדה"><label for="ת-שעה">שעה</label><input id="ת-שעה" type="time"></div>
+    </div>
+    <div class="שדה"><label for="ת-סיווג">סיווג ביום</label><select id="ת-סיווג"></select></div>
+    <div class="אזהרה" id="ת-אזהרה" hidden></div>
+    <div class="שורת-כפתורים">
+      <button type="button" class="סכנה" id="ת-כפתור-מחיקה" hidden>מחק</button>
+      <button type="button" id="ת-כפתור-ביטול">ביטול</button>
+      <button type="submit" class="ראשי" id="ת-כפתור-אישור">אישור</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="meds" id="ת-חלונית-תרופה">
+  <form class="תוך" method="dialog" id="ת-טופס-תרופה">
+    <h2 id="ת-כותרת-עורך">עריכת תרופה</h2>
+    <input type="hidden" id="ת-ע-מזהה">
+    <div class="זוג">
+      <div class="שדה"><label for="ת-ע-שם">שם</label><input id="ת-ע-שם" required></div>
+      <div class="שדה"><label for="ת-ע-משנה">שם משני <em>(לא חובה)</em></label><input id="ת-ע-משנה" placeholder="למשל Zaldiar"></div>
+    </div>
+    <div class="זוג">
+      <div class="שדה"><label for="ת-ע-סוג">סוג</label>
+        <select id="ת-ע-סוג"><option value="יומית">פעם ביום</option><option value="מרווח">לפי מרווח בין מנות</option></select></div>
+      <div class="שדה" id="ת-ע-שדה-מרווח"><label for="ת-ע-מרווח">מרווח מינימלי (שעות)</label><input id="ת-ע-מרווח" type="number" min="0.5" step="0.5" inputmode="decimal"></div>
+    </div>
+    <div class="שדה"><label for="ת-ע-תיאור">תיאור ליד השם <em>(ריק = אוטומטי)</em></label><input id="ת-ע-תיאור" placeholder="למשל: כל בוקר"></div>
+
+    <h4>כפתורי מנה</h4>
+    <div id="ת-ע-מנות"></div>
+    <button type="button" class="הוסף" id="ת-ע-הוסף-מנה">＋ כפתור מנה</button>
+
+    <h4>סיווג ביום</h4>
+    <div class="רמז">כל סיווג מתחיל בשעה שלו ונמשך עד הבא. הסיווג נבחר אוטומטית לפי שעת הרישום.</div>
+    <div id="ת-ע-סיווגים"></div>
+    <div class="שורת-כפתורים"><button type="button" class="הוסף" style="flex:1" id="ת-ע-הוסף-סיווג">＋ סיווג</button>
+      <button type="button" class="קטן" id="ת-ע-סיווגים-כלליים">מההגדרות הכלליות</button></div>
+
+    <h4>זמני השפעה</h4>
+    <label class="תיבה"><input type="checkbox" id="ת-ע-יש-השפעה"> להציג שלבי השפעה ופס זמן</label>
+    <div id="ת-ע-השפעה">
+      <div class="רביעייה">
+        <div class="שדה"><label for="ת-ע-התחלה">מתחיל (דק')</label><input id="ת-ע-התחלה" type="number" min="0" inputmode="numeric"></div>
+        <div class="שדה"><label for="ת-ע-שיא-מ">שיא מ-</label><input id="ת-ע-שיא-מ" type="number" min="0" inputmode="numeric"></div>
+        <div class="שדה"><label for="ת-ע-שיא-עד">שיא עד</label><input id="ת-ע-שיא-עד" type="number" min="0" inputmode="numeric"></div>
+        <div class="שדה"><label for="ת-ע-סיום">נגמר</label><input id="ת-ע-סיום" type="number" min="0" inputmode="numeric"></div>
+      </div>
+      <div class="רמז" style="margin-top:6px">בדקות מרגע הלקיחה.</div>
+    </div>
+
+    <h4>מגבלה יומית</h4>
+    <label class="תיבה"><input type="checkbox" id="ת-ע-יש-מגבלה"> לסמן באדום כשמגיעים למגבלה היומית</label>
+    <div id="ת-ע-מגבלה">
+      <div class="זוג">
+        <div class="שדה"><label for="ת-ע-מקסימום">מקסימום כדורים ביום</label><input id="ת-ע-מקסימום" type="number" min="0" step="any" inputmode="decimal"></div>
+        <div class="שדה"><label for="ת-ע-מג">מ"ג בכדור <em>(לא חובה)</em></label><input id="ת-ע-מג" type="number" min="0" step="any" inputmode="decimal"></div>
+      </div>
+      <div class="רמז" style="margin-top:6px">היום מתחיל בשעה שבהגדרות הכלליות. לא חוסם רישום, רק מציג באדום. יחידות אחרות (למשל טיפות) נספרות לפי "כמה מהיחידה = כדור" בכפתורי המנה.</div>
+    </div>
+
+    <h4>התראות לנייד</h4>
+    <div id="ת-ע-בלוק-תזכורות">
+      <div class="שדה"><label for="ת-ע-תזכורות">תזכורת אם עוד לא נלקחה עד השעות</label><input id="ת-ע-תזכורות" placeholder="למשל 8, 10" inputmode="numeric"></div>
+      <div class="רמז">שעות עגולות בין 5 ל-22, מופרדות בפסיק. ריק = בלי תזכורת.</div>
+    </div>
+    <label class="תיבה" id="ת-ע-בלוק-מרווח"><input type="checkbox" id="ת-ע-התראת-מרווח"> התראה כשמותר לקחת עוד מנה</label>
+
+    <h4>תצוגה</h4>
+    <div class="זוג">
+      <div class="שדה"><label for="ת-ע-צבע">צבע ביומן</label><input id="ת-ע-צבע" type="color"></div>
+      <div class="שדה"><label>סדר</label><div class="שורת-כפתורים" style="margin:0">
+        <button type="button" class="קטן" style="flex:1" id="ת-ע-למעלה">▲ למעלה</button>
+        <button type="button" class="קטן" style="flex:1" id="ת-ע-למטה">▼ למטה</button></div></div>
+    </div>
+    <div class="זוג" id="ת-ע-צבעי-יומית">
+      <div class="שדה"><label for="ת-ע-מצב-חסר">כרטיס כשעוד לא נלקחה היום</label><select id="ת-ע-מצב-חסר" class="בחירת-צבע"></select></div>
+      <div class="שדה"><label for="ת-ע-מצב-נלקח">כרטיס כשנלקחה היום</label><select id="ת-ע-מצב-נלקח" class="בחירת-צבע"></select></div>
+    </div>
+    <div class="זוג" id="ת-ע-צבעי-מרווח">
+      <div class="שדה"><label for="ת-ע-מצב-פעיל">כרטיס בתוך המרווח</label><select id="ת-ע-מצב-פעיל" class="בחירת-צבע"></select></div>
+      <div class="שדה"><label for="ת-ע-מצב-רגיל">כרטיס אחרי המרווח</label><select id="ת-ע-מצב-רגיל" class="בחירת-צבע"></select></div>
+    </div>
+    <label class="תיבה"><input type="checkbox" id="ת-ע-מוסתרת"> להסתיר מהמסך הראשי (ההיסטוריה נשמרת)</label>
+
+    <div class="שורת-כפתורים">
+      <button type="button" id="ת-ע-ביטול">ביטול</button>
+      <button type="submit" class="ראשי">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="meds" id="ת-חלונית-כללי">
+  <form class="תוך" method="dialog" id="ת-טופס-כללי">
+    <h2>הגדרות כלליות</h2>
+    <div class="שדה"><label for="ת-כ-התחלה">לוח השנה מתחיל בתאריך</label><input id="ת-כ-התחלה" type="date"></div>
+    <div class="שדה"><label for="ת-כ-תחילת-יום">יום חדש מתחיל בשעה <em>(למגבלה היומית)</em></label><input id="ת-כ-תחילת-יום" type="time"></div>
+    <div class="שדה" hidden><label for="ת-כ-ערוץ">ערוץ ntfy</label><input id="ת-כ-ערוץ" dir="ltr" autocomplete="off"></div>
+    <h4>סיווג ביום, ברירת מחדל לתרופות חדשות</h4>
+    <div id="ת-כ-סיווגים"></div>
+    <button type="button" class="הוסף" id="ת-כ-הוסף-סיווג">＋ סיווג</button>
+    <h4>תרופות</h4>
+    <div id="ת-כ-תרופות"></div>
+    <button type="button" class="הוסף" id="ת-כ-הוסף-תרופה" style="margin-top:10px">＋ הוספת תרופה</button>
+    <div class="שורת-כפתורים" style="margin-top:16px">
+      <button type="button" id="ת-כ-ביטול">ביטול</button>
+      <button type="submit" class="ראשי">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="meds" id="ת-חלונית-מלאי">
+  <form class="תוך" method="dialog" id="ת-טופס-מלאי">
+    <h2 id="ת-כותרת-מלאי">מלאי</h2>
+    <div class="זוג">
+      <div class="שדה"><label for="ת-מ-כמות">יש לי עכשיו</label><input id="ת-מ-כמות" type="number" min="0" step="any" inputmode="decimal"></div>
+      <div class="שדה"><label for="ת-מ-יחידה">יחידה</label><select id="ת-מ-יחידה"></select></div>
+    </div>
+    <div class="זוג">
+      <div class="שדה"><label for="ת-מ-אריזה">באריזה</label><input id="ת-מ-אריזה" type="number" min="1" step="any" inputmode="decimal" placeholder="למשל 28"></div>
+      <div class="שדה"><label for="ת-מ-התראה">להתריע כשנשארים</label><input id="ת-מ-התראה" type="number" min="0" step="any" inputmode="decimal"></div>
+    </div>
+    <button type="button" class="ראשי" id="ת-מ-קניתי" style="width:100%;margin-bottom:12px">🛒 קניתי אריזה</button>
+    <div class="שורת-כפתורים">
+      <button type="button" class="סכנה" id="ת-מ-הסר">בלי מעקב מלאי</button>
+      <button type="button" id="ת-מ-ביטול">ביטול</button>
+      <button type="submit" class="ראשי">שמירה</button>
+    </div>
+  </form>
+</dialog>
 <main class="screen" id="scr-upkeep" hidden>
   <h1 class="hello">תחזוקה שוטפת</h1>
-  <div class="note" style="margin-top:4px">מה מחליפים או עושים כל פרק זמן. "החלפתי" מתחיל את הספירה מחדש, ותזכורת מגיעה כשמגיע הזמן.</div>
   <div id="up-list" class="more-list"></div>
 </main>
 <main class="screen" id="scr-birthdays" hidden>
@@ -441,7 +732,6 @@
 <main class="screen" id="scr-docs" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">מסמכים</h1>
-  <div class="note" style="margin:4px 0 10px">תזכורת לפני שהתוקף נגמר. "חידשתי" = תאריך תוקף חדש.</div>
   <div id="doc-list" class="more-list"></div>
 </main>
 <main class="screen" id="scr-history" hidden>
@@ -460,6 +750,7 @@
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
   <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-5.6-3.6-7.6-.4 1.6-1.3 2.8-2.4 3.4.1-3.3-1.2-6.4-4-8.8.2 3.6-1.6 5.6-3.2 7.6C4.6 11.3 5 13.4 5 15c0 4.2 3 7 7 7z"/></svg>קלוריות</button>
+  <button data-scr="meds"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>תרופות</button>
   <button data-scr="upkeep"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3.6 17.4a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.3-5.3l-2.4 2.4-2-.6-.6-2z"/></svg>תחזוקה</button>
   <button data-scr="birthdays"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16v-7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M4 16c2 1.3 4 1.3 5.3 0s4-1.3 5.4 0 3.3 1.3 5.3 0"/><path d="M12 12V8M12 5.5c-.8-.8-.8-2 0-3 .8 1 .8 2.2 0 3z"/></svg>ימים מיוחדים</button>
   <button data-scr="docs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>מסמכים</button>
@@ -609,7 +900,6 @@
   <span class="lbl">כל כמה זמן</span><div class="opts" id="up-every" style="margin:6px 0 6px"></div>
   <div class="field" id="up-days-f" hidden><label for="up-days">כל כמה ימים</label><input type="number" inputmode="numeric" id="up-days" min="1"></div>
   <div class="field"><label for="up-last">מתי בפעם האחרונה</label><input type="date" id="up-last"></div>
-  <div class="note" id="up-note"></div>
   <div class="btns"><button class="btn" id="up-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="up-cancel" type="button">ביטול</button><button class="btn primary" id="up-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-bday" aria-label="יום הולדת"><div class="dlg">
@@ -619,7 +909,6 @@
   <div class="field"><label for="bd-name" id="bd-name-l">של מי</label><input type="text" id="bd-name" placeholder="אמא"></div>
   <div class="field"><label for="bd-date" id="bd-date-l">תאריך</label><input type="date" id="bd-date"></div>
   <label class="check-row"><input type="checkbox" id="bd-noyear"> השנה לא ידועה</label>
-  <div class="note">תזכורת שבוע לפני, יום לפני, וביום עצמו ב־09:00.</div>
   <div class="btns"><button class="btn" id="bd-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="bd-cancel" type="button">ביטול</button><button class="btn primary" id="bd-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-doc" aria-label="מסמך"><div class="dlg">
@@ -634,7 +923,7 @@
     <div class="row"><label class="btn doc-add" for="doc-file">📷 תמונה</label><label class="btn doc-add" for="doc-att">📎 קובץ (PDF, Word)</label></div>
     <input type="file" id="doc-file" accept="image/*" multiple hidden>
     <input type="file" id="doc-att" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden>
-    <div class="note">נשמרות במאגר הפרטי שלך בגיטהאב, כמו שאר הנתונים. לא בשום מקום ציבורי.</div></div>
+</div>
   <div class="btns"><button class="btn" id="doc-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="doc-cancel" type="button">ביטול</button><button class="btn primary" id="doc-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-photo" class="full" aria-label="תמונה"><div class="dlg-head">
@@ -665,7 +954,6 @@
   <div class="sheet-list">
     <button class="btn" id="ra-manual">✏️ הוספה ידנית</button>
     <button class="btn" id="ra-paste">📋 הדבקת טקסט של מתכון</button>
-    <div class="note">מעתיקים מתכון מאתר או מוואטסאפ, מדביקים, והאפליקציה מפרקת אותו למצרכים ושלבים.</div>
     <button class="btn" id="ra-cancel">ביטול</button>
   </div>
 </div></dialog>
@@ -1022,8 +1310,8 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'recipes', 'kcal', 'upkeep', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal';
+  for(const x of ['today', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal' || s === 'meds';
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
@@ -1040,6 +1328,7 @@ function renderAll(){
   else if(screen === 'more') renderMore();
   else if(screen === 'kcal') renderKcal();
   else if(screen === 'upkeep') renderUpkeep();
+  else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'birthdays') renderBirthdays();
   else if(screen === 'docs') renderDocs();
   else renderHistory();
@@ -1073,7 +1362,7 @@ function renderShop(){
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
   const sug = ל.shopSuggest(items, q, q ? 10 : 16);
   $('shop-wa').hidden = !groups.length;
-  $('shop-sug-lbl').textContent = !sug.length ? '' : q ? 'הצעות' : sug[0].catalog ? 'להוסיף מהר: מוצרים נפוצים' : 'להוסיף מהר: מה שקנית בעבר, הנפוץ קודם';
+  $('shop-sug-lbl').textContent = '';
   // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
   if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
   $('shop-sug-box').style.marginTop = q || !groups.length ? '' : '22px';
@@ -1377,7 +1666,7 @@ function openRecipeEditor(r, paste){
       <textarea id="re-paste" style="min-height:160px;margin-top:8px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
       <button class="btn primary" type="button" id="re-parse" style="margin-top:8px;width:100%">פירוק למצרכים ושלבים</button></details>
     <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
-    <div class="field"><span class="lbl">תמונה (לחיצה על קטנה מחליפה)</span><div class="img-pick" id="re-pick"></div></div>
+    <div class="field"><span class="lbl">תמונה</span><div class="img-pick" id="re-pick"></div></div>
     <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
       <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
     <div class="field"><label for="re-d">תיאור קצר</label><input type="text" id="re-d" value="${esc(rcEdit.desc)}"></div>
@@ -1512,7 +1801,7 @@ function openKFood(o){
 }
 function renderKFood(){
   $('kf-meal').innerHTML = ל.MEALS.map(([id, n, e]) => `<button type="button" data-m="${id}" class="${kf.meal === id ? 'on' : ''}">${e} ${n}</button>`).join('');
-  const sug = kf.food && !$('kf-q').value ? [] : ל.foodSuggest(KF(), $('kf-q').value, $('kf-q').value ? 40 : 8);
+  const sug = kf.food && !$('kf-q').value ? [] : ל.foodSuggest(KF(), $('kf-q').value, $('kf-q').value ? 15 : 8);
   $('kf-sug').innerHTML = sug.map(f => { const u = f.units[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${esc(f.name)}${f.uses ? ' ⭐' : ''}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
     + ($('kf-q').value && !sug.length ? `<div class="empty">"${esc($('kf-q').value)}" לא במאגר. אפשר להוסיף למטה</div>` : '');
   $('kf-sel').hidden = !kf.food;
@@ -1698,7 +1987,7 @@ $('kc-acts').onclick = e => { const b = e.target.closest('[data-a]'); if(b) open
 $('kc-hist').onclick = () => {
   const h = ל.calHistory(KF(), 60);
   sheet('היסטוריה', h.map(d => [`${kDayLabel(d.date)} · ${kNum(d.eaten)} / ${kNum(d.goal)}${d.burned ? ` · 🔥 ${kNum(d.burned)}` : ''}`, () => { kcDate = d.date; renderKcal(); scrollTo(0, 0); }]),
-    h.length ? 'לחיצה פותחת את היום, ואפשר לערוך בו' : 'עוד אין היסטוריה');
+    h.length ? '' : 'עוד אין היסטוריה');
 };
 $('kc-set').onclick = () => {
   const st = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
@@ -1710,7 +1999,7 @@ $('kc-set').onclick = () => {
       toast(`✓ משקל עודכן: ${(+v).toFixed(1)} ק״ג. החישובים מהיום לפי המשקל החדש`);
     }],
     [`📏 גובה: ${st.height} ס״מ`, () => { const v = prompt('גובה בס״מ', st.height); if(v && +v > 100 && +v < 230) saveK('settings', Object.assign({}, st, {id: 'settings', height: +v, updatedAt: nowIso()})); }],
-  ], 'המשקל והגובה משמשים רק לחישוב השריפה בפעילות.');
+  ]);
 };
 
 // --- מתכון אישי (כמה מרכיבים, מחולק למנות) ---
@@ -1789,7 +2078,6 @@ function renderUpForm(){
     + `<button type="button" data-ev="other" class="${known ? '' : 'on'}">אחר</button>`;
   $('up-days-f').hidden = known;
   if(!known) $('up-days').value = upEvery[1];
-  $('up-note').textContent = `תזכורת ${upEvery[0] === upEvery[1] ? 'ביום שמגיע הזמן' : 'בסוף הטווח'}, ואם לא סומן, כל יום עד ש"החלפתי".`;
 }
 function openUpkeep(id){
   upEdit = id ? taskById(id) : null;
@@ -2568,6 +2856,9 @@ async function sync(){
     await readCommands();
     await readPending();
     await syncFile('occ'); await syncFile('shop'); await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal');
+    // המנות הקבועות של נדב נכנסות פעם אחת, רק אחרי שהקובץ מהמאגר נקרא (כדי לא להחזיר מה שנמחק)
+    const ks = ל.kcalSeed(D.file.kcal, nowIso());
+    if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); await syncFile('kcal'); }
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
     if(D.tasks.some(t => t.calendar) || (calFile.events || []).length)
       try{ const c = await readFile({path: 'משימות/יומן.json'}); if(c){ calFile = c; store(K.cal, JSON.stringify(c)); } }catch(e){}
@@ -3007,12 +3298,1090 @@ function onboard(step){
 }
 
 /* ---------- כתובת: #o=<מופע> או #new ---------- */
+
+/* ---------- תרופות (הועבר מאפליקציית מעקב התרופות, על אותם קבצים במאגר) ---------- */
+{
+/* ---------- קבועים ---------- */
+const בעלים = 'nadavbenmenan', מאגר = 'cv', ענף = 'main';
+const נתיב_הגדרות_ישן = 'קלוד/מעקב תרופות/הגדרות.json';   // ערוץ ה-ntfy מלפני שההגדרות עברו לתצורה
+const מפתח_מתוזמן = 'תרופות.מתוזמן';
+const מפתח_תזכורות = 'תרופות.תזכורות';
+const כתובת_אפליקציה = 'https://nadavbenmenan.github.io/mesimot/#meds';
+const שמות_ימים = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const שמות_חודשים = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const צבעי_כרטיס = ['אפור','כחול','אדום','ירוק'];
+const פלטה = ['#2e7d4f','#1d5fbf','#8a4bc2','#c2410c','#0e7490','#be185d','#4d7c0f','#a16207'];
+const שעת_תזכורת_מ = 5, שעת_תזכורת_עד = 22;   // תואם ל-cron של תזכורות.yml
+
+/* ---------- עזר ---------- */
+const $ = s => document.getElementById('ת-' + s);
+const שתיים = n => String(n).padStart(2,'0');
+const תאריך_של = d => `${d.getFullYear()}-${שתיים(d.getMonth()+1)}-${שתיים(d.getDate())}`;
+const שעה_של = d => `${שתיים(d.getHours())}:${שתיים(d.getMinutes())}`;
+const מתוך = (ת, ש) => new Date(`${ת}T${ש}:00`);              // זמן מקומי
+const בטוח = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const מזהה_חדש = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const עכשיו_iso = () => new Date().toISOString();
+const תצוגת_תאריך = ת => { const [y,m,d]=ת.split('-'); return `${+d}.${+m}`; };
+const עותק = o => JSON.parse(JSON.stringify(o));
+
+const טוסט = (טקסט, שגיאה) => toast(טקסט, {err: !!שגיאה});
+
+const אחסון = store;
+
+/* ---------- תצורה: התרופות וההגדרות הכלליות ---------- */
+// התצורה נשמרת ב-תרופות/תצורה.json ומסונכרנת כמו הרישומים: כל תרופה לפי מזהה קבוע,
+// וההגדרות הכלליות כאובייקט אחד, והחותמת המאוחרת מנצחת. ברירת המחדל כאן היא בדיוק
+// המצב שהיה לפני שהאפליקציה נעשתה גמישה, עם חותמת ריקה כדי שכל עריכה תגבר עליה.
+const סיווגי_ברירת_מחדל = [{שם:'בוקר', מ:'05:00'}, {שם:'צהריים', מ:'12:00'}, {שם:'ערב', מ:'17:00'}, {שם:'לילה', מ:'23:00'}];
+const תבנית_תרופה = {
+  שם:'', משנה:'', תיאור:'', סוג:'מרווח', מרווח:6, מנות:[{כמות:1, יחידה:'כדורים', צעד:1}],
+  סיווגים:סיווגי_ברירת_מחדל, השפעה:null, מגבלה:null, תזכורות:[], התראת_מרווח:true, צבע:'#1d5fbf',
+  מצבים:{חסר:'אדום', נלקח:'כחול', פעיל:'כחול', רגיל:'אפור'}, שמות_קודמים:[], סדר:0, מוסתר:false,
+};
+const תצורת_ברירת_מחדל = () => עותק({
+  כללי: {עודכן:'', תאריך_התחלה:'2026-11-13', תחילת_יום:'05:00', סיווגים:סיווגי_ברירת_מחדל, ntfy:''},
+  תרופות: [
+    {...תבנית_תרופה, id:'propecia', עודכן:'', סדר:1, שם:'פרופסיה', תיאור:'כל בוקר', סוג:'יומית',
+     תזכורות:[8,10], התראת_מרווח:false, צבע:'#2e7d4f'},
+    // זמני ההשפעה בדקות, הערכה כללית לפי העלונים: אופטלגין (מטמיזול) מתחיל תוך כחצי שעה,
+    // שיא אחרי שעה עד שעה וחצי, ונמשך 4–6 שעות. זלדיאר (טרמדול + פרצטמול) מתחיל תוך
+    // פחות משעה, שיא אחרי 1–2.5 שעות, ונמשך כ-6 שעות.
+    {...תבנית_תרופה, id:'optalgin', עודכן:'', סדר:2, שם:'אופטלגין',
+     מנות:[{כמות:1, יחידה:'כדורים', צעד:1}, {כמות:2, יחידה:'כדורים', צעד:1}, {כמות:40, יחידה:'טיפות', צעד:5, לכדור:20}],
+     השפעה:{התחלה:30, שיא_מ:60, שיא_עד:90, סיום:300}, מגבלה:{מקסימום:6, מג_לכדור:500}, צבע:'#1d5fbf'},
+    {...תבנית_תרופה, id:'zaldiar', עודכן:'', סדר:3, שם:'זלדיאר', משנה:'Zaldiar',
+     סיווגים:[{שם:'בוקר', מ:'04:00'}, {שם:'ערב', מ:'15:00'}],
+     השפעה:{התחלה:45, שיא_מ:60, שיא_עד:150, סיום:360}, מגבלה:{מקסימום:2, מג_לכדור:0}, צבע:'#8a4bc2'},
+  ],
+});
+// רישומים מלפני שהיה להם מזהה תרופה נשמרו רק עם השם. השמות האלה תמיד מצביעים לתרופות
+// המקוריות, גם אם השם שונה אחר כך. אותה מפה בדיוק יושבת ב-תזכורות.yml.
+const שמות_מקוריים = {'פרופסיה':'propecia', 'אופטלגין':'optalgin', 'זלדיאר':'zaldiar'};
+
+// תרופה מקורית שנערכה לפני שהייתה מגבלה יומית מקבלת את המגבלה ואת ההמרה של הטיפות מברירת
+// המחדל. מגבלה שהוסרה בעורך נשמרת כ-null, ולכן לא חוזרת.
+function השלם_מגבלה(t){
+  const ב = !('מגבלה' in t) && תצורת_ברירת_מחדל().תרופות.find(x => x.id === t.id);
+  if(!ב) return t;
+  return {...t, מגבלה: ב.מגבלה, מנות: (t.מנות || []).map(מ => {
+    const לכדור = ב.מנות.find(x => x.יחידה === מ.יחידה && x.לכדור)?.לכדור;
+    return מ.לכדור || !לכדור ? מ : {...מ, לכדור};
+  })};
+}
+const נרמל_תרופה = t => (t = השלם_מגבלה(t),
+  {...עותק(תבנית_תרופה), ...t, מצבים:{...תבנית_תרופה.מצבים, ...(t.מצבים || {})}});
+
+function מזג_תצורה(א, ב){
+  const כללי = [א?.כללי, ב?.כללי].filter(Boolean)
+    .reduce((x, y) => (y.עודכן || '') > (x.עודכן || '') ? y : x, {});
+  const מפה = new Map();
+  for(const t of [...(א?.תרופות || []), ...(ב?.תרופות || [])]){
+    const קיים = מפה.get(t.id);
+    if(!קיים || (t.עודכן || '') > (קיים.עודכן || '')) מפה.set(t.id, t);
+  }
+  return {כללי: {...תצורת_ברירת_מחדל().כללי, ...כללי}, תרופות: [...מפה.values()].map(נרמל_תרופה)};
+}
+
+/* ---------- רישומים ---------- */
+// רשומה: {id, מזהה_תרופה, תרופה (השם ברגע הרישום), כמות, יחידה, תאריך, שעה, סיווג, עודכן}
+// או מצבה {id, נמחק:true, עודכן}. רשומה ישנה בלי יחידה היא בכדורים.
+function מזג(א, ב){
+  const מפה = new Map();
+  for(const r of [...א, ...ב]){
+    const קיים = מפה.get(r.id);
+    if(!קיים || (r.עודכן || '') > (קיים.עודכן || '')) מפה.set(r.id, r);
+  }
+  const גבול = new Date(Date.now() - 30*864e5).toISOString();   // מצבות ישנות נגרסות
+  return [...מפה.values()].filter(r => !(r.נמחק && r.עודכן < גבול));
+}
+
+/* ---------- שני הקבצים במאגר ---------- */
+const קבצים = {
+  רישומים: {נתיב:'תרופות/מעקב.json', מטמון:'תרופות.נתונים', ממתין:'תרופות.ממתין', sha:null,
+            ריק:() => [], מזג:(רחוק, מקומי) => מזג(רחוק || [], מקומי),
+            הודעה:'עדכון מעקב תרופות'},
+  תצורה:   {נתיב:'תרופות/תצורה.json', מטמון:'תרופות.תצורה', ממתין:'תרופות.תצורה.ממתין', sha:null,
+            ריק:() => תצורת_ברירת_מחדל(), מזג:(רחוק, מקומי) => מזג_תצורה(מזג_תצורה(תצורת_ברירת_מחדל(), רחוק), מקומי),
+            הודעה:'עדכון הגדרות מעקב התרופות'},
+  // חדש (משימות): מלאי לכל תרופה {id: מזהה התרופה, כמות, יחידה, מאז, אריזה, התראה, הותרע, עודכן}.
+  // הנותר מחושב: הכמות שהוזנה פחות מה שנרשם מאז. אין צורך לעדכן אותו בכל לקיחה.
+  מלאי:    {נתיב:'תרופות/מלאי.json', מטמון:'תרופות.מלאי', ממתין:'תרופות.מלאי.ממתין', sha:null,
+            ריק:() => [], מזג:(רחוק, מקומי) => מזג(רחוק || [], מקומי), הודעה:'עדכון מלאי תרופות'},
+};
+function טען_מטמון(ק){
+  try{ const ט = אחסון(ק.מטמון); if(ט) return ק.מזג(null, JSON.parse(ט)); }catch(e){}
+  return ק.מזג(null, ק.ריק());
+}
+let רשומות = טען_מטמון(קבצים.רישומים);
+let תצורה = טען_מטמון(קבצים.תצורה);
+let מלאי = טען_מטמון(קבצים.מלאי);
+const ערך_של = ק => ק === קבצים.רישומים ? רשומות : ק === קבצים.מלאי ? מלאי : תצורה;
+function קבע(ק, ערך){
+  if(ק === קבצים.רישומים) רשומות = ערך; else if(ק === קבצים.מלאי) מלאי = ערך; else תצורה = ערך;
+  אחסון(ק.מטמון, JSON.stringify(ערך));
+}
+
+const פעילות = () => רשומות.filter(r => !r.נמחק);
+const תרופה = id => תצורה.תרופות.find(t => t.id === id) || null;
+const גלויות = () => תצורה.תרופות.filter(t => !t.מוסתר).sort((a,b) => a.סדר - b.סדר);
+const ממוינות = () => [...תצורה.תרופות].sort((a,b) => a.סדר - b.סדר);
+
+/** לאיזו תרופה שייכת רשומה: לפי המזהה, ואם אין (רשומה ישנה) לפי השם. */
+function מזהה_של(r){
+  if(r.מזהה_תרופה) return r.מזהה_תרופה;
+  if(שמות_מקוריים[r.תרופה]) return שמות_מקוריים[r.תרופה];
+  const t = תצורה.תרופות.find(t => t.שם === r.תרופה || t.שמות_קודמים.includes(r.תרופה));
+  return t ? t.id : '?' + r.תרופה;
+}
+const שם_של = r => תרופה(מזהה_של(r))?.שם || r.תרופה;
+const של_תרופה = id => פעילות().filter(r => מזהה_של(r) === id);
+
+const יחידה_של = r => r.יחידה || 'כדורים';
+/** 'כדור אחד' לא נכתב; אחרת '2 כדורים' או '40 טיפות'. */
+const מנה_של = r => יחידה_של(r) === 'כדורים' && (r.כמות || 1) === 1 ? '' : `${r.כמות} ${יחידה_של(r)}`;
+
+function תווית_מנה(t, מ){
+  if(מ.תווית) return מ.תווית;
+  if(מ.יחידה === 'כדורים') return מ.כמות === 1 ? 'כדור אחד' : `${מ.כמות} כדורים`;
+  return t.מנות.filter(x => x.יחידה === מ.יחידה).length === 1 ? מ.יחידה : `${מ.כמות} ${מ.יחידה}`;
+}
+
+function סיווג_אוטומטי(t, שעה){
+  const רשימה = [...(t?.סיווגים?.length ? t.סיווגים : תצורה.כללי.סיווגים)].sort((a,b) => a.מ.localeCompare(b.מ));
+  const מתאים = רשימה.filter(s => s.מ <= שעה);
+  return (מתאים.length ? מתאים[מתאים.length-1] : רשימה[רשימה.length-1])?.שם || '';
+}
+
+/* ---------- גיטהאב ---------- */
+let מסנכרן = false, שוב = false;
+
+const כתובת = נ => `https://api.github.com/repos/${בעלים}/${מאגר}/contents/` + נ.split('/').map(encodeURIComponent).join('/');
+const ל64 = ט => { const b = new TextEncoder().encode(ט); let s=''; for(const x of b) s += String.fromCharCode(x); return btoa(s); };
+const מ64 = ב => new TextDecoder().decode(Uint8Array.from(atob(ב.replace(/\s/g,'')), c => c.charCodeAt(0)));
+
+async function גיט(שיטה, גוף, נ){
+  const ת = await fetch(כתובת(נ) + (שיטה === 'GET' ? `?ref=${ענף}&t=${Date.now()}` : ''), {
+    method: שיטה, cache: 'no-store',
+    headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'},
+    body: גוף ? JSON.stringify(גוף) : undefined,
+  });
+  if(ת.status === 404 && שיטה === 'GET') return null;
+  if(ת.status === 401) throw Object.assign(new Error('האסימון אינו תקף'), {קוד:401});
+  if(ת.status === 403) throw new Error('לאסימון אין הרשאת כתיבה למאגר cv');
+  if(ת.status === 409 || ת.status === 422) throw Object.assign(new Error('התנגשות'), {קוד:409});
+  if(!ת.ok) throw new Error('גיטהאב החזיר שגיאה ' + ת.status);
+  return ת.json();
+}
+
+/** קורא קובץ מהמאגר. null אם אינו קיים. */
+async function קרא(ק){
+  const ג = await גיט('GET', null, ק.נתיב);
+  if(!ג){ ק.sha = null; return null; }
+  ק.sha = ג.sha;
+  const ט = מ64(ג.content || '').trim();
+  return ט ? JSON.parse(ט) : null;
+}
+
+/** מושך, ממזג, ודוחף אם יש משהו מקומי שעוד לא עלה (או שהקובץ עוד לא קיים). */
+async function סנכרן_קובץ(ק, הודעה){
+  for(let ניסיון = 0; ניסיון < 3; ניסיון++){
+    const רחוק = await קרא(ק);
+    const מאוחד = ק.מזג(רחוק, ערך_של(ק));
+    קבע(ק, מאוחד);
+    const זהה = רחוק !== null && JSON.stringify(ק.מזג(null, רחוק)) === JSON.stringify(מאוחד);
+    const צריך = !!אחסון(ק.ממתין) || (רחוק === null && ק === קבצים.תצורה);
+    if(!צריך || זהה){ אחסון(ק.ממתין, null); return; }
+    try{
+      const גוף = {message: הודעה || ק.הודעה, branch: ענף, content: ל64(JSON.stringify(מאוחד, null, 1))};
+      if(ק.sha) גוף.sha = ק.sha;
+      const ת = await גיט('PUT', גוף, ק.נתיב);
+      ק.sha = ת.content?.sha ?? null;
+      אחסון(ק.ממתין, null);
+      return;
+    }catch(err){
+      if(err.קוד === 409 && ניסיון < 2) continue;
+      throw err;
+    }
+  }
+}
+
+async function סנכרן(הודעה){
+  if(!token){ צייר_מצב(); return; }
+  if(מסנכרן){ שוב = true; return; }
+  מסנכרן = true; צייר_מצב('מסנכרן...');
+  try{
+    await סנכרן_קובץ(קבצים.תצורה);
+    await סנכרן_קובץ(קבצים.רישומים, הודעה);
+    await סנכרן_קובץ(קבצים.מלאי);
+    צייר_מצב();
+    צייר_הכל();
+    תזמן_בדחיפה();
+    await נקה_ntfy();
+  }catch(err){
+    צייר_מצב(err.קוד === 401 ? 'האסימון פג. נשמר במכשיר בלבד' : 'אין חיבור. נשמר במכשיר ויעלה אחר כך');
+    if(err.קוד === 401) טוסט('האסימון אינו תקף. חבר מחדש', true);
+  }finally{
+    מסנכרן = false;
+    צייר_הכל();
+    if(שוב){ שוב = false; סנכרן(); }
+  }
+}
+
+function צייר_מצב(טקסט){
+  const ממתין = !!(אחסון(קבצים.רישומים.ממתין) || אחסון(קבצים.תצורה.ממתין) || אחסון(קבצים.מלאי.ממתין));
+  $('מצב-סנכרון').textContent = טקסט && טקסט !== 'מסנכרן...' ? טקסט : (token ? (ממתין ? '⏳ יש שינויים שעוד לא עלו' : '') : 'נשמר במכשיר הזה בלבד');
+}
+
+/* ---------- התראה כשמותר עוד מנה ---------- */
+// לכל תרופה לפי מרווח יש התראה מתוזמנת אחת ב-ntfy, בזמן המנה האחרונה + המרווח. השרת של
+// ntfy שולח אותה בזמן, גם כשהדף סגור. מזהה הרצף הוא מזהה התרופה, ולכן כשמשהו משתנה
+// מוחקים את המתוזמנת ומתזמנים מחדש. מה שתוזמן נשמר במכשיר, כדי לא לתזמן שוב סתם.
+let ערוץ_ישן = '';
+
+async function ערוץ(){
+  if(תצורה.כללי.ntfy) return תצורה.כללי.ntfy;
+  if(!ערוץ_ישן && token){
+    try{
+      const ג = await גיט('GET', null, נתיב_הגדרות_ישן);
+      ערוץ_ישן = ג ? (JSON.parse(מ64(ג.content || '')).ntfy || '') : '';
+    }catch(e){}
+  }
+  return ערוץ_ישן;
+}
+
+async function תזמן_התראות(){
+  const נושא = await ערוץ();
+  if(!נושא) return;
+  let מתוזמן = {};
+  try{ מתוזמן = JSON.parse(אחסון(מפתח_מתוזמן) || '{}'); }catch(e){}
+  for(const t of תצורה.תרופות){
+    const פעיל = t.סוג === 'מרווח' && t.התראת_מרווח && !t.מוסתר;
+    const א = פעיל ? אחרונה(t.id) : null;
+    // ההתראה יוצאת בסוף המרווח. אם באותו יום אין מקום במגבלה היומית, היא מוסיפה הערה
+    const יעד = א ? הכדור_הבא(t, א) : 0;
+    const הערה = יעד ? הערת_מגבלה(t, יעד) : '';
+    const חתימה = `${נושא}|${יעד}|${t.שם}|${א ? מנה_של(א) : ''}|${הערה}`;
+    if(מתוזמן[t.id] === חתימה) continue;
+    try{
+      await fetch(`https://ntfy.sh/${encodeURIComponent(נושא)}/${encodeURIComponent(t.id)}`, {method:'DELETE'});
+      if(יעד > Date.now() + 15e3){
+        const פרמטרים = new URLSearchParams({
+          title: `אפשר לקחת עוד ${t.שם}`, tags: 'pill', priority: '4', click: כתובת_אפליקציה,
+          delay: String(Math.round(יעד / 1000)),
+        });
+        const ת = await fetch(`https://ntfy.sh/${encodeURIComponent(נושא)}/${encodeURIComponent(t.id)}?${פרמטרים}`, {method:'POST',
+          body: `עברו ${t.מרווח} שעות מה${t.שם} של ${א.שעה}${מנה_של(א) ? ` (${מנה_של(א)})` : ''}`
+            + (הערה ? `\n🔴 שים לב: ${הערה}` : '')});
+        if(!ת.ok) throw new Error('ntfy ' + ת.status);
+      }
+      מתוזמן[t.id] = חתימה;
+    }catch(e){ /* ננסה שוב בסנכרון הבא */ }
+  }
+  אחסון(מפתח_מתוזמן, JSON.stringify(מתוזמן));
+  await תזמן_תזכורות(נושא);
+}
+
+/* ---------- תזכורות לתרופות "פעם ביום" ---------- */
+// כל שעת תזכורת ב-70 השעות הקרובות מתוזמנת מראש ב-ntfy, עם מזהה רצף קבוע
+// r-<תרופה>-<תאריך>-<שעה>, ונמחקת כשהתרופה נרשמה באותו תאריך. ntfy שולח אותה בדקה המדויקת
+// גם כשהאפליקציה סגורה. תזכורות.yml עושה בדיוק את אותו דבר כמה פעמים ביום, כגיבוי לימים
+// שהאפליקציה לא נפתחת (הריצות המתוזמנות של גיטהאב מתעכבות בשעות, ולכן הן לא שולחות בעצמן).
+const אופק_תזכורות = 70 * 36e5;
+const סידורי = {2:'שנייה', 3:'שלישית', 4:'רביעית'};
+
+/** {רצף: {זמן, כותרת, גוף, נלקחה}} לכל שעת תזכורת עתידית בטווח. נלקחה = למחוק. */
+function תזכורות_רצויות(){
+  const רצויות = {}, עכשיו = Date.now();
+  for(const t of תצורה.תרופות){
+    if(t.סוג !== 'יומית' || t.מוסתר || !t.תזכורות.length) continue;
+    const שעות = [...t.תזכורות].sort((a,b) => a-b);
+    for(let יום = 0; יום < 4; יום++){
+      const d = new Date(); d.setDate(d.getDate() + יום);
+      const תאריך = תאריך_של(d);
+      const נלקחה = של_תרופה(t.id).some(r => r.תאריך === תאריך);
+      שעות.forEach((ש, i) => {
+        const זמן = מתוך(תאריך, `${שתיים(ש)}:00`).getTime();
+        if(זמן < עכשיו + 15e3 || זמן > עכשיו + אופק_תזכורות) return;
+        const רצף = `r-${t.id}-${תאריך.replaceAll('-', '')}-${שתיים(ש)}`;
+        רצויות[רצף] = {זמן, נלקחה,
+          כותרת: t.שם + (i ? ` · תזכורת ${סידורי[i + 1] || 'נוספת'}` : ''), גוף: `עוד לא לקחת ${t.שם} היום`};
+      });
+    }
+  }
+  return רצויות;
+}
+
+async function תזמן_תזכורות(נושא){
+  let שמורות = {};
+  try{ שמורות = JSON.parse(אחסון(מפתח_תזכורות) || '{}'); }catch(e){}
+  const רצויות = תזכורות_רצויות(), עכשיו = Date.now();
+  const ntfy = רצף => `https://ntfy.sh/${encodeURIComponent(נושא)}/${encodeURIComponent(רצף)}`;
+  // מה שתוזמן מכאן ולא רצוי עוד (שעה שהוסרה, תרופה שהוסתרה). מה שכבר נשלח לא נמחק מהנייד.
+  for(const [רצף, ש] of Object.entries(שמורות)){
+    if(רצף in רצויות) continue;
+    if(ש.זמן > עכשיו){ try{ await fetch(ntfy(רצף), {method:'DELETE'}); }catch(e){ continue; } }
+    delete שמורות[רצף];
+  }
+  for(const [רצף, ת] of Object.entries(רצויות)){
+    // מחיקה נעשית גם אם לא תוזמן מכאן: אולי גיטהאב או מכשיר אחר תזמנו
+    const חתימה = ת.נלקחה ? `${נושא}|נמחק` : `${נושא}|${ת.כותרת}|${ת.גוף}`;
+    if(שמורות[רצף]?.חתימה === חתימה) continue;
+    try{
+      await fetch(ntfy(רצף), {method:'DELETE'});
+      if(!ת.נלקחה){
+        const פרמטרים = new URLSearchParams({title: ת.כותרת, tags: 'pill', priority: '4',
+          click: כתובת_אפליקציה, delay: String(Math.round(ת.זמן / 1000))});
+        const תשובה = await fetch(`${ntfy(רצף)}?${פרמטרים}`, {method:'POST', body: ת.גוף});
+        if(!תשובה.ok) throw new Error('ntfy ' + תשובה.status);
+      }
+      שמורות[רצף] = {חתימה, זמן: ת.זמן};
+    }catch(e){ /* ננסה שוב בסנכרון הבא */ }
+  }
+  אחסון(מפתח_תזכורות, JSON.stringify(שמורות));
+}
+
+/* ---------- מצב כל תרופה ---------- */
+/** המנה האחרונה שכבר נלקחה. רישום עם שעה מאוחרת יותר היום לא נחשב עד שהשעה מגיעה. */
+function אחרונה(id){
+  const עכשיו = Date.now() + 60e3;
+  return של_תרופה(id).map(r => ({...r, זמן: מתוך(r.תאריך, r.שעה)}))
+    .filter(r => r.זמן <= עכשיו)
+    .sort((a,b) => b.זמן - a.זמן)[0] || null;
+}
+function נותר_פורמט(ms){
+  const דק = Math.ceil(ms / 60000);
+  return `${Math.floor(דק/60)}:${שתיים(דק%60)}`;
+}
+const בתוספת = (זמן, דקות) => שעה_של(new Date(זמן.getTime() + דקות*6e4));
+
+/** שלב ההשפעה ופס זמן לאורך המרווח: התחלה, שיא, דעיכה, סיום, וסמן של עכשיו. */
+function השפעה_של(t, א, הבא){
+  const ה = t.השפעה;
+  if(!ה) return '';
+  const עבר = (Date.now() - א.זמן) / 6e4, ב = m => בתוספת(א.זמן, m);
+  const מלא = t.מרווח * 60;
+  const שלב =
+      עבר < ה.התחלה ? `⏳ מתחיל להשפיע בערך ב-${ב(ה.התחלה)}`
+    : עבר < ה.שיא_מ ? `↗ מתחיל להשפיע · שיא בערך ב-${ב(ה.שיא_מ)}`
+    : עבר < ה.שיא_עד ? `💪 בשיא ההשפעה עד בערך ${ב(ה.שיא_עד)}`
+    : עבר < ה.סיום ? `↘ ההשפעה נחלשת · נגמרת בערך ב-${ב(ה.סיום)}`
+    : `ההשפעה הסתיימה בערך ב-${ב(ה.סיום)} · הכדור הבא מותר רק ב-${שעה_של(new Date(הבא))}`;
+  const פ = m => (Math.min(Math.max(m,0), מלא) / מלא * 100).toFixed(1) + '%';
+  const פס = `linear-gradient(to left, var(--קו) 0 ${פ(ה.התחלה)}, var(--כחול-קו) ${פ(ה.התחלה)} ${פ(ה.שיא_מ)},
+    var(--כחול) ${פ(ה.שיא_מ)} ${פ(ה.שיא_עד)}, var(--כחול-קו) ${פ(ה.שיא_עד)} ${פ(ה.סיום)}, var(--קו) ${פ(ה.סיום)} 100%)`;
+  return `<div class="השפעה">
+    <div class="שלב">${שלב}</div>
+    <div class="פס" style="background:${פס}"><i style="right:${פ(עבר)}"></i></div>
+    <div class="תוויות"><span>${א.שעה} נלקח</span><span>שיא <bdi dir="ltr">${ב(ה.שיא_מ)}–${ב(ה.שיא_עד)}</bdi></span><span>${שעה_של(new Date(הבא))} כדור הבא</span></div>
+  </div>`;
+}
+
+/* ---------- מגבלה יומית ---------- */
+// מגבלה: {מקסימום, מג_לכדור}, המקסימום בכדורים ליום. היום מתחיל בשעה תחילת_יום שבהגדרות
+// הכלליות (ברירת מחדל 05:00), לא בחצות. כל כפתור מנה אומר כמה מהיחידה שלו הן כדור אחד
+// (לכדור, למשל 20 טיפות). חריגה לא חוסמת שום דבר, רק מוצגת באדום.
+const לכדור_של = (t, יחידה) =>
+  +(t.מנות.find(מ => מ.יחידה === יחידה && מ.לכדור > 0)?.לכדור) || (יחידה === 'כדורים' ? 1 : 0);
+
+/** תחילת היום שהרגע הנתון שייך אליו: ה-05:00 (או השעה שבהגדרות) האחרון שלפניו. */
+function תחילת_יום(ms){
+  const [ש, ד] = (תצורה.כללי.תחילת_יום || '05:00').split(':').map(Number);
+  const d = new Date(ms); d.setHours(ש, ד, 0, 0);
+  if(d.getTime() > ms) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
+const היום_הבא = ms => { const d = new Date(תחילת_יום(ms)); d.setDate(d.getDate() + 1); return d.getTime(); };
+
+/** המנות באותו יום עד הרגע הנתון (או בכל היום), בכדורים. */
+function ביום(t, רגע, בלי_id, כל_היום){
+  const מ = תחילת_יום(רגע), עד = כל_היום ? היום_הבא(רגע) - 1 : רגע;
+  return של_תרופה(t.id).filter(r => r.id !== בלי_id)
+    .map(r => ({זמן: מתוך(r.תאריך, r.שעה).getTime(), כדורים: (r.כמות || 1) / (לכדור_של(t, יחידה_של(r)) || Infinity)}))
+    .filter(x => x.זמן >= מ && x.זמן <= עד && x.כדורים > 0);
+}
+const סכום = מנות => מנות.reduce((ס, x) => ס + x.כדורים, 0);
+const מספר = x => (+x.toFixed(2)).toLocaleString('he-IL');
+const כדורים_טקסט = x => Math.abs(x - 1) < 1e-9 ? 'כדור אחד' : `${מספר(x)} כדורים`;
+/** '1,500 מ"ג' כשידוע המינון, אחרת '3 כדורים'. */
+const כמות_מגבלה = (t, כדורים) => t.מגבלה.מג_לכדור ? `${מספר(כדורים * t.מגבלה.מג_לכדור)} מ"ג` : כדורים_טקסט(כדורים);
+
+/** הכדור הבא לפי המרווח מהמנה האחרונה בלבד (0 = מותר). המגבלה היומית היא רק הערה. */
+const הכדור_הבא = (t, א) => א && t.סוג === 'מרווח' ? א.זמן.getTime() + t.מרווח*36e5 : 0;
+/** 'הגעת למגבלה היומית של 3,000 מ"ג (הגעת ל-3,500 מ"ג)' כשבאותו יום אין מקום לכדור שלם נוסף, אחרת ''. */
+function הערת_מגבלה(t, רגע){
+  if(!t.מגבלה?.מקסימום) return '';
+  const סך = סכום(ביום(t, רגע));
+  if(סך <= t.מגבלה.מקסימום - 1 + 1e-9) return '';
+  const בפועל = Math.abs(סך - t.מגבלה.מקסימום) > 1e-9 ? ` (הגעת ל-${כמות_מגבלה(t, סך)})` : '';
+  return `הגעת למגבלה היומית של ${כמות_מגבלה(t, t.מגבלה.מקסימום)}${בפועל}`;
+}
+/** 'בשעה 05:00' או 'בשעה 05:00 מחר'. */
+const שעה_ויום = ms => 'בשעה ' + שעה_של(new Date(ms)) + (תאריך_של(new Date(ms)) !== תאריך_של(new Date()) ? ' מחר' : '');
+
+/** שורת המגבלה בכרטיס: כמה נלקח היום, ובאדום הערה כשאין מקום לכדור נוסף, ובשורה שנייה מתי מתחיל יום חדש. */
+function מגבלה_של(t){
+  if(!t.מגבלה?.מקסימום) return '';
+  const עכשיו = Date.now() + 60e3, סך = סכום(ביום(t, עכשיו));
+  if(!סך) return '';
+  const הערה = הערת_מגבלה(t, עכשיו);
+  if(!הערה) return `<div class="מגבלה">היום: ${כמות_מגבלה(t, סך)} מתוך ${כמות_מגבלה(t, t.מגבלה.מקסימום)}</div>`;
+  return `<div class="מגבלה אדום">🔴 ${הערה}<br>שחרור המגבלה היומית ${שעה_ויום(היום_הבא(עכשיו))}</div>`;
+}
+
+function צייר_כרטיסים(){
+  const היום = תאריך_של(new Date());
+  $('כרטיסים').innerHTML = גלויות().map(t => {
+    let צבע = t.מצבים.רגיל, סטטוס = '', מחלקת_סטטוס = '', השפעה = '';
+    const הבא = הכדור_הבא(t, אחרונה(t.id));
+    if(t.סוג === 'יומית'){
+      const נלקח = של_תרופה(t.id).find(r => r.תאריך === היום);
+      if(נלקח){ צבע = t.מצבים.נלקח; מחלקת_סטטוס = צבע; סטטוס = `✓ נלקח היום ב-${נלקח.שעה}`; }
+      else    { צבע = t.מצבים.חסר; מחלקת_סטטוס = צבע; סטטוס = 'עוד לא נלקח היום'; }
+    }else{
+      const א = אחרונה(t.id);
+      if(א){
+        const עבר = Date.now() - א.זמן;
+        const נותר = הבא - Date.now();
+        if(נותר > 0 && עבר >= 0){
+          צבע = t.מצבים.פעיל; מחלקת_סטטוס = 'אדום';
+          סטטוס = `⏱ עוד ${נותר_פורמט(נותר)} עד הכדור הבא · נלקח ${מנה_של(א) ? מנה_של(א) + ' ' : ''}ב-${א.שעה}${א.תאריך !== היום ? ' (' + תצוגת_תאריך(א.תאריך) + ')' : ''}`;
+          השפעה = השפעה_של(t, א, הבא);
+        }else{
+          סטטוס = `אחרון: ${תצוגת_תאריך(א.תאריך)} ב-${א.שעה}${מנה_של(א) ? ' · ' + מנה_של(א) : ''}`;
+        }
+      }else סטטוס = 'עוד לא נלקח';
+    }
+    const תיאור = t.תיאור || (t.סוג === 'יומית' ? 'פעם ביום' : `כל ${t.מרווח} שעות לפחות`);
+    const כפתורים = t.מנות.map((מ, i) =>
+      `<button data-מנה="${i}">${בטוח(תווית_מנה(t, מ))}</button>`).join('');
+    return `<div class="כרטיס ${צבע}" data-תרופה="${בטוח(t.id)}">
+      <div class="ראש-כרטיס"><h2>${בטוח(t.שם)}</h2>${t.משנה ? `<span class="תת">${בטוח(t.משנה)}</span>` : ''}
+        <span class="תת">· ${בטוח(תיאור)}</span></div>
+      <div class="סטטוס ${מחלקת_סטטוס}">${סטטוס}</div>
+      ${השפעה}
+      ${מגבלה_של(t)}
+      ${שורת_מלאי(t)}
+      <div class="כפתורים">${כפתורים}</div>
+    </div>`;
+  }).join('') || '<div class="ריק" style="margin-top:14px">אין תרופות להצגה. ⋮ ← הוספת תרופה.</div>';
+}
+
+/* ---------- רשימת יום ולוח שנה ---------- */
+let יום_נבחר = תאריך_של(new Date());
+let חודש_מוצג = new Date(); חודש_מוצג.setDate(1);
+
+function צייר_רשימה(){
+  const היום = תאריך_של(new Date());
+  const d = מתוך(יום_נבחר, '12:00');
+  $('כותרת-יום').textContent = (יום_נבחר === היום ? 'היום · ' : '') + `יום ${שמות_ימים[d.getDay()]} ${תצוגת_תאריך(יום_נבחר)}`;
+  const של_היום = פעילות().filter(r => r.תאריך === יום_נבחר).sort((a,b) => a.שעה.localeCompare(b.שעה));
+  $('רשימה').innerHTML = של_היום.length ? של_היום.map(r => {
+    const t = תרופה(מזהה_של(r)), זמן = מתוך(r.תאריך, r.שעה);
+    return `<div class="רשומה" data-id="${בטוח(r.id)}">
+      <span class="שעה">${בטוח(r.שעה)}</span>
+      <span class="שם">${בטוח(שם_של(r))}${מנה_של(r) ? ` · ${בטוח(מנה_של(r))}` : ''}${t?.השפעה
+        ? `<span class="טווח">השפעה בערך <bdi dir="ltr">${בתוספת(זמן, t.השפעה.התחלה)}–${בתוספת(זמן, t.השפעה.סיום)}</bdi></span>` : ''}</span>
+      <span class="סיווג">${בטוח(r.סיווג)}</span>
+    </div>`;
+  }).join('') : '<div class="ריק">אין רישומים ביום הזה</div>';
+}
+
+function צייר_לוח(){
+  const שנה = חודש_מוצג.getFullYear(), חודש = חודש_מוצג.getMonth();
+  const התחלה_ת = תצורה.כללי.תאריך_התחלה;
+  $('שם-חודש').textContent = `${שמות_חודשים[חודש]} ${שנה}`;
+  const היום = תאריך_של(new Date());
+  const ראשון = new Date(שנה, חודש, 1), ימים = new Date(שנה, חודש+1, 0).getDate();
+  const לפי_יום = {};
+  for(const r of פעילות()) (לפי_יום[r.תאריך] ||= new Set()).add(מזהה_של(r));
+  const צבע_של = id => תרופה(id)?.צבע || '#888';
+  let html = 'אבגדהוש'.split('').map(x => `<div class="כותרת-יום">${x}'</div>`).join('');
+  for(let i = 0; i < ראשון.getDay(); i++) html += '<div></div>';
+  for(let יום = 1; יום <= ימים; יום++){
+    const ת = `${שנה}-${שתיים(חודש+1)}-${שתיים(יום)}`;
+    const כבוי = ת < התחלה_ת || ת > היום;
+    const נק = [...(לפי_יום[ת] || [])].map(id => `<i style="background:${בטוח(צבע_של(id))}"></i>`).join('');
+    html += `<button class="יום${כבוי ? ' כבוי' : ''}${ת === יום_נבחר ? ' נבחר' : ''}${ת === היום ? ' היום' : ''}" data-תאריך="${ת}" ${כבוי ? 'disabled' : ''}>${יום}<span class="נקודות">${נק}</span></button>`;
+  }
+  $('רשת').innerHTML = html;
+  $('מקרא').innerHTML = ממוינות().filter(t => !t.מוסתר || של_תרופה(t.id).length)
+    .map(t => `<span><i style="background:${בטוח(t.צבע)}"></i>${בטוח(t.שם)}</span>`).join('');
+  const התחלה = מתוך(התחלה_ת, '12:00');
+  $('חודש-קודם').disabled = שנה*12+חודש <= התחלה.getFullYear()*12+התחלה.getMonth();
+  const נוכחי = new Date();
+  $('חודש-הבא').disabled = שנה*12+חודש >= נוכחי.getFullYear()*12+נוכחי.getMonth();
+}
+
+function צייר_שעון(){
+  const d = new Date();
+  $('שעון').innerHTML = `<b>${שעה_של(d)}</b>יום ${שמות_ימים[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`;
+}
+
+let יום_אחרון = תאריך_של(new Date());
+function צייר_הכל(){
+  const היום = תאריך_של(new Date());
+  if(היום !== יום_אחרון){                 // עבר חצות: עוברים ליום החדש
+    if(יום_נבחר === יום_אחרון) יום_נבחר = היום;
+    יום_אחרון = היום;
+  }
+  צייר_כרטיסים(); צייר_רשימה(); בדוק_מלאי();
+  $('הערת-השפעה').textContent = גלויות().some(t => t.השפעה) ? 'זמני ההשפעה: הערכה כללית לפי העלון.' : '';
+  if(!$('לוח-שנה').hidden) צייר_לוח();
+}
+
+/* ---------- חלונית הרישום ---------- */
+let סיווג_נגעו = false;
+const תרופה_בחלונית = () => תרופה($('תרופה').value);
+
+function מלא_תרופות(נבחרת){
+  const רשימה = ממוינות().filter(t => !t.מוסתר || t.id === נבחרת);
+  $('תרופה').innerHTML = רשימה.map(t => `<option value="${בטוח(t.id)}">${בטוח(t.שם)}</option>`).join('');
+  $('תרופה').value = נבחרת;
+}
+
+function מלא_סיווגים(t, נבחר){
+  const שמות = [...new Set([...(t?.סיווגים || []).map(s => s.שם), ...תצורה.כללי.סיווגים.map(s => s.שם), ...(נבחר ? [נבחר] : [])])];
+  $('סיווג').innerHTML = שמות.map(s => `<option${s === נבחר ? ' selected' : ''}>${בטוח(s)}</option>`).join('');
+}
+
+// יחידות: מה שמופיע בכפתורי המנה של התרופה. הצעד והכמות ההתחלתית לקוחים מכפתור המנה הראשון באותה יחידה.
+const יחידות_של = t => [...new Set((t?.מנות || []).map(מ => מ.יחידה))];
+const מנה_ליחידה = (t, יחידה) => t?.מנות.find(מ => מ.יחידה === יחידה) || {כמות:1, צעד:1};
+function עדכן_יחידה(){
+  const t = תרופה_בחלונית(), יחידות = יחידות_של(t);
+  const נוכחית = $('יחידה').value;
+  const רשימה = [...new Set([...יחידות, ...(נוכחית ? [נוכחית] : [])])];
+  $('יחידה').innerHTML = רשימה.map(u => `<option${u === נוכחית ? ' selected' : ''}>${בטוח(u)}</option>`).join('');
+  if(!רשימה.includes(נוכחית)) $('יחידה').value = רשימה[0] || 'כדורים';
+  $('יחידה').hidden = רשימה.length < 2;
+  $('תווית-כמות').textContent = `כמות ${$('יחידה').value || ''}`.trim();
+}
+const צעד = () => +מנה_ליחידה(תרופה_בחלונית(), $('יחידה').value).צעד || 1;
+
+function בדוק_מרווח(){
+  const t = תרופה_בחלונית();
+  if(!t){ $('אזהרה').hidden = true; return; }
+  const זמן = מתוך($('תאריך').value, $('שעה').value || '00:00');
+  const אחרות = של_תרופה(t.id).filter(r => r.id !== $('מזהה').value);
+  let הודעה = '';
+  if(t.סוג === 'יומית'){
+    const כבר = אחרות.find(r => r.תאריך === $('תאריך').value);
+    if(כבר) הודעה = `${t.שם} כבר נרשמה ביום הזה ב-${כבר.שעה}`;
+  }else{
+    const קרובה = אחרות.map(r => ({...r, ז: מתוך(r.תאריך, r.שעה)}))
+      .filter(r => Math.abs(זמן - r.ז) < t.מרווח*36e5)
+      .sort((a,b) => Math.abs(זמן - a.ז) - Math.abs(זמן - b.ז))[0];
+    if(קרובה){
+      const שעות = Math.abs(זמן - קרובה.ז) / 36e5;
+      הודעה = `פחות מ-${t.מרווח} שעות מהמנה של ${קרובה.שעה}${קרובה.תאריך !== $('תאריך').value ? ' (' + תצוגת_תאריך(קרובה.תאריך) + ')' : ''}: ${נותר_פורמט(שעות*36e5)} שעות בלבד`;
+    }
+  }
+  const הודעות = הודעה ? ['⚠ ' + הודעה] : [];
+  if(t.מגבלה?.מקסימום){
+    const ל = לכדור_של(t, $('יחידה').value || 'כדורים');
+    const סך = סכום(ביום(t, זמן.getTime(), $('מזהה').value, true)) + (ל ? (+$('כמות').value || 0) / ל : 0);
+    if(סך > t.מגבלה.מקסימום + 1e-9)
+      הודעות.push(`🔴 עם המנה הזו: ${כמות_מגבלה(t, סך)} באותו יום, מעל המגבלה היומית של ${כמות_מגבלה(t, t.מגבלה.מקסימום)}`);
+  }
+  $('אזהרה').hidden = !הודעות.length;
+  $('אזהרה').innerHTML = הודעות.map(בטוח).join('<br>');
+}
+
+function פתח_חלונית(r){
+  const d = new Date();
+  const id = r.מזהה_תרופה || מזהה_של(r);
+  $('מזהה').value = r.id || '';
+  מלא_תרופות(id);
+  $('יחידה').innerHTML = `<option>${בטוח(יחידה_של(r))}</option>`;
+  $('יחידה').value = יחידה_של(r);
+  עדכן_יחידה();
+  $('כמות').value = r.כמות || 1;
+  $('תאריך').value = r.תאריך || תאריך_של(d);
+  $('תאריך').min = תצורה.כללי.תאריך_התחלה; $('תאריך').max = תאריך_של(d);
+  $('שעה').value = r.שעה || שעה_של(d);
+  סיווג_נגעו = !!r.id;
+  מלא_סיווגים(תרופה(id), r.סיווג || סיווג_אוטומטי(תרופה(id), $('שעה').value));
+  $('כותרת-חלונית').textContent = r.id ? 'עריכת רישום' : 'רישום תרופה';
+  $('כפתור-מחיקה').hidden = !r.id;
+  בדוק_מרווח();
+  $('חלונית').showModal();
+}
+
+function סיווג_מחדש(){
+  const t = תרופה_בחלונית();
+  מלא_סיווגים(t, סיווג_נגעו ? $('סיווג').value : סיווג_אוטומטי(t, $('שעה').value || '08:00'));
+  בדוק_מרווח();
+}
+$('תרופה').addEventListener('change', () => {
+  const t = תרופה_בחלונית();
+  $('יחידה').value = '';
+  עדכן_יחידה();
+  $('כמות').value = מנה_ליחידה(t, $('יחידה').value).כמות;
+  סיווג_מחדש();
+});
+$('שעה').addEventListener('input', סיווג_מחדש);
+$('תאריך').addEventListener('input', בדוק_מרווח);
+$('כמות').addEventListener('input', בדוק_מרווח);
+$('סיווג').addEventListener('change', () => { סיווג_נגעו = true; });
+$('יחידה').addEventListener('change', () => {
+  $('כמות').value = מנה_ליחידה(תרופה_בחלונית(), $('יחידה').value).כמות;
+  עדכן_יחידה();
+  בדוק_מרווח();
+});
+$('פחות').addEventListener('click', () => { $('כמות').value = Math.max(צעד() < 1 ? צעד() : 1, +((+$('כמות').value || 1) - צעד()).toFixed(2)); בדוק_מרווח(); });
+$('יותר').addEventListener('click', () => { $('כמות').value = +((+$('כמות').value || 0) + צעד()).toFixed(2); בדוק_מרווח(); });
+$('כפתור-ביטול').addEventListener('click', () => $('חלונית').close());
+
+function שנה_רשומה(רשומה, הודעה, טקסט_טוסט){
+  קבע(קבצים.רישומים, מזג(רשומות, [רשומה]));
+  אחסון(קבצים.רישומים.ממתין, '1');
+  $('חלונית').close();
+  צייר_הכל();
+  טוסט(טקסט_טוסט);
+  תזמן_בדחיפה();
+  סנכרן(הודעה);
+}
+
+$('טופס').addEventListener('submit', e => {
+  e.preventDefault();
+  if(!$('תאריך').value || !$('שעה').value) return טוסט('חסר תאריך או שעה', true);
+  const t = תרופה_בחלונית();
+  if(!t) return טוסט('בחר תרופה', true);
+  const כמות = +$('כמות').value;
+  if(!(כמות > 0)) return טוסט('כמות לא תקינה', true);
+  const r = {
+    id: $('מזהה').value || מזהה_חדש(),
+    מזהה_תרופה: t.id, תרופה: t.שם,
+    כמות, יחידה: $('יחידה').value || 'כדורים',
+    תאריך: $('תאריך').value, שעה: $('שעה').value, סיווג: $('סיווג').value,
+    עודכן: עכשיו_iso(),
+  };
+  יום_נבחר = r.תאריך;
+  שנה_רשומה(r, `${r.תרופה} ${r.תאריך} ${r.שעה}`, `נרשם: ${r.תרופה} ${r.שעה}`);
+});
+
+$('כפתור-מחיקה').addEventListener('click', () => {
+  if(!confirm('למחוק את הרישום?')) return;
+  שנה_רשומה({id: $('מזהה').value, נמחק: true, עודכן: עכשיו_iso()}, 'מחיקת רישום', 'הרישום נמחק');
+});
+
+/* ---------- שמירת תצורה ---------- */
+function שמור_תצורה(שינוי, טקסט_טוסט){
+  const חדשה = עותק(תצורה);
+  שינוי(חדשה);
+  קבע(קבצים.תצורה, מזג_תצורה(תצורה, חדשה));
+  אחסון(קבצים.תצורה.ממתין, '1');
+  צייר_הכל();
+  if(טקסט_טוסט) טוסט(טקסט_טוסט);
+  סנכרן();
+}
+
+/* ---------- עורך תרופה ---------- */
+const בחירות_צבע = נבחר => צבעי_כרטיס.map(c => `<option${c === נבחר ? ' selected' : ''}>${c}</option>`).join('');
+
+function שורת_מנה(מ = {כמות:1, יחידה:'כדורים', צעד:1, תווית:''}){
+  return `<div class="שורה-עריכה מנה">
+    <button type="button" class="הסר" title="הסר">✕</button>
+    <div class="שלישייה">
+      <div class="שדה"><label>כמות</label><input class="מ-כמות" type="number" min="0" step="any" inputmode="decimal" value="${בטוח(מ.כמות)}"></div>
+      <div class="שדה"><label>יחידה</label><input class="מ-יחידה" list="יחידות-מוכרות" value="${בטוח(מ.יחידה)}"></div>
+      <div class="שדה"><label>צעד +/−</label><input class="מ-צעד" type="number" min="0" step="any" inputmode="decimal" value="${בטוח(מ.צעד ?? 1)}"></div>
+    </div>
+    <div class="זוג" style="margin-top:8px">
+      <div class="שדה"><label>טקסט על הכפתור <em>(ריק = אוטומטי)</em></label><input class="מ-תווית" value="${בטוח(מ.תווית || '')}"></div>
+      <div class="שדה"><label>כמה מהיחידה = כדור</label><input class="מ-לכדור" type="number" min="0" step="any" inputmode="decimal" value="${בטוח(מ.לכדור || (מ.יחידה === 'כדורים' ? 1 : ''))}"></div>
+    </div>
+  </div>`;
+}
+function שורת_סיווג(s = {שם:'', מ:'08:00'}){
+  return `<div class="שורה-עריכה סיווג-שורה">
+    <button type="button" class="הסר" title="הסר">✕</button>
+    <div class="זוג" style="margin-left:26px">
+      <div class="שדה"><label>שם</label><input class="ס-שם" value="${בטוח(s.שם)}"></div>
+      <div class="שדה"><label>מתחיל בשעה</label><input class="ס-מ" type="time" value="${בטוח(s.מ)}"></div>
+    </div>
+  </div>`;
+}
+document.body.insertAdjacentHTML('beforeend',
+  '<datalist id="יחידות-מוכרות"><option>כדורים</option><option>טיפות</option><option>מ"ל</option><option>שקיות</option><option>כפיות</option><option>יחידות</option></datalist>');
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('הסר')) e.target.closest('.שורה-עריכה').remove();
+});
+
+let סדר_בעורך = 0;
+function פתח_עורך(id){
+  const חדשה = !id;
+  const t = חדשה ? נרמל_תרופה({id:'m' + מזהה_חדש(), עודכן:'', שם:'',
+      סדר: Math.max(0, ...תצורה.תרופות.map(x => x.סדר)) + 1,
+      סיווגים: עותק(תצורה.כללי.סיווגים),
+      צבע: פלטה.find(c => !תצורה.תרופות.some(x => x.צבע === c)) || פלטה[0]})
+    : תרופה(id);
+  if(!t) return;
+  $('כותרת-עורך').textContent = חדשה ? 'תרופה חדשה' : `עריכת ${t.שם}`;
+  $('ע-מזהה').value = חדשה ? 'new:' + t.id : t.id;
+  $('ע-שם').value = t.שם; $('ע-משנה').value = t.משנה; $('ע-תיאור').value = t.תיאור;
+  $('ע-סוג').value = t.סוג; $('ע-מרווח').value = t.מרווח;
+  $('ע-מנות').innerHTML = t.מנות.map(שורת_מנה).join('');
+  $('ע-סיווגים').innerHTML = t.סיווגים.map(שורת_סיווג).join('');
+  $('ע-יש-השפעה').checked = !!t.השפעה;
+  const ה = t.השפעה || {התחלה:30, שיא_מ:60, שיא_עד:120, סיום:240};
+  $('ע-התחלה').value = ה.התחלה; $('ע-שיא-מ').value = ה.שיא_מ; $('ע-שיא-עד').value = ה.שיא_עד; $('ע-סיום').value = ה.סיום;
+  $('ע-יש-מגבלה').checked = !!t.מגבלה;
+  $('ע-מקסימום').value = t.מגבלה?.מקסימום || 6;
+  $('ע-מג').value = t.מגבלה?.מג_לכדור || '';
+  $('ע-תזכורות').value = t.תזכורות.join(', ');
+  $('ע-התראת-מרווח').checked = !!t.התראת_מרווח;
+  $('ע-צבע').value = t.צבע;
+  for(const [מצב, el] of [['חסר','ע-מצב-חסר'], ['נלקח','ע-מצב-נלקח'], ['פעיל','ע-מצב-פעיל'], ['רגיל','ע-מצב-רגיל']])
+    $(el).innerHTML = בחירות_צבע(t.מצבים[מצב]);
+  $('ע-מוסתרת').checked = !!t.מוסתר;
+  סדר_בעורך = t.סדר;
+  $('ע-למעלה').hidden = $('ע-למטה').hidden = חדשה;
+  עדכן_עורך();
+  $('חלונית-תרופה').showModal();
+}
+function עדכן_עורך(){
+  const יומית = $('ע-סוג').value === 'יומית';
+  $('ע-שדה-מרווח').hidden = יומית;
+  $('ע-בלוק-תזכורות').hidden = !יומית;
+  $('ע-בלוק-מרווח').hidden = יומית;
+  $('ע-צבעי-יומית').hidden = !יומית;
+  $('ע-צבעי-מרווח').hidden = יומית;
+  $('ע-השפעה').hidden = !$('ע-יש-השפעה').checked;
+  $('ע-מגבלה').hidden = !$('ע-יש-מגבלה').checked;
+}
+$('ע-סוג').addEventListener('change', עדכן_עורך);
+$('ע-יש-השפעה').addEventListener('change', עדכן_עורך);
+$('ע-יש-מגבלה').addEventListener('change', עדכן_עורך);
+$('ע-הוסף-מנה').addEventListener('click', () => $('ע-מנות').insertAdjacentHTML('beforeend', שורת_מנה()));
+$('ע-הוסף-סיווג').addEventListener('click', () => $('ע-סיווגים').insertAdjacentHTML('beforeend', שורת_סיווג()));
+$('ע-סיווגים-כלליים').addEventListener('click', () => { $('ע-סיווגים').innerHTML = תצורה.כללי.סיווגים.map(שורת_סיווג).join(''); });
+$('ע-ביטול').addEventListener('click', () => $('חלונית-תרופה').close());
+
+/** מחליף מקום עם התרופה הגלויה הסמוכה (מדלג על מוסתרות), וממספר מחדש 1..n. נשמר מיד. */
+function הזז(כיוון){
+  const id = $('ע-מזהה').value;
+  const רשימה = ממוינות(), נראות = רשימה.filter(t => !t.מוסתר || t.id === id);
+  const שכנה = נראות[נראות.findIndex(t => t.id === id) + כיוון];
+  if(!שכנה) return;
+  const i = רשימה.findIndex(t => t.id === id), j = רשימה.findIndex(t => t.id === שכנה.id);
+  [רשימה[i], רשימה[j]] = [רשימה[j], רשימה[i]];
+  const עכשיו = עכשיו_iso();
+  שמור_תצורה(ת => {
+    for(const [k, t] of רשימה.entries()){
+      const x = ת.תרופות.find(y => y.id === t.id);
+      if(x.סדר !== k + 1){ x.סדר = k + 1; x.עודכן = עכשיו; }
+    }
+  }, כיוון < 0 ? 'הוזזה למעלה' : 'הוזזה למטה');
+}
+$('ע-למעלה').addEventListener('click', () => הזז(-1));
+$('ע-למטה').addEventListener('click', () => הזז(1));
+
+function קרא_סיווגים(מכל){
+  const רשימה = [...מכל.querySelectorAll('.סיווג-שורה')].map(el => ({
+    שם: el.querySelector('.ס-שם').value.trim(), מ: el.querySelector('.ס-מ').value}));
+  if(!רשימה.length) throw 'צריך לפחות סיווג אחד';
+  if(רשימה.some(s => !s.שם || !s.מ)) throw 'לכל סיווג צריך שם ושעה';
+  if(new Set(רשימה.map(s => s.שם)).size !== רשימה.length) throw 'שני סיווגים באותו שם';
+  if(new Set(רשימה.map(s => s.מ)).size !== רשימה.length) throw 'שני סיווגים מתחילים באותה שעה';
+  return רשימה.sort((a,b) => a.מ.localeCompare(b.מ));
+}
+
+$('טופס-תרופה').addEventListener('submit', e => {
+  e.preventDefault();
+  try{
+    const ערך_מזהה = $('ע-מזהה').value, חדשה = ערך_מזהה.startsWith('new:');
+    const id = חדשה ? ערך_מזהה.slice(4) : ערך_מזהה;
+    const קודמת = תרופה(id);
+    const שם = $('ע-שם').value.trim();
+    if(!שם) throw 'חסר שם';
+    if(תצורה.תרופות.some(t => t.id !== id && t.שם.trim() === שם)) throw 'כבר יש תרופה בשם הזה';
+    const סוג = $('ע-סוג').value;
+    const מרווח = +$('ע-מרווח').value;
+    if(סוג === 'מרווח' && !(מרווח > 0)) throw 'מרווח לא תקין';
+    const מנות = [...$('ע-מנות').querySelectorAll('.מנה')].map(el => ({
+      כמות: +el.querySelector('.מ-כמות').value, יחידה: el.querySelector('.מ-יחידה').value.trim(),
+      צעד: +el.querySelector('.מ-צעד').value || 1, תווית: el.querySelector('.מ-תווית').value.trim(),
+      לכדור: +el.querySelector('.מ-לכדור').value || 0}));
+    if(!מנות.length) throw 'צריך לפחות כפתור מנה אחד';
+    if(מנות.some(מ => !(מ.כמות > 0) || !מ.יחידה)) throw 'לכל כפתור מנה צריך כמות ויחידה';
+    for(const מ of מנות){
+      if(!מ.תווית) delete מ.תווית;
+      if(!מ.לכדור || (מ.יחידה === 'כדורים' && מ.לכדור === 1)) delete מ.לכדור;
+    }
+    let מגבלה = null;
+    if($('ע-יש-מגבלה').checked){
+      מגבלה = {מקסימום: +$('ע-מקסימום').value, מג_לכדור: +$('ע-מג').value || 0};
+      if(!(מגבלה.מקסימום > 0)) throw 'מגבלה יומית לא תקינה';
+      const חסרות = [...new Set(מנות.filter(מ => !(לכדור_של({מנות}, מ.יחידה) > 0)).map(מ => מ.יחידה))];
+      if(חסרות.length) throw `למגבלה צריך לדעת כמה ${חסרות.join(', ')} הן כדור אחד`;
+    }
+    const סיווגים = קרא_סיווגים($('ע-סיווגים'));
+    let השפעה = null;
+    if($('ע-יש-השפעה').checked){
+      השפעה = {התחלה:+$('ע-התחלה').value, שיא_מ:+$('ע-שיא-מ').value, שיא_עד:+$('ע-שיא-עד').value, סיום:+$('ע-סיום').value};
+      const ס = [השפעה.התחלה, השפעה.שיא_מ, השפעה.שיא_עד, השפעה.סיום];
+      if(ס.some(x => !(x >= 0)) || ס.some((x, k) => k && x < ס[k-1])) throw 'זמני ההשפעה צריכים לעלות: מתחיל ≤ שיא מ- ≤ שיא עד ≤ נגמר';
+    }
+    const טקסט_תזכורות = $('ע-תזכורות').value.trim();
+    const תזכורות = טקסט_תזכורות ? טקסט_תזכורות.split(/[,\s]+/).filter(Boolean).map(Number) : [];
+    if(תזכורות.some(h => !Number.isInteger(h) || h < שעת_תזכורת_מ || h > שעת_תזכורת_עד))
+      throw `שעות תזכורת: מספרים שלמים בין ${שעת_תזכורת_מ} ל-${שעת_תזכורת_עד}`;
+    const שמות_קודמים = [...(קודמת?.שמות_קודמים || [])];
+    if(קודמת && קודמת.שם !== שם && !שמות_קודמים.includes(קודמת.שם)) שמות_קודמים.push(קודמת.שם);
+    const t = נרמל_תרופה({
+      ...(קודמת || {}), id, עודכן: עכשיו_iso(), שם, משנה: $('ע-משנה').value.trim(), תיאור: $('ע-תיאור').value.trim(),
+      סוג, מרווח: סוג === 'מרווח' ? מרווח : (קודמת?.מרווח || 6), מנות, סיווגים, השפעה, מגבלה,
+      תזכורות: [...new Set(תזכורות)].sort((a,b) => a-b), התראת_מרווח: $('ע-התראת-מרווח').checked,
+      צבע: $('ע-צבע').value,
+      מצבים: {חסר:$('ע-מצב-חסר').value, נלקח:$('ע-מצב-נלקח').value, פעיל:$('ע-מצב-פעיל').value, רגיל:$('ע-מצב-רגיל').value},
+      שמות_קודמים, סדר: קודמת ? קודמת.סדר : סדר_בעורך, מוסתר: $('ע-מוסתרת').checked,
+    });
+    שמור_תצורה(ת => {
+      const i = ת.תרופות.findIndex(x => x.id === id);
+      if(i >= 0) ת.תרופות[i] = t; else ת.תרופות.push(t);
+    }, חדשה ? `נוספה: ${שם}` : `נשמר: ${שם}`);
+    $('חלונית-תרופה').close();
+    if($('חלונית-כללי').open) צייר_כללי_תרופות();
+  }catch(err){
+    טוסט(typeof err === 'string' ? err : (err.message || 'שגיאה'), true);
+  }
+});
+
+/* ---------- לחיצה קצרה וארוכה על כרטיס ---------- */
+let טיימר_ארוך = null, נקודת_התחלה = null, הייתה_ארוכה = false;
+$('כרטיסים').addEventListener('pointerdown', e => {
+  const כרטיס = e.target.closest('.כרטיס');
+  if(!כרטיס) return;
+  הייתה_ארוכה = false;
+  נקודת_התחלה = [e.clientX, e.clientY];
+  clearTimeout(טיימר_ארוך);
+  טיימר_ארוך = setTimeout(() => {
+    הייתה_ארוכה = true;
+    if(navigator.vibrate) navigator.vibrate(30);
+    פתח_עורך(כרטיס.dataset.תרופה);
+  }, 550);
+});
+const בטל_ארוך = () => { clearTimeout(טיימר_ארוך); טיימר_ארוך = null; };
+$('כרטיסים').addEventListener('pointerup', בטל_ארוך);
+$('כרטיסים').addEventListener('pointercancel', בטל_ארוך);
+$('כרטיסים').addEventListener('pointerleave', בטל_ארוך);
+$('כרטיסים').addEventListener('pointermove', e => {
+  if(נקודת_התחלה && Math.hypot(e.clientX - נקודת_התחלה[0], e.clientY - נקודת_התחלה[1]) > 10) בטל_ארוך();
+});
+$('כרטיסים').addEventListener('contextmenu', e => { if(e.target.closest('.כרטיס')) e.preventDefault(); });
+$('כרטיסים').addEventListener('click', e => {
+  if(הייתה_ארוכה){ הייתה_ארוכה = false; e.preventDefault(); return; }
+  const ב_מלאי = e.target.closest('[data-מלאי]');
+  if(ב_מלאי) return פתח_מלאי(ב_מלאי.dataset.מלאי);
+  const b = e.target.closest('button[data-מנה]');
+  if(!b) return;
+  const t = תרופה(b.closest('.כרטיס').dataset.תרופה), מ = t?.מנות[+b.dataset.מנה];
+  if(מ) פתח_חלונית({מזהה_תרופה: t.id, כמות: מ.כמות, יחידה: מ.יחידה});
+});
+
+/* ---------- תפריט והגדרות כלליות ---------- */
+$('כפתור-תפריט').addEventListener('click', e => { e.stopPropagation(); $('תפריט').hidden = !$('תפריט').hidden; });
+document.addEventListener('click', e => { if(!e.target.closest('#ת-תפריט')) $('תפריט').hidden = true; });
+$('תפריט-כללי').addEventListener('click', () => { $('תפריט').hidden = true; פתח_כללי(); });
+$('תפריט-הוספה').addEventListener('click', () => { $('תפריט').hidden = true; פתח_עורך(null); });
+
+function צייר_כללי_תרופות(){
+  $('כ-תרופות').innerHTML = ממוינות().map(t => `<div class="פריט-תרופה">
+      <i style="background:${בטוח(t.צבע)}"></i>
+      <span>${בטוח(t.שם)} ${t.מוסתר ? '<small>(מוסתרת)</small>' : ''}</span>
+      <button type="button" class="קטן" data-ערוך="${בטוח(t.id)}">עריכה</button>
+    </div>`).join('');
+}
+$('כ-תרופות').addEventListener('click', e => {
+  const b = e.target.closest('[data-ערוך]');
+  if(b) פתח_עורך(b.dataset.ערוך);
+});
+async function פתח_כללי(){
+  $('כ-התחלה').value = תצורה.כללי.תאריך_התחלה;
+  $('כ-תחילת-יום').value = תצורה.כללי.תחילת_יום || '05:00';
+  $('כ-ערוץ').value = תצורה.כללי.ntfy || '';
+  $('כ-סיווגים').innerHTML = תצורה.כללי.סיווגים.map(שורת_סיווג).join('');
+  צייר_כללי_תרופות();
+  $('חלונית-כללי').showModal();
+  if(!$('כ-ערוץ').value){ const נ = await ערוץ(); if(נ && !$('כ-ערוץ').value) $('כ-ערוץ').value = נ; }
+}
+$('כ-הוסף-סיווג').addEventListener('click', () => $('כ-סיווגים').insertAdjacentHTML('beforeend', שורת_סיווג()));
+$('כ-הוסף-תרופה').addEventListener('click', () => פתח_עורך(null));
+$('כ-ביטול').addEventListener('click', () => $('חלונית-כללי').close());
+$('טופס-כללי').addEventListener('submit', e => {
+  e.preventDefault();
+  try{
+    const התחלה = $('כ-התחלה').value;
+    if(!התחלה) throw 'חסר תאריך התחלה';
+    const סיווגים = קרא_סיווגים($('כ-סיווגים'));
+    const תחילת_יום = $('כ-תחילת-יום').value;
+    if(!תחילת_יום) throw 'חסרה שעת תחילת היום';
+    const ntfy = $('כ-ערוץ').value.trim();
+    if(ntfy && !/^[A-Za-z0-9_-]{1,64}$/.test(ntfy)) throw 'שם ערוץ: אותיות לטיניות, ספרות, - ו-_ בלבד';
+    שמור_תצורה(ת => { ת.כללי = {...ת.כללי, עודכן: עכשיו_iso(), תאריך_התחלה: התחלה, תחילת_יום, סיווגים, ntfy}; }, 'ההגדרות נשמרו');
+    $('חלונית-כללי').close();
+  }catch(err){ טוסט(typeof err === 'string' ? err : (err.message || 'שגיאה'), true); }
+});
+
+/* ---------- אירועים ---------- */
+$('רשימה').addEventListener('click', e => {
+  const el = e.target.closest('.רשומה');
+  const r = el && פעילות().find(x => x.id === el.dataset.id);
+  if(r) פתח_חלונית(r);
+});
+$('כפתור-לוח').addEventListener('click', () => {
+  $('לוח-שנה').hidden = !$('לוח-שנה').hidden;
+  if(!$('לוח-שנה').hidden){ חודש_מוצג = מתוך(יום_נבחר, '12:00'); חודש_מוצג.setDate(1); צייר_לוח(); }
+});
+$('רשת').addEventListener('click', e => {
+  const b = e.target.closest('button[data-תאריך]');
+  if(!b || b.disabled) return;
+  יום_נבחר = b.dataset.תאריך; צייר_לוח(); צייר_רשימה();
+});
+$('חודש-קודם').addEventListener('click', () => { חודש_מוצג.setMonth(חודש_מוצג.getMonth()-1); צייר_לוח(); });
+$('חודש-הבא').addEventListener('click', () => { חודש_מוצג.setMonth(חודש_מוצג.getMonth()+1); צייר_לוח(); });
+
+/* ---------- תזכורות בדחיפה (במקום ntfy) ---------- */
+// התזכורות נכתבות לקובץ הטיימרים של משימות (kind: 'med'), והמנוע בגוגל שולח אותן ישר לאפליקציה.
+// "אפשר לקחת עוד": אחת לכל תרופה (med-<תרופה>). תזכורת יומית: לכל שעה ב-3 הימים הקרובים, ונמחקת כשנלקחה.
+function תזמן_בדחיפה(){
+  const רצויות = {}, עכשיו = Date.now();
+  for(const t of תצורה.תרופות){
+    if(t.מוסתר) continue;
+    if(t.סוג === 'מרווח' && t.התראת_מרווח){
+      const א = אחרונה(t.id), יעד = א ? הכדור_הבא(t, א) : 0;
+      if(יעד > עכשיו){ const הערה = הערת_מגבלה(t, יעד);
+        רצויות['med-' + t.id] = {at: יעד, title: `אפשר לקחת עוד ${t.שם}`,
+          body: `עברו ${t.מרווח} שעות מה${t.שם} של ${א.שעה}${מנה_של(א) ? ` (${מנה_של(א)})` : ''}` + (הערה ? ` · 🔴 ${הערה}` : '')}; }
+    }
+  }
+  for(const [רצף, ת] of Object.entries(תזכורות_רצויות())) if(!ת.נלקחה) רצויות['med-' + רצף] = {at: ת.זמן, title: ת.כותרת, body: ת.גוף};
+  const קיימות = (D.file.timers.timers || []).filter(x => x.kind === 'med'), שינויים = [], t0 = nowIso();
+  for(const [id, ר] of Object.entries(רצויות)){
+    const x = קיימות.find(y => y.id === id);
+    if(!x || x.deleted || x.at !== ר.at || x.title !== ר.title || x.body !== ר.body) שינויים.push({id, kind: 'med', ...ר, updatedAt: t0, deleted: false});
+  }
+  // מה שכבר לא רצוי (נלקחה, תרופה הוסתרה, הכדור האחרון השתנה): נמחק. מה שעבר לפני יום: מנוקה
+  for(const x of קיימות) if(!x.deleted && !(x.id in רצויות) && (x.at > עכשיו || x.at < עכשיו - 864e5)) שינויים.push({...x, deleted: true, updatedAt: t0});
+  if(שינויים.length) saveTimers(שינויים);
+}
+/** ההתראות הישנות ב-ntfy (מאפליקציית התרופות) נמחקות, כדי שלא יגיעו פעמיים. פעם ביום. */
+async function נקה_ntfy(){
+  if(אחסון('תרופות.ניקוי-ntfy') === today()) return;
+  const נושא = await ערוץ(); if(!נושא) return;
+  const רצפים = תצורה.תרופות.map(t => t.id);
+  for(let יום = 0; יום < 4; יום++){ const d = new Date(); d.setDate(d.getDate() + יום);
+    for(const t of תצורה.תרופות) for(const ש of t.תזכורות || []) רצפים.push(`r-${t.id}-${תאריך_של(d).replaceAll('-', '')}-${שתיים(ש)}`); }
+  try{ for(const ר of רצפים) await fetch(`https://ntfy.sh/${encodeURIComponent(נושא)}/${encodeURIComponent(ר)}`, {method: 'DELETE'}); אחסון('תרופות.ניקוי-ntfy', today()); }catch(e){}
+}
+/* ---------- מלאי (חדש) ---------- */
+// כמה נשאר: הכמות שהוזנה ב"יש לי עכשיו" או ב"קניתי", פחות כל מה שנרשם מאז באותה יחידה.
+// כשנשאר מעט: משימה "לקנות" (מגיעה התראה מהמנוע) ומוצר ברשימת הקניות. פעם אחת לכל מילוי.
+const רשומת_מלאי = id => מלאי.find(x => x.id === id && !x.נמחק) || null;
+function מלאי_של(t){
+  const m = רשומת_מלאי(t.id);
+  if(!m) return null;
+  // נספר מה שנלקח אחרי עדכון המלאי: השעה מאותה דקה והלאה, ונרשם אחרי העדכון (לא נספר פעמיים)
+  const מאז = Math.floor(new Date(m.מאז).getTime() / 6e4) * 6e4, עכשיו = Date.now() + 60e3;
+  const שלו = של_תרופה(t.id).filter(r => יחידה_של(r) === m.יחידה).map(r => ({זמן: מתוך(r.תאריך, r.שעה).getTime(), כמות: +r.כמות || 1, עודכן: r.עודכן || ''}));
+  const נלקח = שלו.filter(x => x.זמן >= מאז && x.זמן <= עכשיו && x.עודכן > m.מאז).reduce((ס, x) => ס + x.כמות, 0);
+  const נותר = Math.max(0, +(m.כמות - נלקח).toFixed(2));
+  // קצב: ממוצע ב-14 הימים האחרונים (ולפחות מאז שהתחלנו לספור)
+  const ימים = Math.max(1, Math.min(14, (Date.now() - מאז) / 864e5));
+  const בתקופה = שלו.filter(x => x.זמן >= Date.now() - ימים * 864e5 && x.זמן <= עכשיו).reduce((ס, x) => ס + x.כמות, 0);
+  const ליום = בתקופה / ימים || (t.סוג === 'יומית' ? 1 : 0);
+  return {...m, נותר, ליום, ימים_נותרו: ליום ? Math.floor(נותר / ליום) : null, נמוך: נותר <= (+m.התראה || 0)};
+}
+const יחידה_קצרה = (u, n) => u === 'כדורים' && Math.abs(n - 1) < 1e-9 ? 'כדור אחד' : `${מספר(n)} ${u}`;
+function שורת_מלאי(t){
+  const m = מלאי_של(t);
+  if(!m) return `<button type="button" class="מלאי" data-מלאי="${בטוח(t.id)}">📦 מעקב מלאי</button>`;
+  const ימים = m.ימים_נותרו != null && m.נותר > 0 ? ` · בערך ${m.ימים_נותרו === 0 ? 'היום' : m.ימים_נותרו === 1 ? 'יום' : m.ימים_נותרו + ' ימים'}` : '';
+  return `<button type="button" class="מלאי${m.נמוך ? ' נמוך' : ''}" data-מלאי="${בטוח(t.id)}">${m.נמוך ? '🛒' : '📦'} ${m.נותר > 0 ? 'נשארו ' + יחידה_קצרה(m.יחידה, m.נותר) : 'נגמר'}${ימים}${m.נמוך ? ' · לקנות עוד' : ''}</button>`;
+}
+let מלאי_בעריכה = null;
+function פתח_מלאי(id){
+  const t = תרופה(id); if(!t) return;
+  מלאי_בעריכה = id;
+  const m = מלאי_של(t), יחידות = יחידות_של(t);
+  $('כותרת-מלאי').textContent = `מלאי: ${t.שם}`;
+  $('מ-יחידה').innerHTML = יחידות.map(u => `<option${u === (m?.יחידה || יחידות[0]) ? ' selected' : ''}>${בטוח(u)}</option>`).join('');
+  $('מ-כמות').value = m ? m.נותר : '';
+  $('מ-אריזה').value = m?.אריזה || '';
+  $('מ-התראה').value = m ? m.התראה : (t.סוג === 'יומית' ? 7 : 5);
+  $('מ-הסר').hidden = !m;
+  עדכן_קניתי();
+  $('חלונית-מלאי').showModal();
+}
+function עדכן_קניתי(){ const a = +$('מ-אריזה').value; $('מ-קניתי').hidden = !(a > 0); $('מ-קניתי').textContent = `🛒 קניתי אריזה (+${מספר(a || 0)})`; }
+$('מ-אריזה').addEventListener('input', עדכן_קניתי);
+$('מ-ביטול').addEventListener('click', () => $('חלונית-מלאי').close());
+function שמור_מלאי(כמות){
+  const t = תרופה(מלאי_בעריכה), קודם = רשומת_מלאי(מלאי_בעריכה);
+  const r = {id: מלאי_בעריכה, כמות, יחידה: $('מ-יחידה').value || 'כדורים', מאז: עכשיו_iso(), אריזה: +$('מ-אריזה').value || null,
+    התראה: +$('מ-התראה').value || 0, הותרע: null, עודכן: עכשיו_iso()};
+  קבע(קבצים.מלאי, מזג(מלאי, [r])); אחסון(קבצים.מלאי.ממתין, '1');
+  // מילוי: המשימה "לקנות" (אם פתוחה) מסומנת כבוצעה
+  if(קודם?.הותרע && כמות > (+r.התראה || 0)){
+    const task = taskById('buy-' + t.id + '-' + קודם.הותרע);
+    if(task && !task.deleted){ const nt = ל.normTask(task, D.config), o = currentOcc(nt); if(o && ל.isOpen(o, Date.now())) doDone(nt, o); }
+  }
+  $('חלונית-מלאי').close(); צייר_הכל(); סנכרן('מלאי ' + t.שם);
+  return r;
+}
+$('טופס-מלאי').addEventListener('submit', e => {
+  e.preventDefault();
+  const כמות = +$('מ-כמות').value;
+  if(!($('מ-כמות').value !== '' && כמות >= 0)) return טוסט('כמה יש עכשיו?', true);
+  שמור_מלאי(כמות); טוסט(`📦 נשמר: ${יחידה_קצרה($('מ-יחידה').value, כמות)}`);
+});
+$('מ-קניתי').addEventListener('click', () => {
+  const t = תרופה(מלאי_בעריכה), m = מלאי_של(t), a = +$('מ-אריזה').value;
+  const כמות = (m && m.יחידה === $('מ-יחידה').value ? m.נותר : +$('מ-כמות').value || 0) + a;
+  שמור_מלאי(כמות); טוסט(`🛒 עכשיו יש ${יחידה_קצרה($('מ-יחידה').value, כמות)}`);
+});
+$('מ-הסר').addEventListener('click', () => {
+  if(!confirm('להפסיק לעקוב אחרי המלאי של התרופה הזו?')) return;
+  קבע(קבצים.מלאי, מזג(מלאי, [{id: מלאי_בעריכה, נמחק: true, עודכן: עכשיו_iso()}])); אחסון(קבצים.מלאי.ממתין, '1');
+  $('חלונית-מלאי').close(); צייר_הכל(); סנכרן();
+});
+/** כשנשאר מעט: משימה "לקנות" להיום (המנוע שולח התראה), ומוצר ברשימת הקניות. פעם אחת לכל מילוי (הותרע = מאז). */
+function בדוק_מלאי(){
+  for(const t of תצורה.תרופות){
+    if(t.מוסתר) continue;
+    const m = מלאי_של(t);
+    if(!m || !m.נמוך || m.הותרע === m.מאז) continue;
+    const עכשיו = new Date(), בעוד = new Date(עכשיו.getTime() + 2 * 6e4), d = today();
+    const id = 'buy-' + t.id + '-' + m.מאז;
+    if(!taskById(id)) saveTask({id, title: `לקנות ${t.שם}`, domain: 'health', priority: 'high', kind: 'once', once: {date: d},
+      time: שעה_של(בעוד), exact: true, pre: [], nag: {mode: 'daily'}, doneLabel: 'קניתי', subtasks: [],
+      notes: `נשארו ${יחידה_קצרה(m.יחידה, m.נותר)}. אחרי הקנייה: תרופות ← 📦 ← "קניתי אריזה".`, links: [], start: d, archived: false, deleted: false});
+    const שם_בסל = t.שם;
+    if(!(D.file.shop.items || []).some(i => !i.deleted && !i.done && i.name === שם_בסל)) saveShop(ל.shopAdd(D.file.shop.items, שם_בסל, nowIso()));
+    קבע(קבצים.מלאי, מזג(מלאי, [{...רשומת_מלאי(t.id), הותרע: m.מאז, עודכן: עכשיו_iso()}])); אחסון(קבצים.מלאי.ממתין, '1');
+    טוסט(`🛒 נשאר מעט ${t.שם}: נוסף לקניות ולמשימות`);
+  }
+}
+
+/* ---------- אתחול ---------- */
+const פתוח = () => !$('כרטיסים').closest('.screen').hidden;
+window.medsRender = () => צייר_הכל();
+window.medsSync = () => סנכרן();
+setInterval(() => { if(פתוח() && !document.querySelector('dialog[open]')) צייר_הכל(); }, 20000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && פתוח()) סנכרן(); });
+סנכרן();
+
+}
 function handleHash(){
   const h = location.hash;
   if(h.startsWith('#o=')){
     const occId = decodeURIComponent(h.slice(3)), f = ל.findOcc(data(), occId, Date.now());
     history.replaceState(null, '', location.pathname);
     if(f) openTask(f.task.id, occId); else toast('המשימה לא נמצאה', {err: true});
+  }else if(h === '#meds'){
+    history.replaceState(null, '', location.pathname); show('meds');
   }else if(h === '#new'){
     history.replaceState(null, '', location.pathname);
     openQuick();
