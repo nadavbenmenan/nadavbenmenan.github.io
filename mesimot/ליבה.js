@@ -884,7 +884,7 @@ function recipeImages(recipes){
 /* ---------- טיימרים (התראה מהמנוע כשהזמן עובר) ---------- */
 // משימות/טיימרים.json: {v, timers: [{id, at, title, body, updatedAt, deleted}]}. האפליקציה כותבת, המנוע שולח בזמן.
 function mergeTimersFile(a, b, now){ return {v: 1, timers: mergeById(a?.timers, b?.timers, now)}; }
-const liveTimers = (file, now) => (file?.timers || []).filter(t => !t.deleted && t.at > now - 36e5).sort((a, b) => a.at - b.at);
+const liveTimers = (file, now) => (file?.timers || []).filter(t => !t.deleted && t.kind !== 'med' && t.at > now - 36e5).sort((a, b) => a.at - b.at);
 /** טיימרים שהגיע זמנם (עד 20 דקות אחורה) ועוד לא נשלחו, ומתי הבא. */
 function timersDue(file, now, sent){
   const due = [], later = [];
@@ -895,7 +895,9 @@ function timersDue(file, now, sent){
   }
   return {due, next: later.length ? Math.min(...later) : null};
 }
-const timerPayload = t => JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: t.body ? `עבר ${t.body}` : 'הזמן עבר', u: APP, tag: 'timer-' + t.id, ri: true, vib: true});
+// תזכורות תרופות (kind: 'med') יושבות באותו קובץ: התראה רגילה, שפותחת את מסך התרופות
+const timerPayload = t => t.kind === 'med' ? JSON.stringify({t: t.title, b: t.body || '', u: APP + '#meds', tag: 'med-' + t.id})
+  : JSON.stringify({t: '⏱ ' + (t.title || 'הטיימר הסתיים'), b: t.body ? `עבר ${t.body}` : 'הזמן עבר', u: APP, tag: 'timer-' + t.id, ri: true, vib: true});
 
 /** ערך ריק בפועל: "", "—", "-", "אין", "לא צוין"... */
 const blank = v => !String(v ?? '').replace(/[\s\-–—_.:*]/g, '') || /^(אין|לא צוין|לא ידוע|ללא|n\/?a|none)$/i.test(String(v).trim());
@@ -1031,7 +1033,7 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 גרנולה|470|כף:12,כוס:100
 ביצה|143|יחידה:55
 ביצה קשה|155|יחידה:50
-חביתה|196|ביצה אחת:65
+חביתה|196|חביתה 3 ביצים:195,ביצה אחת:65
 שקשוקה|110|מנה:300
 חלב 3%|60|כוס:240,כף:15
 חלב 1%|42|כוס:240,כף:15
@@ -1091,8 +1093,8 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 ענבים|69|כוס:150
 אבטיח|30|פלח:300
 מלון|34|פלח:200
-תות|32|כוס:150
-מנגו|60|יחידה:300
+תות|32|חופן:80,כוס:150
+מנגו|60|חופן:80,יחידה:300
 תמר מג׳הול|277|יחידה:24
 שקדים|579|חופן:30
 אגוזי מלך|654|חופן:30
@@ -1121,7 +1123,19 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 מיץ תפוזים|45|כוס:240
 קולה|42|פחית:330,כוס:240
 בירה|43|בקבוק:330
-יין|85|כוס:150`;
+יין|85|כוס:150
+שניצל עוף אפוי (שפריץ שמן)|218|מנה 220 גרם לפני בישול:220
+שניצל עוף מטוגן|282|מנה 220 גרם לפני בישול:220
+חזה עוף (משקל לפני בישול)|125|מנה 220 גרם לפני בישול:220
+צ׳יפס בסיר אוויר (שפריץ שמן)|160|מנה:150
+יוגורט חלבון בטעמים|72|גביע:200
+טונה סטארקיסט בשמן|192|קופסה:120
+לחם פשוט מלא דק|240|פרוסה דקה:22
+רוטב בולונז ביתי (בשר טחון)|165|מנה:150,כף:20
+כדורי בשר ברוטב אדום|150|מנה:300,כדור עם רוטב:75
+רוטב עגבניות לפיצה|45|מנה:80,כף:15`;
+// ערכים לפי משקל לפני בישול (שניצל, חזה): חזה עוף נא כ-120 ל-100 גרם, ציפוי (ביצה ופירורי לחם) כ-175 למנה,
+// שפריץ שמן כ-40, טיגון סופג כ-20 גרם שמן (180). צ'יפס בסיר אוויר: תפוח אדמה שאיבד מים, ושפריץ שמן.
 const FOODS = FOOD_DB.split('\n').map((l, i) => {
   const [name, k, units] = l.split('|');
   return {id: 'f-' + sha256(name).slice(0, 8), name, kcal100: +k, units: units.split(',').map(u => { const [n, g] = u.split(':'); return {name: n, g: +g}; }), rank: i, builtin: true};
@@ -1166,6 +1180,35 @@ function calFoods(file){
   for(const f of mine.values()) if(!ids.has(f.id)) out.push(Object.assign({rank: 1000}, f));
   for(const r of live(file?.recipes)) out.push(Object.assign({rank: 900}, recipeFood(r)));   // מתכונים אישיים = מאכלים
   return out;
+}
+/* מנות של נדב (16.11.2026): מאכלים אישיים וארוחות קבועות. נכנסים פעם אחת לקובץ (הדגל: settings/seedK),
+   עם מזהים קבועים, כך ששני מכשירים לא יוצרים כפילות, ומה שנמחק לא חוזר. החישוב:
+   - פנקייק קוטג': 3 גביעי קוטג' 5% (750 ג', 713), 2 כוסות קמח (280 ג', 1,019), 6 כפות מייפל (120 ג', 312), 6 ביצים (429),
+     אבקת אפייה, וניל ושפריץ שמן (60). כ-2,530 קלוריות בכ-1,320 גרם אחרי טיגון = 192 ל-100 גרם.
+   - בצק פיצה Ooni: קילו קמח 00 (3,500), 650 מ"ל מים, 28 ג' מלח, שמרים. כ-1,680 גרם = 210 ל-100 גרם. כדור למגש 13 אינץ' = 280 גרם. */
+const KCAL_SEED = {
+  foods: [
+    {id: 'my-pancake', name: 'פנקייק קוטג׳', kcal100: 192, units: [{name: 'מנה 130 גרם', g: 130}]},
+    {id: 'my-pizza', name: 'בצק פיצה Ooni', kcal100: 210, units: [{name: 'כדור למגש 13 אינץ׳', g: 280}]},
+  ],
+  meals: [
+    ['fav-pancake', 'פנקייק קוטג׳ עם חצי קוטג׳', 'breakfast', [['my-pancake', 1, 'מנה 130 גרם'], ['קוטג׳ 5%', 125, 'גרם']]],
+    ['fav-pizza', 'פיצה 13 אינץ׳ עם חצי קוטג׳', 'dinner', [['my-pizza', 1, 'כדור למגש 13 אינץ׳'], ['רוטב עגבניות לפיצה', 1, 'מנה'], ['קוטג׳ 5%', 125, 'גרם']]],
+    ['fav-omelet', 'חביתה, 4 פרוסות לחם וקוטג׳', 'breakfast', [['חביתה', 1, 'חביתה 3 ביצים'], ['לחם פשוט מלא דק', 4, 'פרוסה דקה'], ['קוטג׳ 5%', 1, 'גביע']]],
+    ['fav-bolognese', 'פסטה בולונז', 'lunch', [['פסטה מבושלת', 300, 'גרם'], ['רוטב בולונז ביתי (בשר טחון)', 150, 'גרם']]],
+    ['fav-shake', 'שייק תות, מנגו ותמרים', 'snack', [['חלב 3%', 0.25, 'כוס'], ['תות', 1, 'חופן'], ['מנגו', 1, 'חופן'], ['תמר מג׳הול', 2, 'יחידה']]],
+    ['fav-meatballs', 'כדורי בשר ברוטב אדום', 'lunch', [['כדורי בשר ברוטב אדום', 1, 'מנה']]],
+  ],
+};
+/** מה להוסיף לקובץ הקלוריות בפעם הראשונה, או null. */
+function kcalSeed(file, nowIso){
+  if(live(file?.settings).some(x => x.id === 'seedK' && x.v >= 1)) return null;
+  const foods = KCAL_SEED.foods.map(f => Object.assign({}, f, {updatedAt: nowIso, deleted: false}));
+  const all = calFoods({foods});
+  const meals = KCAL_SEED.meals.map(([id, name, meal, items]) => ({id, name, meal, updatedAt: nowIso, deleted: false,
+    items: items.map(([key, qty, unit]) => { const f = all.find(x => x.id === key || x.name === key);
+      return {foodId: f.id, name: f.name, qty, unit, grams: foodGrams(f, qty, unit), kcal: foodKcal(f, qty, unit), manual: false}; })}));
+  return {foods, meals, settings: [{id: 'seedK', v: 1, updatedAt: nowIso, deleted: false}]};
 }
 /** גרמים לכמות ויחידה. "גרם" תמיד אפשרי. */
 function foodGrams(food, qty, unit){
@@ -1950,7 +1993,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
