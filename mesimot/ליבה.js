@@ -447,7 +447,8 @@ function findOcc(data, occId, now){
  */
 function applyCommand(data, cmd, cmdTime, nonces){
   if(!cmd || !cmd.c || cmd.c === 'resync') return null;
-  if(nonces && !nonces.has(cmd.k)) return null;
+  if(typeof nonces === 'string'){ if(!verifyCmd(cmd, nonces)) return null; }
+  else if(nonces && !nonces.has(cmd.k)) return null;
   const f = findOcc(data, String(cmd.o || ''), cmdTime);
   if(!f) return null;
   const nowIso = new Date(cmdTime).toISOString(), {task, occ} = f;
@@ -465,6 +466,68 @@ function applyCommand(data, cmd, cmdTime, nonces){
   if(cmd.c === 'tomorrow') return snooze(occ, snoozeTarget('tomorrow', cmdTime, task, data.config), nowIso);
   return null;
 }
+
+/* ---------- חתימה על פקודות ---------- */
+// במקום רשימה של ערכים חד־פעמיים: k = גיבוב של (מפתח סודי | מזהה ההתראה | מופע). המפתח (cmd_key) נמצא רק
+// ב־הגדרות.json במאגר הפרטי. כך גם המנוע וגם האפליקציה יכולים לבדוק פקודה, בלי לשמור רשימה.
+function sha256(str){
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const bytes = [];
+  for(const ch of unescape(encodeURIComponent(String(str)))) bytes.push(ch.charCodeAt(0));
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while(bytes.length % 64 !== 56) bytes.push(0);
+  for(let i = 7; i >= 0; i--) bytes.push(i >= 4 ? 0 : (bitLen >>> (i * 8)) & 0xff);
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const W = new Array(64), rot = (x, n) => (x >>> n) | (x << (32 - n));
+  for(let o = 0; o < bytes.length; o += 64){
+    for(let i = 0; i < 16; i++) W[i] = (bytes[o + 4 * i] << 24) | (bytes[o + 4 * i + 1] << 16) | (bytes[o + 4 * i + 2] << 8) | bytes[o + 4 * i + 3];
+    for(let i = 16; i < 64; i++){
+      const s0 = rot(W[i - 15], 7) ^ rot(W[i - 15], 18) ^ (W[i - 15] >>> 3), s1 = rot(W[i - 2], 17) ^ rot(W[i - 2], 19) ^ (W[i - 2] >>> 10);
+      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for(let i = 0; i < 64; i++){
+      const t1 = (h + (rot(e, 6) ^ rot(e, 11) ^ rot(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;
+      const t2 = ((rot(a, 2) ^ rot(a, 13) ^ rot(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+}
+const cmdKey = (secret, n, o) => sha256(`${secret}|${n}|${o}`).slice(0, 16);
+function verifyCmd(cmd, secret){
+  return !!(secret && cmd && cmd.k && cmd.n && cmd.o) && cmd.k === cmdKey(secret, cmd.n, cmd.o);
+}
+/** שלושת הכפתורים בהתראה: פקודה לערוץ הפקודות, חתומה. */
+function buttonsFor(n, cmdTopic, secret){
+  const body = c => JSON.stringify({c, o: n.occId, n: n.id, k: cmdKey(secret, n.id, n.occId)});
+  const b = (label, c) => ({action: 'http', label, url: `https://ntfy.sh/${cmdTopic}`, method: 'POST', body: body(c), clear: true});
+  return [b('✓ בוצע', 'done'), b('עוד שעה', 'snooze1h'), b('מחר', 'tomorrow')];
+}
+
+/* ---------- מה לקבוע ומה למחוק ב-ntfy ---------- */
+// state: {<מזהה>: {at, sig, occId}}. אותו חישוב במנוע ובאפליקציה.
+// ntfy לא מחליף הודעה מתוזמנת עם אותו מזהה, ולכן כל "קביעה" היא מחיקה ואז פרסום.
+const notifSig = n => sha256(`${n.at}|${n.title}|${n.message}|${n.occId}|${n.buttons ? 1 : 0}`).slice(0, 10);
+function diffSchedule(state, plan, data, now){
+  state = state || {};
+  const want = new Map(plan.map(n => [n.id, n])), del = [], drop = [], pub = [];
+  for(const [id, s] of Object.entries(state)){
+    if(want.has(id)) continue;
+    // עתידית שלא רצויה עוד: מוחקים. שכבר יצאה: מוחקים רק אם המופע נסגר (כך היא נעלמת מהנייד)
+    let gone = s.at > now;
+    if(!gone && s.occId){ const f = findOcc(data, s.occId, now); gone = !f || (f.occ.kind !== 'quota' && !isOpen(f.occ, now)); }
+    if(gone && s.at > now - 3 * DAY) del.push(id);
+    else if(gone || s.at < now - 3 * DAY) drop.push(id);
+  }
+  for(const n of plan) if(state[n.id]?.sig !== notifSig(n)) pub.push(n);
+  return {del, drop, pub};
+}
+/** המנוע חי אם רץ תזמון מלא ב-7 השעות האחרונות (הוא רץ לפחות כל 6 שעות). */
+const engineAlive = (inbox, now) => !!(inbox && inbox.engine && inbox.engine.lastFull && now - toMs(inbox.engine.lastFull) < 7 * 36e5);
 
 /* ---------- מיזוג ---------- */
 /** לפי id: ה-updatedAt המאוחר מנצח. מחיקה (deleted) נשמרת 30 יום ואז נעלמת. */
@@ -627,19 +690,30 @@ function tenantText(b){
 /* ---------- עדכוני נתונים (למי שכבר התקין) ---------- */
 /** מחזיר משימות לעדכן ותצורה חדשה, או null כשאין מה לעשות. */
 function migrate(data, today, nowIso){
-  const cfg = config(data.config), tasks = data.tasks || [];
-  if(+cfg.seedV >= 2) return null;
-  const seed = initialData(today), byId = id => tasks.find(t => t.id === id);
+  const cfg = config(data.config), tasks = data.tasks || [], v = +cfg.seedV || 1;
+  if(v >= 3) return null;
+  const seed = initialData(today), byId = id => tasks.find(t => t.id === id), seedRule = id => seed.config.mailRules.find(r => r.id === id);
   const out = [];
-  const old = byId('arnona');
-  if(old && !old.deleted) out.push(Object.assign({}, old, {deleted: true, updatedAt: nowIso}));
-  for(const id of ['arnona-hk', 'token'])
-    if(!byId(id)) out.push(Object.assign({}, seed.tasks.find(t => t.id === id), {updatedAt: nowIso}));
-  const rules = (cfg.mailRules || []).map(r => r.id === 'elec'
-    ? Object.assign({}, seed.config.mailRules[0], {enabled: true, from: r.from || seed.config.mailRules[0].from}) : r);
-  if(!rules.some(r => r.id === 'water')) rules.push(seed.config.mailRules[1]);
-  return {tasks: out, config: Object.assign({}, cfg, {seedV: 2, mailRules: rules, updatedAt: nowIso})};
+  let rules = (cfg.mailRules || []).slice();
+  if(v < 2){
+    const old = byId('arnona');
+    if(old && !old.deleted) out.push(Object.assign({}, old, {deleted: true, updatedAt: nowIso}));
+    for(const id of ['arnona-hk', 'token'])
+      if(!byId(id)) out.push(Object.assign({}, seed.tasks.find(t => t.id === id), {updatedAt: nowIso}));
+    rules = rules.map(r => r.id === 'elec' ? Object.assign({}, seedRule('elec'), {from: r.from || seedRule('elec').from}) : r);
+  }
+  // גרסה 3: כתובת השולח של המים, והוראות החידוש של האסימון (גם במנוע)
+  if(!rules.some(r => r.id === 'water')) rules.push(seedRule('water'));
+  rules = rules.map(r => r.id === 'water' ? Object.assign({}, r, {enabled: true, from: r.from || seedRule('water').from}) : r);
+  const tk = byId('token') || out.find(t => t.id === 'token');
+  if(tk && !tk.deleted && tk.notes !== TOKEN_NOTES){
+    const i = out.indexOf(tk), nt = Object.assign({}, tk, {notes: TOKEN_NOTES, updatedAt: nowIso});
+    if(i >= 0) out[i] = nt; else out.push(nt);
+  }
+  return {tasks: out, config: Object.assign({}, cfg, {seedV: 3, mailRules: rules, updatedAt: nowIso})};
 }
+
+const TOKEN_NOTES = 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה, 90 יום. להדביק בשני מקומות: 1) באפליקציה: ⋮ ← גיטהאב וסנכרון ← החלפת אסימון (זה גם מסמן את המשימה כבוצעה). 2) במנוע: script.google.com ← הפרויקט ← הגדרות הפרויקט ← Script properties ← GH_TOKEN.';
 
 /* ---------- נתונים התחלתיים (סעיף 5 באפיון) ---------- */
 const DOMAINS = [
@@ -673,16 +747,16 @@ function initialData(today){
         once: {date: '2026-11-30'}, pre: [14, 7, 3, 1], notes: 'החוזה שלי כשוכר.'}),
       T({id: 'token', title: 'חידוש אסימון גיטהאב', domain: 'personal', priority: 'high', kind: 'afterDone',
         afterDone: {minDays: 82, maxDays: 89, lastDone: today}, soft: true, nag: {mode: 'daily', from: 'max'},
-        doneLabel: 'חידשתי', notes: 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה. להדביק באפליקציה: ⋮ ← הגדרות ← החלפת אסימון. ההחלפה מסמנת את המשימה כבוצעה.'}),
+        doneLabel: 'חידשתי', notes: TOKEN_NOTES}),
     ],
     domains: DOMAINS.map(d => Object.assign({hidden: false, updatedAt: ''}, d)),
     config: Object.assign({}, DEFAULT_CONFIG, {
-      seedV: 2,
+      seedV: 3,
       mailRules: [
         {id: 'elec', enabled: true, from: 'noreplys@iec.co.il', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
           priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'elec',
           subtasks: [{id: 's1', text: 'לקרוא את מונה המשנה של הדייר'}, {id: 's2', text: 'לחשב במחשבון'}, {id: 's3', text: 'לשלוח לדייר'}, {id: 's4', text: 'לקבל תשלום'}]},
-        {id: 'water', enabled: false, from: '', subject: '', title: 'חלוקת מים עם הדייר', domain: 'rental',
+        {id: 'water', enabled: true, from: 'mast@outbox.co.il', subject: '', title: 'חלוקת מים עם הדייר', domain: 'rental',
           priority: 'normal', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'water',
           subtasks: [{id: 's1', text: 'לחשב במחשבון'}, {id: 's2', text: 'לשלוח לדייר'}, {id: 's3', text: 'לקבל תשלום'}]},
       ],
@@ -698,6 +772,7 @@ return {
   occurrencesOf, effStatus, isOpen, effDate, buildView, inActive, shiftToActive, snoozeTarget,
   displayTitle, lateText, inText, planNotifications, buildSummary,
   markDone, snooze, skip, toggleSub, undo, findOcc, applyCommand,
+  sha256, cmdKey, verifyCmd, buttonsFor, notifSig, diffSchedule, engineAlive,
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
