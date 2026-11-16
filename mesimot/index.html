@@ -234,6 +234,14 @@
   #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
+  .img-pick .big{height:190px;border-radius:16px;background:var(--soft) center/cover no-repeat}
+  .img-pick .row2{display:flex;gap:10px;margin-top:10px;align-items:stretch}
+  .img-pick .sm{flex:1;height:84px;border-radius:12px;border:3px solid transparent;background:var(--soft) center/cover no-repeat;padding:0}
+  .img-pick .sm.on{border-color:var(--accent)}
+  .img-pick .more{flex:none;width:84px;border-radius:12px;border:0;background:var(--soft);font-size:14px}
+  .rc-hero{position:relative}
+  .rc-hero .img-btn{position:absolute;left:10px;bottom:10px;border:0;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:6px 12px;min-height:36px}
+  .tmr-left{font-size:64px;font-weight:700;font-variant-numeric:tabular-nums;margin:10px 0 4px;color:var(--accent)}
   .rc-subh{font-weight:700;color:var(--accent);padding:12px 0 2px;border-bottom:1px solid var(--line)}
   .rc-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));background:var(--card);border-radius:16px;margin-top:18px;text-align:center}
   .rc-meta div{padding:12px 4px}
@@ -436,6 +444,17 @@
   </div>
   <div class="dlg" id="r-body"></div>
 </dialog>
+<dialog id="dlg-img" aria-label="בחירת תמונה"><div class="dlg">
+  <h2 id="im-title">בחירת תמונה</h2>
+  <div class="img-pick" id="im-pick"></div>
+  <div class="btns"><button class="btn" id="im-auto" type="button">אוטומטי</button><button class="btn" id="im-cancel" type="button">ביטול</button><button class="btn primary" id="im-ok" type="button">שמירה</button></div>
+</div></dialog>
+<dialog id="dlg-timer" aria-label="טיימר"><div class="dlg" style="text-align:center">
+  <div id="tmr-title" style="font-weight:600;font-size:17px"></div>
+  <div id="tmr-left" class="tmr-left">0:00</div>
+  <div id="tmr-note" class="note"></div>
+  <div class="btns"><button class="btn" id="tmr-cancel" type="button" style="color:var(--red)">ביטול הטיימר</button><button class="btn primary" id="tmr-close" type="button">סגירה</button></div>
+</div></dialog>
 <dialog id="dlg-redit" class="full" aria-label="עריכת מתכון">
   <div class="dlg-head">
     <button class="txt-btn" id="re-close">ביטול</button>
@@ -931,7 +950,46 @@ function renderRecipes(){
 }
 $('rc-q').addEventListener('input', renderRecipes);
 $('rc-cats').onclick = e => { const b = e.target.closest('[data-c]'); if(b){ rcCat = b.dataset.c; renderRecipes(); } };
-$('rc-list').onclick = e => { const b = e.target.closest('[data-r]'); if(b) openRecipe(b.dataset.r); };
+$('rc-list').onclick = e => { if(longPressed){ longPressed = false; return; } const b = e.target.closest('[data-r]'); if(b) openRecipe(b.dataset.r); };
+// לחיצה ארוכה על תמונה (ברשימה או בדף המתכון): בחירת תמונה אחרת
+let longPressed = false, lpTimer = null;
+function onLongPress(root, sel, getId){
+  root.addEventListener('pointerdown', e => {
+    const el = e.target.closest(sel); if(!el) return;
+    clearTimeout(lpTimer);
+    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) openImagePicker(r); }, 550);
+  });
+  for(const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) root.addEventListener(ev, e => { if(ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(lpTimer); });
+  root.addEventListener('contextmenu', e => { if(e.target.closest(sel)) e.preventDefault(); });
+}
+onLongPress($('rc-list'), '.rc-pic', el => el.closest('[data-r]').dataset.r);
+onLongPress($('r-body'), '.rc-hero', el => el.dataset.img);
+// בחירת תמונה: אחת גדולה (הנבחרת), ושתיים קטנות לבחירה. "עוד" מציג שתיים אחרות
+let imgPick = null;
+function renderPicker(box, st){
+  const small = st.opts.slice(1 + st.page * 2, 3 + st.page * 2).length ? st.opts.slice(1 + st.page * 2, 3 + st.page * 2) : st.opts.slice(1, 3);
+  box.innerHTML = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>
+    <div class="row2">${small.map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" style="background-image:url('${esc(u.replace(/\/medium$/, '/small'))}')" aria-label="תמונה אחרת"></button>`).join('')}
+    <button type="button" class="more" data-more="1">עוד<br>תמונות</button></div>`;
+  box.onclick = e => {
+    const b = e.target.closest('[data-u]');
+    if(b){ st.sel = b.dataset.u; st.onPick && st.onPick(st.sel); renderPicker(box, st); return; }
+    if(e.target.closest('[data-more]')){ st.page = (st.page + 1) % Math.max(1, Math.floor((st.opts.length - 1) / 2)); renderPicker(box, st); }
+  };
+}
+function openImagePicker(r){
+  const cur = picUrl(r) || ל.recipeImages([...recipeList().filter(x => x.id !== r.id), r])[r.id];
+  imgPick = {r, sel: cur, page: 0, opts: ל.imageOptions(r, recipeList(), cur)};
+  $('im-title').textContent = 'תמונה ל' + r.title;
+  renderPicker($('im-pick'), imgPick);
+  $('dlg-img').showModal();
+}
+$('im-cancel').onclick = () => $('dlg-img').close();
+$('im-auto').onclick = () => { saveRecipe(Object.assign({}, imgPick.r, {image: ''})); $('dlg-img').close(); if($('dlg-recipe').open) renderRecipe(); toast('חזרה לתמונה אוטומטית'); };
+$('im-ok').onclick = () => {
+  saveRecipe(Object.assign({}, imgPick.r, {image: imgPick.sel}));
+  $('dlg-img').close(); if($('dlg-recipe').open) renderRecipe();
+};
 
 // דף מתכון
 let rcOpen = null, rcGot = new Set(), wake = null;
@@ -948,7 +1006,7 @@ function renderRecipe(){
   $('r-title').textContent = r.title;
   const ing = r.ingredients || [], steps = r.steps || [];
   $('r-body').innerHTML = `
-    <div class="rc-hero"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}</div>
+    <div class="rc-hero" data-img="${esc(r.id)}"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}<button type="button" class="img-btn" id="r-img">🖼️ החלפת תמונה</button></div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
     ${ing.length ? `<div class="rc-sec"><h3>מצרכים <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
       <div class="rc-box">${ing.map((x, i) => /[:：]\s*$/.test(x) ? `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`
@@ -973,7 +1031,8 @@ function renderRecipe(){
   });
   $('r-body').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
   if($('r-shop')) $('r-shop').onclick = () => recipeToShop(r);
-  $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(r)); if(!window.open(url, '_blank')) location.href = url; };
+  $('r-img').onclick = e => { e.stopPropagation(); openImagePicker(r); };
+  $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(r, picUrl(r))); if(!window.open(url, '_blank')) location.href = url; };
   if($('r-cook')) $('r-cook').onclick = toggleCooking;
   $('r-del').onclick = () => {
     if(!confirm(`למחוק את "${r.title}"?`)) return;
@@ -1009,18 +1068,43 @@ function recipeTimer(r, minutes, label, step){
   const old = (D.file.timers.timers || []).filter(x => !x.deleted && x.at < now - 864e5).map(x => Object.assign({}, x, {deleted: true, updatedAt: nowIso()}));
   saveTimers([t, ...old]);
   renderTimers();
-  const engine = pushMode();
-  toast(`⏱ טיימר ${label}: עד ${ל.localTime(t.at)}${engine ? '. ההתראה תגיע גם אם האפליקציה סגורה' : '. ההתראה רק כשהאפליקציה פתוחה (המנוע לא פועל)'}`, {ms: 4500});
+  openTimer(t.id);
 }
+// חלון הטיימר: נפתח מיד, עם ספירה לאחור גדולה ומתי תגיע ההתראה
+let tmrOpen = null;
+function openTimer(id){
+  tmrOpen = id;
+  renderTimerDlg();
+  if(!$('dlg-timer').open) $('dlg-timer').showModal();
+}
+function renderTimerDlg(){
+  const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen);
+  if(!t || t.deleted){ if($('dlg-timer').open) $('dlg-timer').close(); return; }
+  const now = Date.now(), left = t.at - now, s = Math.max(0, Math.round(left / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  $('tmr-title').textContent = '⏱ ' + t.title;
+  $('tmr-left').textContent = left <= 0 ? 'הסתיים' : (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60);
+  const mins = Math.max(1, Math.ceil(left / 6e4));
+  $('tmr-note').textContent = left <= 0 ? 'הזמן עבר' : `תגיע התראה בעוד ${mins === 1 ? 'דקה' : mins + ' דקות'} (ב־${ל.localTime(t.at)})` +
+    (pushMode() ? ', גם אם תסגור את האפליקציה.' : '. המנוע לא פועל, אז רק כשהאפליקציה פתוחה.');
+}
+$('tmr-close').onclick = () => $('dlg-timer').close();
+$('dlg-timer').addEventListener('close', () => renderTimers());
+$('tmr-cancel').onclick = () => {
+  const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen);
+  if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
+  $('dlg-timer').close(); renderTimers(); toast('הטיימר בוטל');
+};
 const announced = new Set(storeJson('משימות.טיימרים.הוכרזו', []));
 function renderTimers(){
   let bar = $('timer-bar');
   const list = timerList();
-  if(!list.length){ if(bar) bar.remove(); return; }
+  // אין טיימרים, או שחלון הטיימר עצמו פתוח (הוא כבר מציג את הספירה): בלי פס
+  if(!list.length || $('dlg-timer').open){ if(bar) bar.remove(); return; }
   if(!bar || bar.parentNode !== topLayer()){
     if(bar) bar.remove();
     bar = document.createElement('div'); bar.id = 'timer-bar'; topLayer().appendChild(bar);
     bar.onclick = e => {
+      const o = e.target.closest('[data-open]'); if(o && !e.target.closest('[data-x]')){ openTimer(o.dataset.open); return; }
       const b = e.target.closest('[data-x]'); if(!b) return;
       const t = (D.file.timers.timers || []).find(x => x.id === b.dataset.x);
       if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
@@ -1029,7 +1113,7 @@ function renderTimers(){
   }
   const now = Date.now(), fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
     return (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60); };
-  bar.innerHTML = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
+  bar.innerHTML = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}" data-open="${esc(t.id)}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
     <button type="button" data-x="${esc(t.id)}" aria-label="${t.at <= now ? 'סגירה' : 'ביטול טיימר'}">✕</button></div>`).join('');
 }
 setInterval(() => {
@@ -1045,6 +1129,7 @@ setInterval(() => {
       dir: 'rtl', lang: 'he', icon: 'icon-192.png', badge: 'badge-96.png', requireInteraction: true, vibrate: [600, 300, 600], data: {u: './'}})).catch(() => {});
   }
   renderTimers();
+  if($('dlg-timer').open) renderTimerDlg();
 }, 1000);
 /** "🛒 לקניות": כל המצרכים נכנסים לרשימת הקניות, כל אחד כמוצר (מה שכבר ברשימה לא נכנס פעמיים). */
 function recipeToShop(r){
@@ -1074,6 +1159,7 @@ function openRecipeEditor(r, paste){
       <textarea id="re-paste" style="min-height:160px;margin-top:8px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
       <button class="btn primary" type="button" id="re-parse" style="margin-top:8px;width:100%">פירוק למצרכים ושלבים</button></details>
     <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
+    <div class="field"><span class="lbl">תמונה (לחיצה על קטנה מחליפה)</span><div class="img-pick" id="re-pick"></div></div>
     <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
       <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
     <div class="field"><label for="re-d">תיאור קצר</label><input type="text" id="re-d" value="${esc(rcEdit.desc)}"></div>
@@ -1086,6 +1172,16 @@ function openRecipeEditor(r, paste){
       <div class="field"><label for="re-serv">מנות</label><input type="text" id="re-serv" placeholder="4" value="${esc(rcEdit.servings || '')}"></div></div>
     <div class="field"><label for="re-img">קישור לתמונה (לא חובה. בלי קישור: תמונה מתאימה לפי שם המנה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
     <div class="field"><label for="re-src">קישור למקור (לא חובה)</label><input type="url" id="re-src" dir="ltr" placeholder="https://..." value="${esc(rcEdit.source || '')}"></div>`;
+  // בחירת תמונה בעריכה: לפי השם (מתעדכן כשהשם משתנה, עד שבוחרים ביד)
+  const pickSt = {r: rcEdit, sel: '', page: 0, opts: [], manual: !!rcEdit.image, onPick: u => { pickSt.manual = true; rcEdit.image = u; $('re-img').value = u; }};
+  const refreshPick = () => {
+    const tmp = Object.assign({}, rcEdit, {title: $('re-t').value || rcEdit.title, image: pickSt.manual ? rcEdit.image : ''});
+    const cur = pickSt.manual && rcEdit.image ? rcEdit.image : ל.recipeImages([...recipeList().filter(x => x.id !== tmp.id), tmp])[tmp.id];
+    Object.assign(pickSt, {sel: cur, page: 0, opts: ל.imageOptions(tmp, recipeList(), cur)});
+    renderPicker($('re-pick'), pickSt);
+  };
+  refreshPick();
+  $('re-t').addEventListener('input', () => { if(!pickSt.manual) refreshPick(); });
   if($('re-parse')) $('re-parse').onclick = () => {
     const p = ל.parseRecipeText($('re-paste').value);
     if(!p.title && !p.ingredients.length && !p.steps.length) return toast('לא הצלחתי לקרוא מתכון מהטקסט', {err: true});
@@ -1095,6 +1191,7 @@ function openRecipeEditor(r, paste){
     $('re-prep').value = p.prep; $('re-tot').value = p.total; $('re-src').value = p.source; $('re-cook').value = p.cook; $('re-serv').value = p.servings;
     if(p.level) $('re-lv').value = p.level;
     if(!$('re-cat').value) $('re-cat').value = ל.guessRecipeCat({title: $('re-t').value});
+    if(!pickSt.manual) refreshPick();
     $('re-paste').closest('details').open = false; $('re-t').scrollIntoView({block: 'start'});
     toast(`נמצאו ${p.ingredients.length} מצרכים ו־${p.steps.length} שלבים. אפשר לתקן ולשמור`);
   };
