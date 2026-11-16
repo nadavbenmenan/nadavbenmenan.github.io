@@ -7,7 +7,7 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v2';
+const מטמון = 'mesimot-v3';
 const קבצים = ['./', 'index.html', 'ליבה.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
@@ -63,6 +63,8 @@ self.addEventListener('push', e => {
   e.waitUntil(self.registration.showNotification(d.t || 'משימות', {
     body: d.b || '', tag: d.tag || undefined, renotify: !!d.tag, data: d, dir: 'rtl', lang: 'he',
     icon: 'icon-192.png', badge: 'badge-96.png', actions: d.btn ? ACTIONS : [],
+    // טיימר: נשארת עד שסוגרים, ורוטטת חזק
+    requireInteraction: !!d.ri, vibrate: d.vib ? [600, 300, 600, 300, 600, 300, 600] : undefined,
   }));
 });
 
