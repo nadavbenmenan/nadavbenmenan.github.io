@@ -1098,6 +1098,21 @@ const FOODS = FOOD_DB.split('\n').map((l, i) => {
   const [name, k, units] = l.split('|');
   return {id: 'f-' + sha256(name).slice(0, 8), name, kcal100: +k, units: units.split(',').map(u => { const [n, g] = u.split(':'); return {name: n, g: +g}; }), rank: i, builtin: true};
 });
+// מאגר מורחב: מאגר התזונה הלאומי (כ-4,400 מאכלים), נטען באפליקציה מ-מאכלים.js. מאכל מהמאגר המובנה עם אותו שם קודם.
+// דירוג: המובנים (הנפוצים, בשמות קצרים) קודם, ואחריהם המורחב, שם קצר קודם.
+let FOODS_EXTRA = [];
+function addFoodDb(text){
+  const names = new Set(FOODS.map(f => shopNorm(f.name)));
+  FOODS_EXTRA = String(text || '').split('\n').filter(Boolean).map(l => {
+    const [name, k, units] = l.split('|'), n = shopNorm(name);
+    if(!name || names.has(n)) return null;
+    names.add(n);
+    return {id: 'z-' + sha256(name).slice(0, 8), name, kcal100: +k || 0, rank: 2000 + name.length, builtin: true, db: true, _n: n,
+      units: units ? units.split(',').map(u => { const [un, g] = u.split(':'); return {name: un, g: +g}; }).filter(u => u.g > 0) : []};
+  }).filter(Boolean);
+  return FOODS_EXTRA.length;
+}
+const allBuiltin = () => FOODS_EXTRA.length ? FOODS.concat(FOODS_EXTRA) : FOODS;
 const MEALS = [['breakfast', 'בוקר', '🍳'], ['lunch', 'צהריים', '🍲'], ['dinner', 'ערב', '🥗'], ['snack', 'נשנושים', '🍎']];
 // פעילות: MET (פעילות/מנוחה), לפי ה-Compendium of Physical Activities. קלוריות = MET × משקל × שעות.
 const ACTIVITIES = {
@@ -1117,9 +1132,10 @@ function mergeCaloriesFile(a, b, now){
 const live = l => (l || []).filter(x => !x.deleted);
 /** כל המאכלים: המאגר + אישיים. מאכל אישי עם id של מאכל מהמאגר = תיקון שלו. */
 function calFoods(file){
-  const mine = new Map(live(file?.foods).map(f => [f.id, f]));
-  const out = FOODS.map(f => mine.has(f.id) ? Object.assign({}, f, mine.get(f.id), {builtin: true, corrected: true}) : f);
-  for(const f of mine.values()) if(!FOODS.some(b => b.id === f.id)) out.push(Object.assign({rank: 1000}, f));
+  const mine = new Map(live(file?.foods).map(f => [f.id, f])), base = allBuiltin();
+  const out = mine.size ? base.map(f => mine.has(f.id) ? Object.assign({}, f, mine.get(f.id), {builtin: true, corrected: true, _n: null}) : f) : base.slice();
+  const ids = mine.size ? new Set(base.map(f => f.id)) : null;
+  for(const f of mine.values()) if(!ids.has(f.id)) out.push(Object.assign({rank: 1000}, f));
   for(const r of live(file?.recipes)) out.push(Object.assign({rank: 900}, recipeFood(r)));   // מתכונים אישיים = מאכלים
   return out;
 }
@@ -1134,9 +1150,9 @@ const foodKcal = (food, qty, unit) => Math.round(foodGrams(food, qty, unit) * (+
 function foodSuggest(file, query, limit){
   const q = shopNorm(query), count = {};
   for(const e of live(file?.entries)) if(e.foodId) count[e.foodId] = (count[e.foodId] || 0) + 1;
-  const fits = f => { if(!q) return true; const n = shopNorm(f.name); return n.startsWith(q) || n.includes(' ' + q) || q.split(' ').every(a => n.split(' ').some(b => sameWord(a, b) || b.startsWith(a))); };
+  const fits = f => { if(!q) return true; const n = f._n || shopNorm(f.name); return n.startsWith(q) || n.includes(' ' + q) || q.split(' ').every(a => n.split(' ').some(b => sameWord(a, b) || b.startsWith(a))); };
   return calFoods(file).filter(fits)
-    .sort((a, b) => (count[b.id] || 0) - (count[a.id] || 0) || (q ? +!shopNorm(a.name).startsWith(q) - +!shopNorm(b.name).startsWith(q) : 0) || a.rank - b.rank)
+    .sort((a, b) => (count[b.id] || 0) - (count[a.id] || 0) || (q ? +!(a._n || shopNorm(a.name)).startsWith(q) - +!(b._n || shopNorm(b.name)).startsWith(q) : 0) || a.rank - b.rank)
     .slice(0, limit || 12).map(f => Object.assign({}, f, {uses: count[f.id] || 0}));
 }
 function calSettings(file){
@@ -1893,7 +1909,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
