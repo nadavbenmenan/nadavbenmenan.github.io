@@ -947,6 +947,7 @@ function renderRecipe(){
           `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}" aria-label="תזכורת בעוד ${esc(t.label)}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>`;
       }).join('')}</div></div>` : ''}
     ${r.notes ? `<div class="rc-sec"><h3>הערות</h3><div class="rc-box" style="padding:12px;white-space:pre-wrap">${esc(r.notes)}</div></div>` : ''}
+    ${safeImg(r.source) ? `<div style="margin-top:14px"><a href="${esc(r.source)}" target="_blank" rel="noopener">🔗 המתכון המקורי</a></div>` : ''}
     ${r.prep || r.total || r.level ? `<div class="rc-meta"><div><span>זמן הכנה</span>${esc(r.prep || '—')}</div><div><span>זמן כולל</span>${esc(r.total || '—')}</div><div><span>רמת קושי</span>${esc(r.level || '—')}</div></div>` : ''}
     <div class="btns" style="margin-top:20px">
       <button class="btn" type="button" id="r-wa">שליחה בוואטסאפ</button>
@@ -1024,8 +1025,9 @@ function openRecipeEditor(r, paste){
   $('re-title').textContent = r ? 'עריכת מתכון' : 'מתכון חדש';
   const lv = ['', 'קל', 'בינוני', 'מאתגר'];
   $('re-body').innerHTML = `
-    ${paste ? `<div class="field"><label for="re-paste">הדביקו כאן את המתכון</label><textarea id="re-paste" style="min-height:160px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
-      <button class="btn primary" type="button" id="re-parse" style="margin-top:8px">פירוק למצרכים ושלבים</button></div>` : ''}
+    <details class="field"${paste ? ' open' : ''}><summary class="lbl" style="cursor:pointer">📋 ${r ? 'הדבקה מחדש של המתכון (מחליף את מה שלמטה)' : 'הדבקת מתכון'}</summary>
+      <textarea id="re-paste" style="min-height:160px;margin-top:8px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
+      <button class="btn primary" type="button" id="re-parse" style="margin-top:8px;width:100%">פירוק למצרכים ושלבים</button></details>
     <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
     <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
       <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
@@ -1035,14 +1037,17 @@ function openRecipeEditor(r, paste){
     <div class="field"><label for="re-n">הערות</label><textarea id="re-n">${esc(rcEdit.notes || '')}</textarea></div>
     <div class="row"><div class="field"><label for="re-prep">זמן הכנה</label><input type="text" id="re-prep" placeholder="חצי שעה" value="${esc(rcEdit.prep || '')}"></div>
       <div class="field"><label for="re-tot">זמן כולל</label><input type="text" id="re-tot" placeholder="שעה" value="${esc(rcEdit.total || '')}"></div></div>
-    <div class="field"><label for="re-img">קישור לתמונה (לא חובה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>`;
+    <div class="field"><label for="re-img">קישור לתמונה (לא חובה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
+    <div class="field"><label for="re-src">קישור למקור (לא חובה)</label><input type="url" id="re-src" dir="ltr" placeholder="https://..." value="${esc(rcEdit.source || '')}"></div>`;
   if($('re-parse')) $('re-parse').onclick = () => {
     const p = ל.parseRecipeText($('re-paste').value);
     if(!p.title && !p.ingredients.length && !p.steps.length) return toast('לא הצלחתי לקרוא מתכון מהטקסט', {err: true});
-    if(p.title && !$('re-t').value) $('re-t').value = p.title;
-    if(p.desc && !$('re-d').value) $('re-d').value = p.desc;
-    $('re-ing').value = p.ingredients.join('\n'); $('re-st').value = p.steps.join('\n');
-    if(p.notes) $('re-n').value = p.notes;
+    // הטקסט המודבק קובע הכול (גם בעריכה: "הדבקה מחדש")
+    $('re-t').value = p.title || $('re-t').value; $('re-d').value = p.desc;
+    $('re-ing').value = p.ingredients.join('\n'); $('re-st').value = p.steps.join('\n'); $('re-n').value = p.notes;
+    $('re-prep').value = p.prep; $('re-tot').value = p.total; $('re-src').value = p.source;
+    if(p.level) $('re-lv').value = p.level;
+    $('re-paste').closest('details').open = false; $('re-t').scrollIntoView({block: 'start'});
     toast(`נמצאו ${p.ingredients.length} מצרכים ו־${p.steps.length} שלבים. אפשר לתקן ולשמור`);
   };
   if(!$('dlg-redit').open) $('dlg-redit').showModal();
@@ -1054,7 +1059,7 @@ $('re-save').onclick = () => {
   if(!title) return toast('צריך שם למתכון', {err: true});
   const r = saveRecipe(Object.assign({}, rcEdit, {title, cat: $('re-cat').value, level: $('re-lv').value, desc: $('re-d').value.trim(),
     ingredients: lines('re-ing'), steps: lines('re-st'), notes: $('re-n').value.trim(), prep: $('re-prep').value.trim(),
-    total: $('re-tot').value.trim(), image: safeImg($('re-img').value.trim())}));
+    total: $('re-tot').value.trim(), image: safeImg($('re-img').value.trim()), source: safeImg($('re-src').value.trim())}));
   $('dlg-redit').close();
   openRecipe(r.id);
 };
