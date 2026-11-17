@@ -2251,7 +2251,7 @@ async function sleepSync(){
   if(!NATIVE) return sleepState = 'web';
   let st;
   try{ st = await NAlarm.status(); }catch(e){ return sleepState = 'err'; }
-  if(st.usage === undefined) return sleepState = 'old';
+  if(st.usage === undefined) return sleepState = 'nohc';   // 1.3: בלי "נתוני שימוש". שינה רק מ-Samsung Health
   if(!st.usage) return sleepState = 'perm';
   sleepState = 'ok';
   if(Date.now() - sleepAt < 5 * 6e4) return;
@@ -2272,7 +2272,7 @@ async function renderSleep(){
   const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
     return `${String((Math.floor(a / 60) + 12) % 24).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`; };
   const note = {web: 'שעות השינה נמדדות באפליקציית האנדרואיד: השעה האחרונה בלילה שהטלפון היה בשימוש, והשעה הראשונה בבוקר.',
-    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.', health: '✓ השינה מגיעה מ-Samsung Health (מהשעון או מהטלפון).'}[sleepState];
+    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', nohc: 'שעות השינה מגיעות מ-Samsung Health. אפשר גם להוסיף ידנית.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.', health: '✓ השינה מגיעה מ-Samsung Health (מהשעון או מהטלפון).'}[sleepState];
   $('h-sleep').innerHTML = `
     ${hcState === 'perm' ? `<div class="card" style="margin-top:12px"><b>🔗 Samsung Health</b><div class="note" style="margin:6px 0 10px">הכי מדויק: השינה מ-Samsung Health.</div>
       <button class="btn primary" type="button" id="sl-hc" style="width:100%">חיבור ל-Samsung Health</button></div>` : ''}
@@ -5174,6 +5174,7 @@ async function nativeScheduleNow(){
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
   const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), title: n.title, body: n.message || '', at: n.at,
       channelId: 'reminders', extra: {u: n.click || ''}}))
+    .concat(morningNotifs(now))
     .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), title: t.title, body: t.body || '',
       at: t.at, channelId: 'meds', extra: {u: '#meds'}})));
   const sig = JSON.stringify(list);
@@ -5185,6 +5186,13 @@ async function nativeScheduleNow(){
       smallIcon: 'ic_stat_notify', extra: n.extra, schedule: {at: new Date(n.at), allowWhileIdle: true}}))});
     store('משימות.מקומי', sig);
   }catch(e){ toast('התזכורות לא נקבעו בטלפון: ' + (e.message || e), {err: true, ms: 8000}); }
+}
+/** סיכום הבוקר: התראה בשעה שבהגדרות (ברירת מחדל 07:30), להיום (אם עוד לא עברה) ולמחר. */
+function morningNotifs(now){
+  if(!LOCAL) return [];
+  let days; try{ days = dailyInfo(); }catch(e){ return []; }
+  return Object.entries(days).slice(0, 2).map(([d, x]) => ({id: intId('morning:' + d), title: x.morning, body: x.lines.slice(0, 8).join('\n') || 'אין משימות להיום 🎉',
+    at: ל.at(d, D.config.summaryTime || '07:30'), channelId: 'reminders', extra: {u: '#morning'}})).filter(n => n.at > now + 15e3);
 }
 /** מה קרה כשהאפליקציה הייתה סגורה: טיימרים שנעצרו מההתראה, או פתיחה מהתראת טיימר. */
 async function nativeEvents(){
@@ -5793,6 +5801,8 @@ function handleHash(){
     const id = decodeURIComponent(h.slice(4));
     history.replaceState(null, '', location.pathname);
     tmrOpen = id; stopAlarm(true); openTimer(id);
+  }else if(h === '#morning'){
+    history.replaceState(null, '', location.pathname); show('today'); $('dlg-morning').showModal(); renderMorning();
   }else if(h === '#meds'){
     history.replaceState(null, '', location.pathname); show('meds');
   }else if(h === '#new'){
