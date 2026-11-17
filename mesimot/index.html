@@ -530,6 +530,13 @@
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
   .img-pick .big{height:170px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+  .img-pick .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .img-pick .tp{position:relative;padding:0;border:2px solid transparent;border-radius:12px;overflow:hidden;background:var(--soft);display:flex;flex-direction:column;font:inherit;color:inherit}
+  .img-pick .tp i{display:block;aspect-ratio:4/3;background:var(--soft) center/cover no-repeat}
+  .img-pick .tp span{font-size:13px;padding:5px 4px;text-align:center;line-height:1.2}
+  .img-pick .tp.fit{border-color:var(--accent)}
+  .img-pick .tp em{position:absolute;top:4px;right:4px;font-style:normal;font-size:11px;background:var(--accent);color:#fff;border-radius:8px;padding:1px 6px}
+  .img-pick .tp-head{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
   .img-pick .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
   .img-pick .gal .sm{aspect-ratio:1;height:auto;padding:0;overflow:hidden;border-radius:12px;border:3px solid transparent;background:var(--soft)}
   .img-pick .gal .sm img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1822,24 +1829,36 @@ function recipeMenu(r){
   $('nav').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
   $('nav').addEventListener('contextmenu', e => e.preventDefault()); }
 onLongPress($('r-body'), '.rc-hero', el => el.dataset.img);
-// בחירת תמונה: גלריה. למעלה התמונה שנבחרה, ומתחת הרבה תמונות, לפי הסיכוי שהן מתאימות למתכון (ליבה: imageOptions)
+// בחירת תמונה: למעלה התמונה שנבחרה. מתחת קודם נושאים (סלטים, עוף, קינוחים...), ורק אחרי בחירת נושא, התמונות שלו
 let imgPick = null;
 function renderPicker(box, st){
   st.n = st.n || 30;
   const small = u => u.replace(/\/medium$/, '/small');
-  box.innerHTML = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>
-    <div class="gal">${st.opts.slice(0, st.n).map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" aria-label="תמונה"><img loading="lazy" alt="" src="${esc(small(u))}"></button>`).join('')}</div>
-    ${st.opts.length > st.n ? `<button type="button" class="btn" data-more="1" style="width:100%;margin-top:10px">עוד תמונות (${st.opts.length - st.n})</button>` : ''}`;
+  const big = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>`;
+  if(!st.topic){
+    const tops = ל.imageTopics(st.r, st.sel);
+    box.innerHTML = big + `<div class="note" style="margin:10px 2px 0">בוחרים נושא:</div><div class="topics">${tops.map(t =>
+      `<button type="button" class="tp${t.fit ? ' fit' : ''}" data-topic="${t.g}"><i style="background-image:url('${esc(small(t.cover))}')"></i><span>${t.emoji} ${esc(t.name)}</span>${t.fit ? '<em>מתאים</em>' : ''}</button>`).join('')}</div>`;
+  } else {
+    const opts = ל.topicImages(st.topic, st.r, recipeList()), name = (ל.imageTopics(st.r, '').find(t => t.g === st.topic) || {}).name || '';
+    box.innerHTML = big + `<div class="tp-head"><button type="button" class="txt-btn" data-tp-back="1">→ כל הנושאים</button><b>${esc(name)}</b></div>
+      <div class="gal">${opts.slice(0, st.n).map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" aria-label="תמונה"><img loading="lazy" alt="" src="${esc(small(u))}"></button>`).join('')}</div>
+      ${opts.length > st.n ? `<button type="button" class="btn" data-more="1" style="width:100%;margin-top:10px">עוד תמונות (${opts.length - st.n})</button>` : ''}`;
+  }
+  const dlg = box.closest('dialog'), keep = f => { const y = dlg?.scrollTop; f(); renderPicker(box, st); if(y != null) dlg.scrollTop = y; };
   box.onclick = e => {
+    const tp = e.target.closest('[data-topic]');
+    if(tp){ st.topic = tp.dataset.topic; st.n = 30; renderPicker(box, st); return; }
+    if(e.target.closest("[data-tp-back]")){ st.topic = null; renderPicker(box, st); return; }
     const b = e.target.closest('[data-u]');
     if(b){ st.sel = b.dataset.u; st.onPick && st.onPick(st.sel); box.querySelector('.big').style.backgroundImage = `url('${st.sel}')`;
       box.querySelectorAll('.gal .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); return; }
-    if(e.target.closest('[data-more]')){ st.n += 30; const y = box.closest('dialog')?.scrollTop; renderPicker(box, st); if(y != null) box.closest('dialog').scrollTop = y; }
+    if(e.target.closest('[data-more]')) keep(() => { st.n += 30; });
   };
 }
 function openImagePicker(r){
   const cur = picUrl(r) || ל.recipeImages([...recipeList().filter(x => x.id !== r.id), r])[r.id];
-  imgPick = {r, sel: cur, page: 0, opts: ל.imageOptions(r, recipeList(), cur)};
+  imgPick = {r, sel: cur, topic: null};
   $('im-title').textContent = 'תמונה ל' + r.title;
   renderPicker($('im-pick'), imgPick);
   $('dlg-img').showModal();
@@ -2113,11 +2132,11 @@ function openRecipeEditor(r, paste){
     <div class="field"><label for="re-img">קישור לתמונה (לא חובה. בלי קישור: תמונה מתאימה לפי שם המנה)</label><input type="url" id="re-img" dir="ltr" placeholder="https://..." value="${esc(rcEdit.image || '')}"></div>
     <div class="field"><label for="re-src">קישור למקור (לא חובה)</label><input type="url" id="re-src" dir="ltr" placeholder="https://..." value="${esc(rcEdit.source || '')}"></div>`;
   // בחירת תמונה בעריכה: לפי השם (מתעדכן כשהשם משתנה, עד שבוחרים ביד)
-  const pickSt = {r: rcEdit, sel: '', page: 0, opts: [], manual: !!rcEdit.image, onPick: u => { pickSt.manual = true; rcEdit.image = u; $('re-img').value = u; }};
+  const pickSt = {r: rcEdit, sel: '', topic: null, manual: !!rcEdit.image, onPick: u => { pickSt.manual = true; rcEdit.image = u; $('re-img').value = u; }};
   const refreshPick = () => {
     const tmp = Object.assign({}, rcEdit, {title: $('re-t').value || rcEdit.title, image: pickSt.manual ? rcEdit.image : ''});
     const cur = pickSt.manual && rcEdit.image ? rcEdit.image : ל.recipeImages([...recipeList().filter(x => x.id !== tmp.id), tmp])[tmp.id];
-    Object.assign(pickSt, {sel: cur, page: 0, opts: ל.imageOptions(tmp, recipeList(), cur)});
+    Object.assign(pickSt, {r: tmp, sel: cur});
     renderPicker($('re-pick'), pickSt);
   };
   refreshPick();
@@ -2234,7 +2253,7 @@ async function sleepSync(){
   if(!NATIVE) return sleepState = 'web';
   let st;
   try{ st = await NAlarm.status(); }catch(e){ return sleepState = 'err'; }
-  if(st.usage === undefined) return sleepState = 'nohc';   // 1.3: בלי "נתוני שימוש". שינה רק מ-Samsung Health
+  if(st.usage === undefined) return sleepState = 'old';   // התקנה ישנה, בלי "נתוני שימוש"
   if(!st.usage) return sleepState = 'perm';
   sleepState = 'ok';
   if(Date.now() - sleepAt < 5 * 6e4) return;
@@ -2242,24 +2261,22 @@ async function sleepSync(){
   try{
     const r = await NAlarm.screenEvents({from: Date.now() - 10 * 864e5});
     const have = new Map((KF().sleep || []).map(x => [x.date, x]));   // גם מה שנמחק או תוקן ביד: לא דורסים
-    const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && (o.sleep !== n.sleep || o.wake !== n.wake)); })
-      .map(n => Object.assign({id: 'sl' + n.date, updatedAt: nowIso(), deleted: false}, n));
+    const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && o.src !== 'health' && (o.sleep !== n.sleep || o.wake !== n.wake)); })
+      .map(n => Object.assign({id: 'sl' + n.date, src: 'phone', updatedAt: nowIso(), deleted: false}, n));
     if(recs.length) saveK('sleep', recs);
   }catch(e){ sleepState = 'err'; }
 }
 async function renderSleep(){
-  await healthSync();
-  if(hcState === 'ok') sleepState = 'health'; else await sleepSync();
+  // השינה נמדדת מהטלפון (מתי המסך כבה ונפתח). אם יש שעון עם Samsung Health, הלילות משם גוברים
+  await sleepSync(); await healthSync();
   const nights = live(KF().sleep).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30), last7 = nights.filter(n => n.date >= ל.addDays(today(), -7));
   // ממוצע של שעה בלילה: מודדים מהצהריים, כדי ש-23:30 ו-00:30 ימוצעו ל-00:00
   const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
     return `${String((Math.floor(a / 60) + 12) % 24).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`; };
   const note = {web: 'שעות השינה נמדדות באפליקציית האנדרואיד: השעה האחרונה בלילה שהטלפון היה בשימוש, והשעה הראשונה בבוקר.',
-    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', nohc: 'שעות השינה מגיעות מ-Samsung Health. אפשר גם להוסיף ידנית.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.', health: '✓ השינה מגיעה מ-Samsung Health (מהשעון או מהטלפון).'}[sleepState];
+    old: 'כדי למדוד שינה מהטלפון צריך להתקין שוב את האפליקציה מהקישור (אותה גרסה, הנתונים נשמרים).', ok: 'השינה נמדדת מהטלפון: מתי המסך כבה בלילה ומתי נפתח בבוקר. אפשר לתקן לילה בלחיצה עליו.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.', health: '✓ השינה מגיעה מ-Samsung Health (מהשעון או מהטלפון).'}[sleepState];
   $('h-sleep').innerHTML = `
-    ${hcState === 'perm' ? `<div class="card" style="margin-top:12px"><b>🔗 Samsung Health</b><div class="note" style="margin:6px 0 10px">הכי מדויק: השינה מ-Samsung Health.</div>
-      <button class="btn primary" type="button" id="sl-hc" style="width:100%">חיבור ל-Samsung Health</button></div>` : ''}
-    ${sleepState === 'perm' && hcState !== 'perm' ? `<div class="card" style="margin-top:12px"><b>צריך אישור אחד</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי הטלפון היה בשימוש, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". הנתונים נשארים בטלפון ובמאגר שלך בלבד.</div>
+    ${sleepState === 'perm' ? `<div class="card" style="margin-top:12px"><b>😴 מדידת שינה מהטלפון</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי המסך כבה בלילה ומתי נפתח בבוקר, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". נקראים רק זמני המסך, והם נשארים בטלפון בלבד.</div>
       <button class="btn primary" type="button" id="sl-perm" style="width:100%">פתיחת ההגדרה</button></div>` : note ? `<div class="card note" style="margin-top:12px">${esc(note)}</div>` : ''}
     ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
       <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span></div>` : ''}
@@ -2269,7 +2286,6 @@ async function renderSleep(){
         <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : n.src === 'health' ? ' · Samsung Health' : ''}</div>
         <div class="sl-bar"><i style="right:${Math.max(0, Math.min(100, x0 * 100)).toFixed(1)}%;width:${Math.min(100, n.mins / (14 * 60) * 100).toFixed(1)}%"></i></div></button>`; }).join('')
       : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>`;
-  if($('sl-hc')) $('sl-hc').onclick = healthConnect;
   if($('sl-perm')) $('sl-perm').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
   $('sl-add').onclick = () => editSleep(null);
 }
@@ -5837,7 +5853,7 @@ async function renderNativePrefs(){
       <div class="btns"><button class="btn" type="button" id="pf-cal-pick">בחירת יומן</button></div><div id="pf-cal-ev" class="more-list" style="margin-top:8px"></div></div>` : ''}
     ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית <span id="pf-home" class="note" style="margin:0"></span></h2>
       <div class="btns" id="pf-home-btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית כאן</button></div></div>` : ''}
-    ${st.usage === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
+    ${st.listener === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
       <div class="btns">${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות</button><button class="btn" type="button" id="pf-app">חסום? הגדרות מוגבלות</button>'}</div></div>`}`;
   $('pf-t1').onclick = async () => {
     try{ await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: 'reminders', smallIcon: 'ic_stat_notify',
