@@ -5574,11 +5574,10 @@ async function renderNativePrefs(){
       ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
     <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
     <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
-    ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית</h2><div class="pf-stat" id="pf-home">בודק…</div>
-      <div class="btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית שלי = המיקום עכשיו</button><button class="btn" type="button" id="pf-home-test">בדיקה</button></div></div>` : ''}
-    ${st.usage === undefined ? '' : `<div class="sec"><h2>אישורים נוספים</h2><div class="pf-stat">${ok(st.usage)} שעות שינה (גישה לנתוני שימוש)<br>${ok(st.listener)} הצעות ליומן מהודעות (גישה להתראות)</div>
-      <div class="btns">${st.usage ? '' : '<button class="btn" type="button" id="pf-usage">אישור שעות שינה</button>'}${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות ליומן</button>'}</div>
-      ${st.usage && st.listener ? '' : `<div class="note" style="margin-top:8px">אם האפשרות אפורה ("הגדרה מוגבלת"): <a href="#" id="pf-app">פרטי האפליקציה</a> ← ⋮ למעלה ← "התרת הגדרות מוגבלות", ואז שוב כאן.</div>`}</div>`}`;
+    ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית <span id="pf-home" class="note" style="margin:0"></span></h2>
+      <div class="btns" id="pf-home-btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית כאן</button></div></div>` : ''}
+    ${st.usage === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
+      <div class="btns">${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות</button><button class="btn" type="button" id="pf-app">חסום? הגדרות מוגבלות</button>'}</div></div>`}`;
   $('pf-t1').onclick = async () => {
     try{ await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: 'reminders', smallIcon: 'ic_stat_notify',
       schedule: {at: new Date(Date.now() + 10e3), allowWhileIdle: true}}]}); toast('✓ נקבע. אפשר לצאת מהאפליקציה'); }
@@ -5592,12 +5591,12 @@ async function renderNativePrefs(){
   if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
   if($('pf-home')){
     const hs = await NPhone.homeStatus().catch(() => ({}));
-    $('pf-home').innerHTML = hs.home ? (hs.always ? '✓ פועל: כשיוצאים מהבית מגיעה התראה מה לקחת (לפי מה שיש היום, ומה שסומן 🚪)'
-      : '✗ חסר אישור מיקום "כל הזמן". בלי זה הטלפון לא יודע שיצאת כשהאפליקציה סגורה.<br><button class="btn primary" type="button" id="pf-home-always" style="margin-top:8px;width:100%">אישור מיקום כל הזמן</button>')
-      : 'עוד לא נקבע איפה הבית. כשאתה בבית, לוחצים "הבית שלי = המיקום עכשיו". צורך סוללה זניח: הטלפון מזהה יציאה לפי האנטנות וה-WiFi.';
+    $('pf-home').textContent = hs.home ? (hs.always ? '✓ פועל' : '✗ חסר מיקום "כל הזמן"') : '';
+    if(hs.home && !hs.always) $('pf-home-btns').insertAdjacentHTML('afterbegin', '<button class="btn primary" type="button" id="pf-home-always">אישור מיקום</button>');
+    if(hs.home && hs.always) $('pf-home-btns').insertAdjacentHTML('beforeend', '<button class="btn" type="button" id="pf-home-test">בדיקה</button>');
     $('pf-home-set').onclick = async () => { try{ const r = await NPhone.setHome(); toast(r.always ? '✓ הבית נשמר. ביציאה תגיע התראה' : '✓ הבית נשמר. עכשיו מאשרים מיקום "כל הזמן"', {ms: 4000}); if(!r.always) await NPhone.alwaysLocation().catch(() => {}); }
       catch(e){ toast(e.message || String(e), {err: true}); } renderNativePrefs(); };
-    $('pf-home-test').onclick = async () => { dailySoon(); setTimeout(() => NPhone.testLeave().then(() => toast('נשלחה התראת בדיקה (אם יש מה לקחת היום)')).catch(e => toast(e.message, {err: true})), 1800); };
+    if($('pf-home-test')) $('pf-home-test').onclick = async () => { dailySoon(); setTimeout(() => NPhone.testLeave().then(() => toast('נשלחה התראת בדיקה (אם יש מה לקחת היום)')).catch(e => toast(e.message, {err: true})), 1800); };
     if($('pf-home-always')) $('pf-home-always').onclick = () => NPhone.alwaysLocation().then(renderNativePrefs).catch(e => toast(e.message || String(e), {err: true}));
   }
   if($('pf-usage')) $('pf-usage').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
