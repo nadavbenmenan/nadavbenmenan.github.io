@@ -5305,6 +5305,62 @@ function restoreBackup(){
 /** יומן הטלפון (גוגל): משימה עם "גם ביומן" נכנסת ליומן ישירות, מתעדכנת ונמחקת איתה. */
 var calBusy = false, calT = null;
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+/* ---------- חיבור ישיר ליומן גוגל (Google Calendar API) ---------- */
+// הטוקן מגיע משירותי Google Play (Phone.googleToken), בלי סיסמה ובלי מפתח בקוד. אירוע = {gid, sig, link} במפה.
+const GCAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+let gTok = null, gWait = false;
+async function gcalToken(){
+  if(gTok && Date.now() - gTok.at < 40 * 6e4) return gTok.t;
+  const r = await NPhone.googleToken({interactive: false});
+  gTok = {t: r.token, at: Date.now()};
+  return gTok.t;
+}
+async function gcalFetch(method, path, body, again){
+  const t = await gcalToken();
+  const r = await fetch(GCAL + (path || ''), {method, headers: {Authorization: 'Bearer ' + t, 'Content-Type': 'application/json'}, body: body ? JSON.stringify(body) : undefined});
+  if(r.status === 401 && !again){ gTok = null; return gcalFetch(method, path, body, true); }
+  if(method === 'DELETE' && (r.status === 404 || r.status === 410)) return null;   // כבר לא קיים
+  if(!r.ok) throw new Error('יומן גוגל ' + r.status);
+  return method === 'DELETE' ? null : r.json();
+}
+function gcalBody(spec){
+  const ev = {summary: spec.title, description: 'מניהול שיגרה', reminders: {useDefault: false, overrides: []}};   // התזכורות מגיעות מהאפליקציה
+  if(spec.time){
+    const end = ל.at(spec.date, spec.time) + 30 * 6e4;
+    ev.start = {dateTime: `${spec.date}T${spec.time}:00`, timeZone: 'Asia/Jerusalem'};
+    ev.end = {dateTime: `${ל.localDate(end)}T${ל.localTime(end)}:00`, timeZone: 'Asia/Jerusalem'};
+  }else{ ev.start = {date: spec.date}; ev.end = {date: ל.addDays(spec.date, 1)}; }
+  const rr = calRrule(spec); if(rr) ev.recurrence = ['RRULE:' + rr];
+  return ev;
+}
+/** חיבור: פותח את מסך האישור של גוגל. כשחוזרים לאפליקציה, מנסים שוב (בלי מסך) ומסיימים. */
+async function googleConnect(){
+  try{
+    const r = await NPhone.googleToken({interactive: true});
+    if(r.token){ gTok = {t: r.token, at: Date.now()}; return googleConnected(); }
+    gWait = true; toast('מאשרים בחלון של גוגל, וחוזרים לאפליקציה', {ms: 6000});
+  }catch(e){ toast('החיבור לגוגל נכשל: ' + (e.message || e) + '. בודקים את ההגדרות בגוגל קלאוד לפי המדריך', {err: true, ms: 12000}); }
+}
+async function googleConnected(){
+  store('משימות.יומן-מצב', 'google');
+  toast('✓ מחובר ליומן גוגל. מעכשיו אירועים נכנסים, מתעדכנים ונמחקים לבד', {ms: 6000});
+  await phoneCalendarSync(); renderNativePrefs();
+}
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState !== 'visible' || !gWait) return;
+  gWait = false;
+  try{ gTok = null; await gcalToken(); googleConnected(); }catch(e){ toast('החיבור לגוגל לא הושלם (' + (e.message || e) + ')', {err: true, ms: 8000}); }
+});
+async function gcalSyncTask(t, spec, old, map){
+  if(spec && (!old || old.sig !== spec.sig)){
+    const ev = old && old.gid ? await gcalFetch('PUT', '/' + encodeURIComponent(old.gid), gcalBody(spec)) : await gcalFetch('POST', '', gcalBody(spec));
+    map[t.id] = {gid: ev.id, sig: spec.sig, link: ev.htmlLink};
+    if(!old) toast(`📅 נוסף ליומן גוגל: ${spec.title}`, {undo: () => window.open(ev.htmlLink, '_blank'), btn: 'פתיחה', ms: 6000});
+  }else if(!spec && old){
+    if(old.gid) await gcalFetch('DELETE', '/' + encodeURIComponent(old.gid));
+    delete map[t.id];
+  }
+}
 /** בדיקה אחרי 20 שניות ושוב אחרי דקה וחצי: האירוע עוד קיים, ועלה לגוגל. נמחק: נפתח היומן ממולא (לוחצים שמירה). */
 function calVerify(taskId, eid, spec, acc){
   const check = async last => {
@@ -5338,8 +5394,14 @@ async function phoneCalendarSync(){
   try{
     const map = storeJson('משימות.יומן-טלפון', {}), dd = data(), now = Date.now(), had = JSON.stringify(map);
     const engine = new Set((calFile.events || []).filter(e => !e.deleted).map(e => e.id));   // נוצרו בעבר ביומן מהמנוע
-    const viaUi = store('משימות.יומן-מצב') !== 'direct';   // 17.11.2026: כתיבה ישירה לא עלתה לגוגל בטלפון של המשתמש
+    const mode = store('משימות.יומן-מצב'), viaUi = mode !== 'direct' && mode !== 'google';   // 17.11.2026: כתיבה ישירה לספק היומן לא עלתה לגוגל
     for(const t of D.tasks){
+      if(mode === 'google'){
+        if(engine.has(t.id) && !map[t.id]) continue;
+        try{ await gcalSyncTask(t, ל.calendarSpec(t, dd, now), map[t.id], map); }
+        catch(e){ if(/NEED_CONSENT/.test(e.message)) toast('צריך לחבר מחדש את יומן גוגל: הגדרות ← 📅 יומן', {err: true}); else if(!navigator.onLine) {} else toast(e.message, {err: true}); break; }
+        continue;
+      }
       if(engine.has(t.id) && !map[t.id]) continue;
       const spec = ל.calendarSpec(t, dd, now), old = map[t.id];
       if(spec && (!old || old.sig !== spec.sig)){
@@ -5369,8 +5431,8 @@ async function phoneCalendarSync(){
 async function pickCalendar(list){
   list = list || await NPhone.calendars().catch(e => (toast(e.message || String(e), {err: true}), null));
   if(!list) return;
-  const ui = store('משימות.יומן-מצב') !== 'direct', cur = ui ? -2 : (+store('משימות.יומן-בחירה') || list.auto);
-  sheet('לאיזה יומן להכניס?', [...list.calendars.sort((a, b) => (b.count || 0) - (a.count || 0)).map(c => [`${c.id === cur ? '✓ ' : ''}${c.name}${c.account && c.account !== c.name ? ' · ' + c.account : ''} · ${c.count || 0} אירועים${c.type === 'com.google' ? '' : ' (בטלפון בלבד)'}${c.sync ? '' : ' · לא מסונכרן'}${c.visible ? '' : ' · מוסתר'}`,
+  const md = store('משימות.יומן-מצב'), ui = md !== 'direct' && md !== 'google', cur = md === 'direct' ? (+store('משימות.יומן-בחירה') || list.auto) : -2;
+  sheet('לאיזה יומן להכניס?', [[`${store('משימות.יומן-מצב') === 'google' ? '✓ ' : ''}🔗 חיבור ישיר ליומן גוגל (אוטומטי: נכנס, מתעדכן ונמחק)`, googleConnect], ...list.calendars.sort((a, b) => (b.count || 0) - (a.count || 0)).map(c => [`${c.id === cur ? '✓ ' : ''}${c.name}${c.account && c.account !== c.name ? ' · ' + c.account : ''} · ${c.count || 0} אירועים${c.type === 'com.google' ? '' : ' (בטלפון בלבד)'}${c.sync ? '' : ' · לא מסונכרן'}${c.visible ? '' : ' · מוסתר'}`,
     async () => {
       store('משימות.יומן-מצב', 'direct');
       if(c.id === cur) return;
@@ -5791,12 +5853,12 @@ async function renderNativePrefs(){
   if($('pf-cal')){
     const list = await NPhone.calendars().catch(() => null);
     const cur = list && list.calendars.find(c => c.id === (+store('משימות.יומן-בחירה') || list.auto));
-    $('pf-cal').textContent = store('משימות.יומן-מצב') !== 'direct' ? 'דרך יומן גוגל' : cur ? `${cur.name}${cur.account && cur.account !== cur.name ? ' · ' + cur.account : ''}` : '';
+    $('pf-cal').textContent = store('משימות.יומן-מצב') === 'google' ? '✓ מחובר ישירות ליומן גוגל' : store('משימות.יומן-מצב') !== 'direct' ? 'דרך יומן גוגל (שמירה ידנית)' : cur ? `${cur.name}${cur.account && cur.account !== cur.name ? ' · ' + cur.account : ''}` : '';
     $('pf-cal-pick').onclick = () => pickCalendar(list);
-    const map = storeJson('משימות.יומן-טלפון', {}), evs = Object.entries(map).map(([id, x]) => ({t: taskById(id), eid: x.eid})).filter(x => x.t && x.eid);
-    $('pf-cal-ev').innerHTML = evs.length ? '<span class="lbl">מה נכנס ליומן (לחיצה: פתיחה ביומן)</span>' + evs.map(x => `<button type="button" class="more-row" data-eid="${x.eid}"><span class="i">📅</span><span class="b"><span class="t">${esc(x.t.title)}</span></span><span class="side">פתיחה</span></button>`).join('')
+    const map = storeJson('משימות.יומן-טלפון', {}), evs = Object.entries(map).map(([id, x]) => ({t: taskById(id), eid: x.eid, link: x.link})).filter(x => x.t && (x.eid || x.link));
+    $('pf-cal-ev').innerHTML = evs.length ? '<span class="lbl">מה נכנס ליומן (לחיצה: פתיחה ביומן)</span>' + evs.map(x => `<button type="button" class="more-row" ${x.link ? `data-link="${esc(x.link)}"` : `data-eid="${x.eid}"`}><span class="i">📅</span><span class="b"><span class="t">${esc(x.t.title)}</span></span><span class="side">פתיחה</span></button>`).join('')
       : '<div class="note">עוד לא נכנס שום אירוע ליומן. מסמנים 📅 כשמוסיפים משימה עם תאריך.</div>';
-    $('pf-cal-ev').onclick = e => { const b = e.target.closest('[data-eid]'); if(b) NPhone.openEvent({eid: +b.dataset.eid}).catch(err => toast('האירוע לא נמצא ביומן: ' + (err.message || err), {err: true})); };
+    $('pf-cal-ev').onclick = e => { const l = e.target.closest('[data-link]'); if(l) return window.open(l.dataset.link, '_blank'); const b = e.target.closest('[data-eid]'); if(b) NPhone.openEvent({eid: +b.dataset.eid}).catch(err => toast('האירוע לא נמצא ביומן: ' + (err.message || err), {err: true})); };
   }
   if($('pf-home')){
     const hs = await NPhone.homeStatus().catch(() => ({}));
