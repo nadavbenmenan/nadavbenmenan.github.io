@@ -458,6 +458,18 @@
   .wz-tips{display:flex;flex-direction:column;gap:10px}
   .wz-tips div{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:12px}
   .wz-tips b{font-size:24px;width:32px;text-align:center;flex:none}
+  .mo-tab{position:fixed;right:0;top:40%;z-index:5;border:0;border-radius:16px 0 0 16px;background:var(--accent);color:#fff;font-size:22px;
+          padding:10px 8px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 4px 14px rgba(40,40,140,.3)}
+  .mo-tab b{font-size:13px;min-width:18px}
+  dialog.drawer{margin:0 0 0 auto;height:100%;max-height:100%;width:min(380px,88vw);border-radius:22px 0 0 22px;border-top:0}
+  dialog.drawer[open]{animation:mo-in .2s ease-out}
+  @keyframes mo-in{from{transform:translateX(40px);opacity:.4}to{transform:none;opacity:1}}
+  .native dialog.drawer .dlg-head{padding-top:calc(max(env(safe-area-inset-top), 30px) + 6px)}
+  .mo-row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:8px 10px;margin-bottom:8px;min-height:52px}
+  .mo-row .t{flex:1;min-width:0}
+  .mo-row.done{opacity:.55} .mo-row.done .t{text-decoration:line-through}
+  .mo-row.done .td-chk{display:grid;place-items:center;background:var(--accent);color:#fff;border-color:var(--accent)}
+  .mo-go{width:34px;height:34px;border:0;border-radius:50%;background:var(--soft);flex:none}
   .dom-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:8px 10px;margin:8px 0;border:1px solid var(--line)}
   .dom-row.off{opacity:.6}
   .dom-color{width:36px;height:36px;border-radius:50%;background:var(--c);flex:none;position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
@@ -840,9 +852,10 @@
 <main class="screen" id="scr-bills" hidden>
   <h1 class="hello">חשבונות</h1>
   <div id="bl-bal" class="bl-bal"></div>
-  <div class="btns"><button class="btn primary" type="button" id="bl-new">＋ חשבון חדש</button><button class="btn" type="button" id="bl-imp">📥 הודעה שכבר נשלחה</button></div>
   <div class="sec"><h2 class="bl-h">חובות פתוחים <button class="txt-btn" type="button" id="bl-led-add">＋ חוב</button></h2><div id="bl-led" class="more-list"></div></div>
-  <div class="sec"><h2>חשבונות שנשלחו</h2><div id="bl-hist" class="more-list"></div></div>
+  <div class="btns" id="bl-tenant"><button class="btn primary" type="button" id="bl-new">＋ חשבון לדייר</button><button class="btn" type="button" id="bl-imp">📥 הודעה שכבר נשלחה</button></div>
+  <div class="sec" id="bl-hist-sec"><h2>חשבונות שנשלחו לדייר</h2><div id="bl-hist" class="more-list"></div></div>
+  <button class="txt-btn" type="button" id="bl-tenant-on" style="margin-top:16px">🏠 חלוקת חשבונות עם דייר (חשמל, מים, ארנונה)</button>
 </main>
 <main class="screen" id="scr-prefs" hidden>
   <h1 class="hello">הגדרות</h1>
@@ -851,6 +864,7 @@
   <div class="sec"><h2>תצוגה</h2>
     <div class="field"><span class="lbl">ערכת צבע</span><div class="opts" id="pf-theme"></div></div>
     <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
+    <div class="field"><label for="pf-name">השם שלך (לברכה במסך הראשי)</label><input type="text" id="pf-name"></div>
   </div>
   <div id="pf-more"></div>
 </main>
@@ -911,6 +925,11 @@
   </div>
 </section>
 
+<button id="mo-tab" class="mo-tab" type="button" aria-label="סיכום היום">☀️<b id="mo-n"></b></button>
+<dialog id="dlg-morning" class="drawer" aria-label="סיכום היום"><div class="dlg-head">
+    <button class="txt-btn" id="mo-close" type="button">סגירה</button><h2>☀️ סיכום היום</h2><span style="width:40px"></span></div>
+  <div class="dlg" id="mo-list"></div>
+</dialog>
 <!-- ===== חלוניות ===== -->
 <dialog id="dlg-quick" aria-label="משימה חדשה"><div class="dlg">
   <h2>משימה חדשה</h2>
@@ -1073,7 +1092,8 @@
   <div class="field"><label for="td-e-title">משימה</label><input type="text" id="td-e-title"></div>
   <div class="field"><span class="lbl">קטגוריה</span><div class="opts" id="td-e-cat"></div></div>
   <div class="field"><span class="lbl">דחיפות</span><div class="opts" id="td-e-urg"></div></div>
-  <div class="field"><label for="td-e-due">תאריך יעד (לא חובה)</label><input type="date" id="td-e-due"></div>
+  <div class="row"><div class="field"><label for="td-e-due">תאריך (לא חובה)</label><input type="date" id="td-e-due"></div>
+    <div class="field"><label for="td-e-time">שעה (לא חובה)</label><input type="time" id="td-e-time"></div></div>
   <div class="field"><label for="td-e-notes">הערות</label><textarea id="td-e-notes"></textarea></div>
   <div class="btns"><button class="btn" id="td-e-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="td-e-cancel" type="button">ביטול</button><button class="btn primary" id="td-e-ok" type="button">שמירה</button></div>
 </div></dialog>
@@ -1179,7 +1199,7 @@ function store(k, v){
 /* ---------- עצמאי: עותק של כל הנתונים בקובץ בטלפון (נכנס לגיבוי של גוגל) ---------- */
 const LOCAL_DONE = 'משימות.עצמאי';   // מתי הנתונים הועברו מגיטהאב (אחרי זה גיטהאב לא בשימוש)
 let mirrorReady = !LOCAL || !!localStorage.getItem('משימות.משימות'), mirrorT = null;
-// התקנה חדשה (לא עדכון, ובלי גיבוי שחזר): מתחילים נקי, בלי הנתונים של נדב, ועם שאלון פתיחה
+// התקנה חדשה (לא עדכון, ובלי גיבוי שחזר): מתחילים נקי, בלי הנתונים של המשתמש, ועם שאלון פתיחה
 try{ if(LOCAL && !localStorage.getItem('משימות.משימות') && !localStorage.getItem('משימות.הוכנס')) localStorage.setItem('משימות.משתמש-חדש', '1'); }catch(e){}
 const NEW_USER = (() => { try{ return !!localStorage.getItem('משימות.משתמש-חדש'); }catch(e){ return false; } })();
 function mirrorData(){
@@ -1339,13 +1359,7 @@ const FILES = {
   config: {path: 'משימות/תצורה.json', cache: 'משימות.תצורה', pending: 'משימות.תצורה.ממתין', sha: null,
            merge: (a, b) => ל.mergeConfig(a, b), msg: 'עדכון הגדרות משימות'},
 };
-/** משתמש חדש: רק פריטי תחזוקה כלליים (מברשת, מסנן, סכין, תספורת), בלי התחום "דירה מושכרת", ובלי לשונית חשבונות. */
-function newUserSeed(){
-  const s = ל.initialData(today()), keep = new Set(['haircut', 'toothbrush', 'filter', 'razor']);
-  return {tasks: s.tasks.filter(t => keep.has(t.id)), domains: s.domains.filter(d => d.id !== 'rental'),
-    config: Object.assign({}, s.config, {mailRules: [], seedV: 5, navHidden: ['bills']})};
-}
-const seed = NEW_USER ? newUserSeed() : ל.initialData(today());
+const seed = ל.initialData(today());
 const D = {
   file: {
     tasks: FILES.tasks.merge(storeJson(FILES.tasks.cache, null) || {tasks: seed.tasks, domains: seed.domains}, null),
@@ -1472,7 +1486,7 @@ function todayEvents(){
 function renderToday(){
   const now = Date.now(), d = today(), v = ל.buildView(data(), now);
   $('dateline').textContent = `${dayName(d)} · ${ל.longDate(d)}`;
-  $('hello').textContent = NEW_USER ? (D.config.userName ? `${greeting()}, ${D.config.userName}` : greeting()) : `${greeting()}, נדב`;
+  $('hello').textContent = D.config.userName ? `${greeting()}, ${D.config.userName}` : greeting();
   const p = v.total ? Math.round(v.doneToday / v.total * 100) : 0;
   $('ring').style.setProperty('--p', p);
   $('ring-txt').textContent = `${v.doneToday}/${v.total}`;
@@ -1639,6 +1653,7 @@ function show(s){
   else if(s === 'history' && screen !== 'history') hsTab = 'domains';
   screen = s;
   for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('mo-tab').hidden = s !== 'today';
   $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills'].includes(s);
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
@@ -1650,7 +1665,7 @@ function show(s){
 }
 function renderAll(){
   if(typeof applyNav === 'function') applyNav();
-  if(screen === 'today') renderToday();
+  if(screen === 'today'){ renderToday(); renderMorning(); }
   else if(screen === 'calendar'){ renderCalendar(); renderBirthdays(); }
   else if(screen === 'shop') renderShop();
   else if(screen === 'recipes') renderRecipes();
@@ -3540,7 +3555,7 @@ async function sync(){
     await readCommands();
     await readPending();
     await syncFile('occ'); await syncFile('shop'); await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal'); await syncFile('todos');
-    // המנות הקבועות של נדב נכנסות פעם אחת, רק אחרי שהקובץ מהמאגר נקרא (כדי לא להחזיר מה שנמחק)
+    // המנות הקבועות של המשתמש נכנסות פעם אחת, רק אחרי שהקובץ מהמאגר נקרא (כדי לא להחזיר מה שנמחק)
     const ks = ל.kcalSeed(D.file.kcal, nowIso());
     if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); await syncFile('kcal'); }
     try{ const x = await readFile({path: 'משימות/נכנס.json'}); if(x){ inbox = x; store(K.inbox, JSON.stringify(x)); } }catch(e){}
@@ -3554,7 +3569,7 @@ async function sync(){
     if(err.code === 401) toast('האסימון אינו תקף. אפשר לחבר מחדש בהגדרות', {err: true});
   }finally{
     syncing = false; renderAll();
-    // ההגדרות פתוחות: מעדכנים רק את שורת המנוע (בלי לדרוס מה שנדב מקליד שם)
+    // ההגדרות פתוחות: מעדכנים רק את שורת המנוע (בלי לדרוס מה שהמשתמש מקליד שם)
     if($('s-engine')) $('s-engine').innerHTML = engineText();
     if(again){ again = false; sync(); }
   }
@@ -4049,7 +4064,7 @@ function welcome(step){
         <div><b>💾</b><span>גיבוי כל יום, בטלפון ובגוגל. בהגדרות: "שליחה לדרייב"</span></div>
       </div>
       <div class="btns"><button class="btn primary" type="button" id="wz-done" style="font-size:18px">יאללה, מתחילים</button></div></div>`;
-    // הסימון "משתמש-חדש" נשאר לתמיד (וגם בגיבוי שלו): בלי התרופות והארוחות של נדב גם בהמשך
+    // הסימון "משתמש-חדש" נשאר לתמיד (וגם בגיבוי שלו): בלי התרופות והארוחות של המשתמש גם בהמשך
     $('wz-done').onclick = done;
   }
   if(!$('dlg-onboard').open) $('dlg-onboard').showModal();
@@ -4099,23 +4114,10 @@ const תבנית_תרופה = {
 };
 const תצורת_ברירת_מחדל = () => עותק({
   כללי: {עודכן:'', תאריך_התחלה:'2026-11-13', תחילת_יום:'05:00', סיווגים:סיווגי_ברירת_מחדל, ntfy:''},
-  תרופות: NEW_USER ? [] : [
-    {...תבנית_תרופה, id:'propecia', עודכן:'', סדר:1, שם:'פרופסיה', תיאור:'כל בוקר', סוג:'יומית',
-     תזכורות:[8,10], התראת_מרווח:false, צבע:'#2e7d4f'},
-    // זמני ההשפעה בדקות, הערכה כללית לפי העלונים: אופטלגין (מטמיזול) מתחיל תוך כחצי שעה,
-    // שיא אחרי שעה עד שעה וחצי, ונמשך 4–6 שעות. זלדיאר (טרמדול + פרצטמול) מתחיל תוך
-    // פחות משעה, שיא אחרי 1–2.5 שעות, ונמשך כ-6 שעות.
-    {...תבנית_תרופה, id:'optalgin', עודכן:'', סדר:2, שם:'אופטלגין',
-     מנות:[{כמות:1, יחידה:'כדורים', צעד:1}, {כמות:2, יחידה:'כדורים', צעד:1}, {כמות:40, יחידה:'טיפות', צעד:5, לכדור:20}],
-     השפעה:{התחלה:30, שיא_מ:60, שיא_עד:90, סיום:300}, מגבלה:{מקסימום:6, מג_לכדור:500}, צבע:'#1d5fbf'},
-    {...תבנית_תרופה, id:'zaldiar', עודכן:'', סדר:3, שם:'זלדיאר', משנה:'Zaldiar',
-     סיווגים:[{שם:'בוקר', מ:'04:00'}, {שם:'ערב', מ:'15:00'}],
-     השפעה:{התחלה:45, שיא_מ:60, שיא_עד:150, סיום:360}, מגבלה:{מקסימום:2, מג_לכדור:0}, צבע:'#8a4bc2'},
-  ],
+  תרופות: [],   // התרופות של כל משתמש נשמרות בנתונים שלו, לא בקוד,
 });
 // רישומים מלפני שהיה להם מזהה תרופה נשמרו רק עם השם. השמות האלה תמיד מצביעים לתרופות
 // המקוריות, גם אם השם שונה אחר כך. אותה מפה בדיוק יושבת ב-תזכורות.yml.
-const שמות_מקוריים = {'פרופסיה':'propecia', 'אופטלגין':'optalgin', 'זלדיאר':'zaldiar'};
 
 // תרופה מקורית שנערכה לפני שהייתה מגבלה יומית מקבלת את המגבלה ואת ההמרה של הטיפות מברירת
 // המחדל. מגבלה שהוסרה בעורך נשמרת כ-null, ולכן לא חוזרת.
@@ -4188,7 +4190,6 @@ const ממוינות = () => [...תצורה.תרופות].sort((a,b) => a.סדר
 /** לאיזו תרופה שייכת רשומה: לפי המזהה, ואם אין (רשומה ישנה) לפי השם. */
 function מזהה_של(r){
   if(r.מזהה_תרופה) return r.מזהה_תרופה;
-  if(שמות_מקוריים[r.תרופה]) return שמות_מקוריים[r.תרופה];
   const t = תצורה.תרופות.find(t => t.שם === r.תרופה || t.שמות_קודמים.includes(r.תרופה));
   return t ? t.id : '?' + r.תרופה;
 }
@@ -5131,6 +5132,7 @@ const פתוח = () => !$('כרטיסים').closest('.screen').hidden;
 window.medsRender = () => צייר_הכל();
 window.medsSync = () => סנכרן();
 // לווידג'ט ולסיכום הבוקר: תרופות יומיות, והאם נלקחו היום
+window.medsLow = () => גלויות().filter(t => מלאי_של(t)?.נמוך).map(t => t.שם);
 window.medsDaily = () => גלויות().filter(t => t.סוג === 'יומית').map(t => ({name: t.שם, taken: !!של_תרופה(t.id).find(r => r.תאריך === תאריך_של(new Date()))}));
 window.medsSync = () => סנכרן();
 setInterval(() => { if(פתוח() && !document.querySelector('dialog[open]')) צייר_הכל(); }, 20000);
@@ -5323,14 +5325,29 @@ async function phoneCalendarSync(){
   finally{ calBusy = false; }
 }
 /** הסיכום של היום (ושל יומיים קדימה) לווידג'ט ולסיכום הבוקר: משימות, תרופות יומיות, ומשימות דחופות מהרשימה. */
+/** מה יש ביום: משימות (גם תחזוקה וימים מיוחדים), משימות פתוחות מהרשימה (בלי תאריך או עד היום), תרופות יומיות, מלאי שנגמר. */
+function morningItems(d){
+  d = d || today();
+  const now = d === today() ? Date.now() : ל.at(d, '06:00'), v = ל.buildView(data(), now), out = [], seen = new Set();
+  const safe = f => { try{ return f() || []; }catch(e){ return []; } };
+  for(const x of [...v.overdue, ...v.todays]){
+    if(seen.has(x.task.id)) continue; seen.add(x.task.id);
+    out.push({k: 'task', key: 't:' + x.occ.id, task: x.task.id, occ: x.occ.id, text: ל.displayTitle(x.task),
+      icon: x.task.special === 'birthday' ? '🎂' : x.task.upkeep ? (x.task.emoji || '🔧') : v.overdue.includes(x) ? '⚠️' : '•'});
+  }
+  for(const b of ל.birthdaysView(D.tasks, d)) if(b.inDays <= 1 && !seen.has(b.task.id))
+    out.push({k: 'info', key: 'b:' + b.task.id + b.next, icon: b.emoji, text: `${b.task.person || b.label}: ${b.label} ${b.inDays ? 'מחר' : 'היום'}`});
+  for(const x of todoItems().filter(x => !x.done && !x.removed && (!x.due || x.due <= d)).sort((a, b) => (b.urg || 0) - (a.urg || 0)))
+    out.push({k: 'todo', key: 'td:' + x.id, id: x.id, icon: x.urg === 2 ? '🔴' : x.urg === 1 ? '🟠' : '📝', text: x.title + (x.time && x.due === d ? ' ' + x.time : '')});
+  for(const m of safe(() => window.medsDaily?.())) if(d !== today() || !m.taken) out.push({k: 'med', key: 'm:' + m.name, icon: '💊', text: m.name});
+  for(const n of safe(() => window.medsLow?.())) out.push({k: 'info', key: 's:' + n, icon: '🛒', text: `${n}: נגמר בקרוב, לקנות`});
+  return out;
+}
 function dailyInfo(){
-  const days = {}, meds = (() => { try{ return window.medsDaily?.() || []; }catch(e){ return []; } })();
+  const days = {};
   for(let i = 0; i < 3; i++){
-    const d = ל.addDays(today(), i), v = ל.buildView(data(), i ? ל.at(d, '06:00') : Date.now()), lines = [];
-    for(const x of v.overdue) lines.push('⚠️ ' + ל.displayTitle(x.task));
-    for(const x of v.todays) lines.push('• ' + ל.displayTitle(x.task));
-    for(const m of meds) if(i || !m.taken) lines.push('💊 ' + m.name);
-    for(const x of todoItems().filter(x => !x.done && !x.removed && ((x.due && x.due <= d) || (!i && x.urg === 2)))) lines.push('📝 ' + x.title);
+    const d = ל.addDays(today(), i), v = ל.buildView(data(), i ? ל.at(d, '06:00') : Date.now());
+    const lines = morningItems(d).map(x => `${x.icon} ${x.text}`);
     // ביציאה מהבית: מה שסומן 🚪, ומה לקחת לפי מה שיש היום (אימון ← בגדי אימון)
     const titles = [...v.overdue, ...v.todays].map(x => ל.displayTitle(x.task));
     const leave = [...[...v.overdue, ...v.todays].filter(x => x.task.onLeave).map(x => '🔔 ' + ל.displayTitle(x.task)),
@@ -5340,6 +5357,30 @@ function dailyInfo(){
   }
   return days;
 }
+/* ---------- סיכום היום בצד של מסך "היום": פותחים, ומסמנים מה נעשה ---------- */
+const moKey = () => 'משימות.סיכום.' + today();
+function renderMorning(){
+  const doneList = storeJson(moKey(), []), done = new Set(doneList.map(x => x.key));
+  const items = morningItems().filter(x => !done.has(x.key));
+  $('mo-n').textContent = items.length || '';
+  if(!$('dlg-morning').open) return;
+  $('mo-list').innerHTML = (items.length || doneList.length) ? [...items.map(x => `<div class="mo-row" data-key="${esc(x.key)}">
+      ${x.k === 'med' ? `<button type="button" class="mo-go" data-med="1" aria-label="לתרופות">💊</button>` : `<button type="button" class="td-chk" data-mo="${esc(x.key)}" aria-label="בוצע"></button>`}
+      <span class="t">${x.k === 'med' ? '' : esc(x.icon) + ' '}${esc(x.text)}</span></div>`),
+    ...doneList.map(x => `<div class="mo-row done"><span class="td-chk">✓</span><span class="t">${esc(x.icon)} ${esc(x.text)}</span></div>`)].join('')
+    : '<div class="empty">אין כלום להיום 🎉</div>';
+}
+$('mo-tab').onclick = () => { $('dlg-morning').showModal(); renderMorning(); };
+$('mo-close').onclick = () => $('dlg-morning').close();
+$('mo-list').onclick = e => {
+  if(e.target.closest('[data-med]')){ $('dlg-morning').close(); show('meds'); return; }
+  const b = e.target.closest('[data-mo]'); if(!b) return;
+  const x = morningItems().find(y => y.key === b.dataset.mo); if(!x) return;
+  if(x.k === 'task'){ const f = resolve(x.occ, x.task); if(f) doDone(f.task, f.occ); }
+  else if(x.k === 'todo'){ const t = todoItems().find(y => y.id === x.id); if(t) saveTodo(Object.assign({}, t, {done: true, doneAt: nowIso()})); }
+  store(moKey(), JSON.stringify([...storeJson(moKey(), []), {key: x.key, icon: x.icon, text: x.text}]));
+  renderMorning();
+};
 var dailyT = null;   // var: נקרא גם מקוד שרץ לפני השורה הזו
 function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
 function localInit(){
@@ -5414,13 +5455,16 @@ const shekel = x => ל.money(+x);
 function saveTenant(patch){ saveConfig({tenant: Object.assign({}, TC(), patch)}); }
 function renderBills(){
   const tc = TC(), b = ל.tenantBalance(tc), net = b.unpaid + b.heOwes - b.iOwe;
+  // לכולם: חובות (אני חייב / חייבים לי). חלוקת חשבונות עם דייר: רק למי שמשתמש בה
+  const tenant = (tc.charges || []).some(c => !c.deleted) || !!D.config.tenantOn;
+  $('bl-tenant').hidden = !tenant; $('bl-hist-sec').hidden = !tenant; $('bl-tenant-on').hidden = tenant;
   $('bl-bal').innerHTML = `
-    <div class="bl-row"><span>הדייר חייב (חשבונות שלא שולמו)</span><b>${shekel(b.unpaid + b.heOwes)}</b></div>
-    <div class="bl-row"><span>אתה חייב לו</span><b>${shekel(b.iOwe)}</b></div>
-    <div class="bl-row tot"><span>${net >= 0 ? 'בסך הכול הוא חייב לך' : 'בסך הכול אתה חייב לו'}</span><b>${shekel(Math.abs(net))}</b></div>`;
+    <div class="bl-row"><span>חייבים לי${tenant && b.unpaid ? ' (כולל חשבונות שלא שולמו)' : ''}</span><b>${shekel(b.unpaid + b.heOwes)}</b></div>
+    <div class="bl-row"><span>אני חייב</span><b>${shekel(b.iOwe)}</b></div>
+    <div class="bl-row tot"><span>${net >= 0 ? 'בסך הכול חייבים לי' : 'בסך הכול אני חייב'}</span><b>${shekel(Math.abs(net))}</b></div>`;
   const led = (tc.ledger || []).filter(l => !l.deleted && !l.settled);
   $('bl-led').innerHTML = led.length ? led.map(l => `<button type="button" class="more-row" data-l="${esc(l.id)}"><span class="i">${l.dir === 'me' ? '➖' : '➕'}</span>
-      <span class="b"><span class="t" style="display:block">${esc(l.text)}</span><span class="s" style="display:block">${l.dir === 'me' ? 'אתה חייב לו' : 'הוא חייב לך'} · ${esc(ל.shortDate(l.date))}</span></span>
+      <span class="b"><span class="t" style="display:block">${esc(l.text)}</span><span class="s" style="display:block">${l.person ? esc(l.person) + ' · ' : ''}${l.dir === 'me' ? 'אני חייב' : 'חייבים לי'} · ${esc(ל.shortDate(l.date))}</span></span>
       <span class="side">${shekel(l.amount)}</span></button>`).join('') : '<div class="empty">אין חובות פתוחים</div>';
   const ch = (tc.charges || []).filter(c => !c.deleted).sort((x, y) => y.date.localeCompare(x.date));
   $('bl-hist').innerHTML = ch.length ? ch.map(c => `<button type="button" class="more-row" data-c="${esc(c.id)}"><span class="i">${c.paid ? '✅' : '⏳'}</span>
@@ -5451,15 +5495,17 @@ $('bl-led').onclick = e => {
     ['🗑 מחיקה', () => upd({deleted: true})],
   ]);
 };
-$('bl-led-add').onclick = () => addLedger('me');   // חלון אחד: על מה, כמה, ומי חייב למי
+$('bl-led-add').onclick = () => addLedger('me');
+$('bl-tenant-on').onclick = () => { saveConfig({tenantOn: true}); renderBills(); };   // חלון אחד: על מה, כמה, ומי חייב למי
 /** חלון חוב: על מה, כמה, ומי חייב למי. הכול בחלון אחד. */
 function ledgerDialog(l){
   l = l || {dir: 'me'};
   let dir = l.dir;
-  return ask(l.id ? 'עריכת חוב' : 'חוב חדש', [{label: 'על מה', value: l.text || '', ph: 'למשל: ועד בית', req: true}, {label: 'סכום בשקלים', value: l.amount ?? '', ph: '0', num: true, req: true}], {
-    ok: 'שמירה', html: `<div class="opts led-dir">${[['me', '➖ אני חייב לו'], ['him', '➕ הוא חייב לי']].map(([k, n]) => `<button type="button" data-dir="${k}" class="${dir === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
+  return ask(l.id ? 'עריכת חוב' : 'חוב חדש', [{label: 'על מה', value: l.text || '', ph: 'למשל: ועד בית', req: true}, {label: 'סכום בשקלים', value: l.amount ?? '', ph: '0', num: true, req: true},
+    {label: 'מי (לא חובה)', value: l.person || '', ph: 'למשל: דני'}], {
+    ok: 'שמירה', html: `<div class="opts led-dir">${[['me', '➖ אני חייב'], ['him', '➕ חייבים לי']].map(([k, n]) => `<button type="button" data-dir="${k}" class="${dir === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
     init: d => { d.querySelector('.led-dir').onclick = e => { const b = e.target.closest('[data-dir]'); if(!b) return; dir = b.dataset.dir; d.querySelectorAll('[data-dir]').forEach(x => x.classList.toggle('on', x === b)); }; },
-  }).then(v => v && +v[1] > 0 ? {text: v[0], amount: +v[1], dir} : null);
+  }).then(v => v && +v[1] > 0 ? {text: v[0], amount: +v[1], person: v[2] || '', dir} : null);
 }
 async function addLedger(dir){
   const v = await ledgerDialog({dir}); if(!v) return;
@@ -5546,10 +5592,10 @@ function renderTodo(){
   list.sort(todoHist ? (a, b) => (b.doneAt || b.removedAt || '').localeCompare(a.doneAt || a.removedAt || '')
     : (a, b) => ((b.due && b.due < t) - (a.due && a.due < t)) || (b.urg || 0) - (a.urg || 0) || (a.due || '9').localeCompare(b.due || '9') || (a.createdAt || '').localeCompare(b.createdAt || ''));
   $('td-list').innerHTML = list.length ? list.map(x => {
-    const late = !todoHist && x.due && x.due < t, u = URG[x.urg || 0];
+    const late = !todoHist && x.due && (x.due < t || (x.due === t && x.time && x.time < ל.localTime(Date.now()))), u = URG[x.urg || 0];
     return `<div class="td-row${late ? ' late' : ''}" data-id="${esc(x.id)}">
       <button type="button" class="td-chk" data-done="${esc(x.id)}" aria-label="${todoHist ? 'החזרה' : 'בוצע'}">${todoHist ? '↺' : ''}</button>
-      <span class="b"><span class="t">${esc(x.title)}</span><span class="s">${todoCat === 'all' && x.cat ? esc(x.cat) + ' · ' : ''}${x.due ? (late ? 'באיחור · ' : '') + esc(ל.shortDate(x.due)) : 'בלי תאריך'}${todoHist ? (x.done ? ' · בוצע' : ' · נמחק') : ''}</span></span>
+      <span class="b"><span class="t">${esc(x.title)}</span><span class="s">${todoCat === 'all' && x.cat ? esc(x.cat) + ' · ' : ''}${x.due ? (late ? 'באיחור · ' : '') + esc(x.due === t ? 'היום' : ל.shortDate(x.due)) + (x.time ? ' ' + esc(x.time) : '') : 'בלי תאריך'}${todoHist ? (x.done ? ' · בוצע' : ' · נמחק') : ''}</span></span>
       ${u[1] && !todoHist ? `<span class="td-u ${u[1]}">${u[0]}</span>` : ''}</div>`;
   }).join('') : `<div class="empty">${todoHist ? 'ההיסטוריה ריקה' : 'אין משימות. כותבים למעלה ומוסיפים'}</div>`;
 }
@@ -5562,13 +5608,13 @@ $('td-cats').onclick = e => {
 $('td-hist').onclick = () => { todoHist = !todoHist; renderTodo(); };
 function addTodo(){
   const title = $('td-new').value.trim(); if(!title) return;
-  saveTodo({id: 'td' + uid(), title, cat: todoCat === 'all' ? todoCats()[0] : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false});
+  saveTodo({id: 'td' + uid(), title, cat: todoCat === 'all' ? '' : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false});
   $('td-new').value = '';
 }
 $('td-add').onclick = addTodo;
 function addTodoWith(patch){
   const title = $('td-new').value.trim(); if(!title){ $('td-new').focus(); toast('קודם כותבים את המשימה'); return null; }
-  const x = Object.assign({id: 'td' + uid(), title, cat: todoCat === 'all' ? todoCats()[0] : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false}, patch);
+  const x = Object.assign({id: 'td' + uid(), title, cat: todoCat === 'all' ? '' : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false}, patch);
   saveTodo(x); $('td-new').value = ''; return x;
 }
 onHold($('td-add-row'), '#td-add', () => sheet('הוספה עם…', [
@@ -5604,8 +5650,8 @@ $('td-list').onclick = e => {
 let tdEdit = null;
 function openTodo(id){
   tdEdit = todoItems().find(x => x.id === id); if(!tdEdit) return;
-  $('td-e-title').value = tdEdit.title; $('td-e-due').value = tdEdit.due || ''; $('td-e-notes').value = tdEdit.notes || '';
-  $('td-e-cat').innerHTML = todoCats().map(c => `<button type="button" data-c="${esc(c)}" class="${tdEdit.cat === c ? 'on' : ''}">${esc(c)}</button>`).join('');
+  $('td-e-title').value = tdEdit.title; $('td-e-due').value = tdEdit.due || ''; $('td-e-time').value = tdEdit.time || ''; $('td-e-notes').value = tdEdit.notes || '';
+  $('td-e-cat').innerHTML = [['', 'בלי'], ...todoCats().map(c => [c, c])].map(([c, n]) => `<button type="button" data-c="${esc(c)}" class="${(tdEdit.cat || '') === c ? 'on' : ''}">${esc(n)}</button>`).join('');
   $('td-e-urg').innerHTML = URG.map(([n], i) => `<button type="button" data-u="${i}" class="${(tdEdit.urg || 0) === i ? 'on' : ''}">${n}</button>`).join('');
   $('td-e-del').textContent = tdEdit.removed || tdEdit.done ? 'מחיקה לצמיתות' : 'מחיקה (להיסטוריה)';
   $('dlg-todo').showModal();
@@ -5615,7 +5661,7 @@ $('td-e-urg').onclick = e => { const b = e.target.closest('[data-u]'); if(b){ td
 $('td-e-cancel').onclick = () => $('dlg-todo').close();
 $('td-e-ok').onclick = () => {
   const title = $('td-e-title').value.trim(); if(!title) return toast('צריך שם', {err: true});
-  saveTodo(Object.assign({}, tdEdit, {title, due: $('td-e-due').value || null, notes: $('td-e-notes').value.trim()}));
+  saveTodo(Object.assign({}, tdEdit, {title, due: $('td-e-due').value || ($('td-e-time').value ? today() : null), time: $('td-e-time').value || null, notes: $('td-e-notes').value.trim()}));
   $('dlg-todo').close();
 };
 $('td-e-del').onclick = () => {
@@ -5645,6 +5691,7 @@ function renderPrefs(){
     <button type="button" data-up="${i}" aria-label="למעלה"${i ? '' : ' disabled'}>▲</button><button type="button" data-down="${i}" aria-label="למטה"${i < btns.length - 1 ? '' : ' disabled'}>▼</button></div>`).join('');
   $('pf-theme').innerHTML = [['system', 'לפי הטלפון'], ['light', 'בהיר'], ['dark', 'כהה']].map(([k, n]) => `<button type="button" data-th="${k}" class="${(D.config.theme || 'system') === k ? 'on' : ''}">${n}</button>`).join('');
   $('pf-start').innerHTML = btns.filter(b => !hidden.has(b.dataset.scr)).map(b => `<option value="${b.dataset.scr}"${(D.config.startScreen || 'today') === b.dataset.scr ? ' selected' : ''}>${esc(navName(b))}</option>`).join('');
+  if(document.activeElement !== $('pf-name')) $('pf-name').value = D.config.userName || '';
   renderNativePrefs();
 }
 $('pf-nav').onclick = e => {
@@ -5656,6 +5703,7 @@ $('pf-nav').onclick = e => {
   applyNav(); renderPrefs();
 };
 $('pf-theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ saveConfig({theme: b.dataset.th}); renderPrefs(); } };
+$('pf-name').onchange = () => { saveConfig({userName: $('pf-name').value.trim()}); toast('✓ נשמר'); };
 $('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
 /** באפליקציית האנדרואיד: מצב ההרשאות, ובדיקה אמיתית של התראה ושל שעון מעורר בעוד 10 שניות. */
 async function renderNativePrefs(){
