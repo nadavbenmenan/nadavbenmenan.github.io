@@ -5305,6 +5305,24 @@ function restoreBackup(){
 /** יומן הטלפון (גוגל): משימה עם "גם ביומן" נכנסת ליומן ישירות, מתעדכנת ונמחקת איתה. */
 var calBusy = false, calT = null;
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+/** בדיקה אחרי 20 שניות ושוב אחרי דקה וחצי: האירוע עוד קיים, ועלה לגוגל. נמחק: נפתח היומן ממולא (לוחצים שמירה). */
+function calVerify(taskId, eid, spec, acc){
+  const check = async last => {
+    let st; try{ st = await NPhone.eventStatus({eid}); }catch(e){ return; }
+    if(!st.exists){
+      const map = storeJson('משימות.יומן-טלפון', {});
+      if(map[taskId]?.eid !== eid) return;   // הוחלף בינתיים
+      map[taskId] = {ui: true, sig: spec.sig}; store('משימות.יומן-טלפון', JSON.stringify(map));
+      toast('היומן לא שמר את האירוע. פתחתי אותו ביומן ממולא: לוחצים "שמירה"', {ms: 8000});
+      NPhone.insertUi({title: spec.title, date: spec.date, time: spec.time || null, rrule: calRrule(spec) || null}).catch(() => {});
+      return;
+    }
+    if(st.synced) return;
+    if(last) toast(`⚠️ "${spec.title}" נשמר בטלפון אבל עוד לא עלה ליומן גוגל. בודקים שיש אינטרנט ושסנכרון היומן פועל ל-${acc}`, {err: true, ms: 10000});
+    else setTimeout(() => check(true), 70e3);
+  };
+  setTimeout(() => check(false), 20e3);
+}
 function calRrule(spec){
   let rr = ל.rruleOf(spec.rule);
   if(rr && spec.rule.type === 'weekly' && (spec.rule.days || []).length) rr += ';BYDAY=' + spec.rule.days.map(d => BYDAY[d]).join(',');
@@ -5330,8 +5348,13 @@ async function phoneCalendarSync(){
         // לאיזה יומן נכנס ומתי, וכפתור לפתוח אותו שם
         if(!old) toast(`📅 ביומן "${r.calendar || 'הטלפון'}"${r.account ? ' (' + r.account + ')' : ''}: ${spec.title}${r.start ? ' · ' + ל.shortDate(ל.localDate(r.start)) + (spec.time ? ' ' + ל.localTime(r.start) : '') : ''}`,
           {undo: () => NPhone.openEvent({eid: r.eid}).catch(e => toast(e.message, {err: true})), btn: 'פתיחה', ms: 7000});
-        if(!old && (r.missing || r.sync === false || r.visible === false))
-          setTimeout(() => toast('⚠️ היומן הזה לא מסונכרן או לא מוצג, ולכן האירוע לא יופיע ביומן גוגל. הגדרות ← 📅 יומן ← בחירת יומן', {err: true, ms: 9000}), 7200);
+        if(!old){
+          const acc = r.account || 'החשבון';
+          if(r.masterSync === false) setTimeout(() => toast('⚠️ "סנכרון אוטומטי" כבוי בטלפון, ולכן האירוע לא עולה לגוגל. מדליקים: הגדרות ← חשבונות וסנכרון ← סנכרון אוטומטי', {err: true, ms: 10000}), 7200);
+          else if(r.accountSync === false) setTimeout(() => toast(`⚠️ סנכרון היומן כבוי בחשבון ${acc}. מדליקים: הגדרות ← חשבונות ← Google ← ${acc} ← יומן`, {err: true, ms: 10000}), 7200);
+          else if(r.missing || r.sync === false || r.visible === false) setTimeout(() => toast('⚠️ היומן הזה לא מסונכרן או לא מוצג. הגדרות ← 📅 יומן ← בחירת יומן', {err: true, ms: 9000}), 7200);
+          calVerify(t.id, r.eid, spec, acc);
+        }
       }else if(!spec && old){ if(old.eid) await NPhone.calendarDelete({eid: old.eid}); delete map[t.id]; }
     }
     if(JSON.stringify(map) !== had) store('משימות.יומן-טלפון', JSON.stringify(map));
@@ -5348,7 +5371,8 @@ async function pickCalendar(list){
       store('משימות.יומן-מצב', null);
       if(c.id === cur) return;
       const map = storeJson('משימות.יומן-טלפון', {});
-      for(const x of Object.values(map)) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
+      while(calBusy) await new Promise(r => setTimeout(r, 200));   // לא באמצע הכנסה
+      for(const x of Object.values(map)) if(x.eid) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
       store('משימות.יומן-טלפון', '{}'); store('משימות.יומן-בחירה', String(c.id));
       await phoneCalendarSync(); renderNativePrefs(); toast(`✓ מעכשיו ביומן "${c.name}"`);
     }]), [`${ui ? '✓ ' : ''}📲 דרך אפליקציית היומן (נפתח ממולא, לוחצים "שמירה")`, () => { store('משימות.יומן-מצב', 'ui'); renderNativePrefs(); toast('✓ מעכשיו נפתח ביומן, ולוחצים שמירה'); }]],
