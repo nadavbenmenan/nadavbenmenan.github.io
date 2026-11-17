@@ -163,7 +163,24 @@
   dialog{border:0;padding:0;background:var(--card);color:var(--text);width:min(560px,100vw);max-height:92vh;
          border-radius:22px 22px 0 0;margin:auto auto 0;overflow:auto}
   dialog.full{height:100%;max-height:100%;border-radius:0;margin:0 auto;width:min(640px,100vw)}
-  dialog::backdrop{background:rgba(0,0,0,.4)}
+  dialog::backdrop{background:rgba(18,20,60,.45);backdrop-filter:blur(2px)}
+  /* כל החלונות: כחול עדין למעלה, פס כחול, וכפתור ✕ אדום ליציאה */
+  dialog{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 20%,var(--card)) 0,color-mix(in srgb,var(--accent) 7%,var(--card)) 170px,var(--card) 420px);
+         border-top:4px solid var(--accent);box-shadow:0 -12px 40px rgba(30,30,110,.28)}
+  dialog.full{border-top:0}
+  dialog .dlg h2{color:var(--accent);padding-left:46px}
+  dialog input[type=text],dialog input[type=search],dialog input[type=number],dialog input[type=date],dialog input[type=time],dialog select,dialog textarea{background:var(--card)}
+  dialog .btn:not(.primary){background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+  dialog .opts button:not(.on){background:color-mix(in srgb,var(--accent) 11%,var(--card))}
+  dialog.full .dlg-head{background:color-mix(in srgb,var(--accent) 16%,var(--card));border-bottom:2px solid color-mix(in srgb,var(--accent) 35%,var(--card))}
+  .x-close{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:50%;border:0;background:var(--red);color:#fff;
+           font-size:17px;font-weight:700;z-index:6;display:grid;place-items:center;box-shadow:0 3px 10px color-mix(in srgb,var(--red) 40%,transparent)}
+  .dlg-head .x-red{color:#fff;background:var(--red);border-radius:50%;width:40px;height:40px;min-height:40px;padding:0;font-size:17px;flex:none}
+  .btn.danger,.btn.primary.danger{background:var(--red);color:#fff}
+  /* באפליקציה: שורת השעה והמצלמה מעל הדף. מורידים את ראש החלון מתחתיה */
+  .native dialog.full .dlg-head{padding-top:calc(max(env(safe-area-inset-top), 30px) + 6px)}
+  .native dialog.full>.dlg:first-child{padding-top:calc(max(env(safe-area-inset-top), 30px) + 16px)}
+  .native .screen{padding-top:calc(max(env(safe-area-inset-top), 30px) + 12px)}
   .dlg{padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
   .dlg h2{font-size:20px;font-weight:700;margin-bottom:12px}
   .dlg-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);
@@ -405,6 +422,35 @@
   .bl-pre{white-space:pre-wrap;background:var(--bg);border-radius:14px;padding:12px;font:14px/1.6 inherit;margin-top:10px}
   .bl-sum{font-weight:700;font-size:18px;margin-top:10px}
   .pf-list{display:flex;flex-direction:column;gap:6px}
+  .subtabs{display:flex;gap:6px;background:var(--soft);border-radius:16px;padding:4px;margin:12px 0 4px}
+  .subtabs button{flex:1;border:0;background:transparent;border-radius:12px;min-height:42px;font-weight:600;font-size:15px;color:var(--muted)}
+  .subtabs button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .fit-day{margin-top:12px} .fit-day h3{font-size:14px;color:var(--muted);font-weight:600;margin:0 4px 6px}
+  .sl-avg{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--card)),var(--card));border-radius:20px;padding:16px;text-align:center}
+  .sl-avg b{font-size:36px;font-weight:800;color:var(--accent);display:block;font-variant-numeric:tabular-nums}
+  .sl-row{display:block;width:100%;text-align:right;border:0;background:var(--card);border-radius:16px;padding:10px 12px;margin-top:8px;color:inherit}
+  .sl-row .top{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+  .sl-row .top span:last-child{color:var(--accent);font-variant-numeric:tabular-nums}
+  .sl-row .s{color:var(--muted);font-size:14px}
+  .sl-bar{height:8px;border-radius:999px;background:var(--soft);margin-top:6px;position:relative;overflow:hidden}
+  .sl-bar i{position:absolute;top:0;bottom:0;border-radius:999px;background:var(--accent)}
+  .dp{display:grid;grid-template-columns:1fr;justify-items:center;gap:6px;margin:4px 0 8px}
+  .dp-b{width:100%;max-width:260px;min-height:52px;border:0;border-radius:16px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--accent);font-size:22px;font-weight:700}
+  .dp-v{width:100%;max-width:260px;text-align:center;padding:14px 8px;border-radius:18px;background:var(--card);border:2px solid var(--accent);touch-action:none;user-select:none}
+  .dp-v b{display:block;font-size:28px;color:var(--accent)} .dp-v span{color:var(--muted);font-size:16px;font-variant-numeric:tabular-nums}
+  .dp-cal{position:relative;color:var(--accent);font-weight:600;padding:8px 12px;cursor:pointer}
+  .dp-cal input{position:absolute;inset:0;opacity:0}
+  .q-time-row{display:flex;gap:8px;align-items:center} .q-time-row input{flex:1}
+  .q-clock{flex:none;display:flex;align-items:center;gap:6px;border:0;border-radius:14px;min-height:48px;padding:0 14px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+  .q-clock svg{flex:none}
+  .dom-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:8px 10px;margin:8px 0;border:1px solid var(--line)}
+  .dom-row.off{opacity:.6}
+  .dom-color{width:36px;height:36px;border-radius:50%;background:var(--c);flex:none;position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
+  .dom-color input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0}
+  .dom-name{flex:1;min-width:0;display:flex;flex-direction:column}
+  .dom-name input{min-height:40px!important;border:0!important;background:transparent!important;padding:2px 4px!important;font-weight:600;font-size:16px}
+  .dom-name small{color:var(--muted);font-size:12px;padding:0 4px}
+  .dom-ic{width:40px;height:40px;border:0;border-radius:12px;background:var(--soft);flex:none;font-size:17px}
   .pf-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:6px 10px;min-height:52px}
   .pf-row .n{flex:1;font-weight:600}
   .pf-row.off .n{color:var(--muted);text-decoration:line-through}
@@ -465,13 +511,30 @@
   #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
-  .img-pick .big{height:190px;border-radius:16px;background:var(--soft) center/cover no-repeat}
+  .img-pick .big{height:170px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+  .img-pick .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .img-pick .gal .sm{aspect-ratio:1;height:auto;padding:0;overflow:hidden;border-radius:12px;border:3px solid transparent;background:var(--soft)}
+  .img-pick .gal .sm img{width:100%;height:100%;object-fit:cover;display:block}
+  .img-pick .gal .sm.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
   .img-pick .row2{display:flex;gap:10px;margin-top:10px;align-items:stretch}
   .img-pick .sm{flex:1;height:84px;border-radius:12px;border:3px solid transparent;background:var(--soft) center/cover no-repeat;padding:0}
   .img-pick .sm.on{border-color:var(--accent)}
   .img-pick .more{flex:none;width:84px;border-radius:12px;border:0;background:var(--soft);font-size:14px}
   .rc-hero{position:relative}
-  .rc-hero .img-btn{position:absolute;left:10px;bottom:10px;border:0;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:6px 12px;min-height:36px}
+  .rc-hero .img-btn{position:absolute;left:10px;bottom:10px;border:0;border-radius:999px;background:rgba(255,255,255,.92);color:#14161B;font-size:14px;font-weight:600;padding:8px 14px;min-height:40px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  .rc-scale{display:flex;align-items:center;gap:8px;margin:10px 0 0}
+  .rc-scale .opts button{min-height:38px;padding:6px 14px}
+  #dlg-cook[open]{display:flex;flex-direction:column;overflow:hidden}
+  .ck-wrap{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+  .ck-card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:20px 20px 24px;display:flex;flex-direction:column;justify-content:center;overflow:auto}
+  .ck-num{color:var(--accent);font-weight:700;font-size:16px;margin-bottom:8px}
+  .ck-text{font-size:24px;line-height:1.55;font-weight:500}
+  .ck-ing{background:color-mix(in srgb,var(--accent) 10%,var(--card));border-radius:16px;padding:12px 14px;margin-top:18px;font-size:19px;line-height:1.7}
+  .ck-ing b{display:block;font-size:14px;color:var(--muted);font-weight:600}
+  .ck-nav{display:flex;gap:10px;padding:10px 16px calc(env(safe-area-inset-bottom) + 12px);border-top:1px solid var(--line);background:var(--card)}
+  .ck-nav .btn{flex:1}
+  .ck-pos{min-width:60px;text-align:left;color:var(--muted);font-weight:600;padding-left:8px}
+  .ck-hint{color:var(--muted);font-size:14px;margin-top:22px;text-align:center}
   .tmr-left{font-size:64px;font-weight:700;font-variant-numeric:tabular-nums;margin:10px 0 4px;color:var(--accent)}
   .rc-subh{font-weight:700;color:var(--accent);padding:12px 0 2px;border-bottom:1px solid var(--line)}
   .rc-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));background:var(--card);border-radius:16px;margin-top:18px;text-align:center}
@@ -533,14 +596,6 @@
   <div class="status" id="sync-status"></div>
 </main>
 
-<!-- ===== תחומים ===== -->
-<main class="screen" id="scr-domains" hidden>
-  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
-  <h1 class="hello">תחומים</h1>
-  <div class="chips" id="dom-filter"></div>
-  <div id="dom-body"></div>
-</main>
-
 <!-- ===== לוח שנה ===== -->
 <main class="screen" id="scr-calendar" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
@@ -552,6 +607,7 @@
   </div>
   <div class="cal" id="cal"></div>
   <div class="sec"><h2 id="cal-day-title"></h2><div id="cal-day"></div></div>
+  <div class="sec"><h2 class="bl-h">🎂 ימים מיוחדים <button class="txt-btn" type="button" id="bd-add">＋ יום מיוחד</button></h2><div id="bd-list" class="more-list"></div></div>
 </main>
 
 <!-- ===== היסטוריה ===== -->
@@ -575,13 +631,21 @@
 </main>
 
 <main class="screen" id="scr-kcal" hidden>
-  <div class="kc-top"><h1 class="hello">קלוריות</h1><button class="icon-btn" id="kc-set" type="button" aria-label="הגדרות קלוריות"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
-  <div class="kc-date"><button type="button" id="kc-next" aria-label="יום הבא">›</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-prev" aria-label="יום קודם">‹</button></div>
-  <div class="kc-dash" id="kc-dash"></div>
-  <div id="kc-meals"></div>
-  <div class="sec"><h2 class="kc-h">🏃 פעילות <span id="kc-act-sum"></span><button class="btn" type="button" id="kc-act-add">+ פעילות</button></h2><div id="kc-acts" class="kc-list"></div></div>
-  <div class="btns" style="margin-top:20px"><button class="btn" type="button" id="kc-hist">📅 היסטוריה</button><button class="btn" type="button" id="kc-myfoods">🍽️ המאכלים שלי</button></div>
-  <div class="btns"><button class="btn" type="button" id="kc-recipe">🧾 מתכון חדש (כמה מרכיבים)</button></div>
+  <div class="kc-top"><h1 class="hello">בריאות</h1><button class="icon-btn" id="kc-set" type="button" aria-label="הגדרות קלוריות"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+  <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="sleep">😴 שעות שינה</button></div>
+  <div class="kc-date" id="kc-date"><button type="button" id="kc-prev" aria-label="יום קודם">‹</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-next" aria-label="יום הבא">›</button></div>
+  <div id="h-kcal">
+    <div class="kc-dash" id="kc-dash"></div>
+    <div id="kc-meals"></div>
+    <div class="btns" style="margin-top:20px"><button class="btn" type="button" id="kc-hist">📅 היסטוריה</button><button class="btn" type="button" id="kc-myfoods">🍽️ המאכלים שלי</button></div>
+    <div class="btns"><button class="btn" type="button" id="kc-recipe">🧾 מתכון חדש (כמה מרכיבים)</button></div>
+  </div>
+  <div id="h-fit" hidden>
+    <div class="kc-dash" id="fit-sum"></div>
+    <div class="sec"><h2 class="kc-h">🏃 אימונים <span id="kc-act-sum"></span><button class="btn" type="button" id="kc-act-add">+ אימון</button></h2><div id="kc-acts" class="kc-list"></div></div>
+    <div class="sec"><h2>היסטוריית אימונים</h2><div id="fit-hist"></div></div>
+  </div>
+  <div id="h-sleep" hidden></div>
 </main>
 <main class="screen" id="scr-more" hidden>
   <h1 class="hello">עוד</h1>
@@ -778,11 +842,6 @@
   <h1 class="hello">תחזוקה שוטפת</h1>
   <div id="up-list" class="more-list"></div>
 </main>
-<main class="screen" id="scr-birthdays" hidden>
-  <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
-  <h1 class="hello">ימים מיוחדים</h1>
-  <div id="bd-list" class="more-list"></div>
-</main>
 <main class="screen" id="scr-docs" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">מסמכים</h1>
@@ -791,11 +850,18 @@
 <main class="screen" id="scr-history" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">היסטוריה</h1>
-  <div class="row" style="margin-top:14px">
-    <select id="hist-task" aria-label="סינון לפי משימה"></select>
-    <select id="hist-domain" aria-label="סינון לפי תחום"></select>
+  <div class="subtabs" id="hs-tabs"><button type="button" data-hs="domains" class="on">🗂️ תחומים</button><button type="button" data-hs="history">🕘 היסטוריה</button></div>
+  <div id="hs-dom">
+    <div class="chips" id="dom-filter"></div>
+    <div id="dom-body"></div>
   </div>
-  <div id="hist-body"></div>
+  <div id="hs-hist" hidden>
+    <div class="row" style="margin-top:14px">
+      <select id="hist-task" aria-label="סינון לפי משימה"></select>
+      <select id="hist-domain" aria-label="סינון לפי תחום"></select>
+    </div>
+    <div id="hist-body"></div>
+  </div>
 </main>
 
 <button id="fab" aria-label="משימה חדשה"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -804,13 +870,11 @@
   <button data-scr="todo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>משימות</button>
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
-  <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-5.6-3.6-7.6-.4 1.6-1.3 2.8-2.4 3.4.1-3.3-1.2-6.4-4-8.8.2 3.6-1.6 5.6-3.2 7.6C4.6 11.3 5 13.4 5 15c0 4.2 3 7 7 7z"/></svg>קלוריות</button>
+  <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/><path d="M4.5 12.5h4l1.5-2.5 2.5 5 1.5-2.5h5.5"/></svg>בריאות</button>
   <button data-scr="meds"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>תרופות</button>
   <button data-scr="upkeep"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3.6 17.4a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.3-5.3l-2.4 2.4-2-.6-.6-2z"/></svg>תחזוקה</button>
-  <button data-scr="birthdays"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16v-7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M4 16c2 1.3 4 1.3 5.3 0s4-1.3 5.4 0 3.3 1.3 5.3 0"/><path d="M12 12V8M12 5.5c-.8-.8-.8-2 0-3 .8 1 .8 2.2 0 3z"/></svg>ימים מיוחדים</button>
   <button data-scr="docs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>מסמכים</button>
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
-  <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>תחומים</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
   <button data-scr="bills"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>חשבונות</button>
   <button data-scr="prefs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 6.5l2 1.2M17.8 16.3l2 1.2M4.2 17.5l2-1.2M17.8 7.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>הגדרות</button>
@@ -838,7 +902,9 @@
   <div class="q-when-line" id="q-line" aria-live="polite"></div>
   <div class="field"><span class="lbl">מתי</span><div class="opts" id="q-when"></div></div>
   <div class="field"><span class="lbl">חוזר</span><div class="opts" id="q-rep"></div></div>
-  <div class="field"><label for="q-time">שעה להתראה (לא חובה)</label><input type="time" id="q-time"></div>
+  <div class="field"><label for="q-time">שעה להתראה (לא חובה)</label><div class="q-time-row">
+    <button type="button" class="q-clock" id="q-clock" aria-label="השעה עכשיו"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="q-clock-t"></span></button>
+    <input type="time" id="q-time"><button type="button" class="dom-ic" id="q-time-x" aria-label="בלי שעה">✕</button></div></div>
   <div class="field"><span class="lbl">תחום</span><div class="opts" id="q-domain"></div></div>
   <div class="btns">
     <button class="btn cal-tog" id="q-cal" type="button" aria-pressed="false" aria-label="גם ביומן גוגל" title="גם ביומן גוגל"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg></button>
@@ -1030,8 +1096,13 @@
   <div id="tmr-title" style="font-weight:600;font-size:17px"></div>
   <div id="tmr-left" class="tmr-left">0:00</div>
   <div id="tmr-note" class="note"></div>
-  <div class="btns"><button class="btn" id="tmr-cancel" type="button" style="color:var(--red)">ביטול הטיימר</button><button class="btn primary" id="tmr-close" type="button">סגירה</button></div>
+  <div class="btns"><button class="btn" id="tmr-cancel" type="button" style="color:var(--red)">ביטול הטיימר</button><button class="btn" id="tmr-plus" type="button">+1 דקה</button><button class="btn primary" id="tmr-close" type="button">סגירה</button></div>
 </div></dialog>
+<dialog id="dlg-cook" class="full" aria-label="מצב בישול"><div class="dlg-head">
+    <button class="txt-btn" id="ck-close" type="button">סגירה</button><h2 id="ck-title">מצב בישול</h2><span class="ck-pos" id="ck-pos"></span></div>
+  <div class="ck-wrap" id="ck-wrap"></div>
+  <div class="ck-nav"><button class="btn" type="button" id="ck-prev">▲ הקודם</button><button class="btn primary" type="button" id="ck-next">▼ הבא</button></div>
+</dialog>
 <dialog id="dlg-redit" class="full" aria-label="עריכת מתכון">
   <div class="dlg-head">
     <button class="txt-btn" id="re-close">ביטול</button>
@@ -1100,6 +1171,106 @@ function toast(text, opts){
   if(opts.undo) t.querySelector('button').onclick = () => { t.remove(); opts.undo(); };
   topLayer().appendChild(t);
   toastTimer = setTimeout(() => t.remove(), opts.ms || (opts.undo ? 5000 : 2600));
+}
+
+/* ---------- חלונות: ✕ אדום בכל חלון, שאלות בחלון של האפליקציה, וכפתור "הקודם" ---------- */
+/** שאלה בחלון מעוצב (במקום החלון הלבן של הדפדפן). fields: [{label, value, ph, num, req}]. מחזיר מערך ערכים, true (בלי שדות) או null. */
+function ask(title, fields, o){
+  fields = fields || []; o = o || {};
+  return new Promise(res => {
+    const d = document.createElement('dialog'); d.className = 'ask';
+    d.innerHTML = `<div class="dlg"><h2>${esc(title)}</h2>${o.note ? `<div class="note" style="margin:0 0 6px">${esc(o.note)}</div>` : ''}
+      ${o.html || ''}${fields.map((f, i) => `<div class="field"><label for="ask-${i}">${esc(f.label)}</label><input type="text" id="ask-${i}"${f.num ? ' inputmode="decimal"' : ''} value="${esc(f.value ?? '')}" placeholder="${esc(f.ph || '')}" autocomplete="off"></div>`).join('')}
+      <div class="btns"><button class="btn" type="button" data-no>${esc(o.no || 'ביטול')}</button><button class="btn primary${o.danger ? ' danger' : ''}" type="button" data-ok>${esc(o.ok || 'אישור')}</button></div></div>`;
+    document.body.appendChild(d);
+    let done = false;
+    const fin = v => { if(done) return; done = true; if(d.open) d.close(); setTimeout(() => d.remove(), 50); res(v); };
+    d.querySelector('[data-no]').onclick = () => fin(null);
+    d.querySelector('[data-ok]').onclick = () => {
+      const v = fields.map((f, i) => d.querySelector('#ask-' + i).value.trim());
+      const bad = fields.findIndex((f, i) => (f.req && !v[i]) || (f.num && v[i] && !isFinite(+v[i].replace(',', '.'))));
+      if(bad >= 0){ d.querySelector('#ask-' + bad).focus(); return; }
+      fin(fields.length ? v.map((x, i) => fields[i].num && x ? +x.replace(',', '.') : x) : (o.read ? o.read(d) : true));
+    };
+    d.addEventListener('close', () => fin(null));
+    d.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.tagName === 'INPUT'){ e.preventDefault(); d.querySelector('[data-ok]').click(); } });
+    if(o.init) o.init(d);
+    d.showModal(); if(fields.length) setTimeout(() => d.querySelector('input')?.focus(), 60);
+  });
+}
+/** בחירת תאריך: התאריך גדול באמצע, ▲ יום אחרי, ▼ יום לפני (או מחליקים למעלה/למטה), ולוח שנה רגיל למטה. */
+function pickDate(d0, title){
+  let d = d0 || ל.localDate(Date.now());
+  return ask(title || 'בחירת תאריך', [], {ok: 'בחירה', read: () => d,
+    html: `<div class="dp"><button type="button" class="dp-b" data-dd="1" aria-label="יום אחרי">▲</button>
+      <div class="dp-v" id="dp-v"><b id="dp-day"></b><span id="dp-date"></span></div>
+      <button type="button" class="dp-b" data-dd="-1" aria-label="יום לפני">▼</button>
+      <label class="dp-cal">📅 מלוח שנה<input type="date" id="dp-in"></label></div>`,
+    init: dlg => {
+      const t0 = ל.localDate(Date.now()), draw = () => {
+        dlg.querySelector('#dp-day').textContent = d === t0 ? 'היום' : d === ל.addDays(t0, 1) ? 'מחר' : d === ל.addDays(t0, -1) ? 'אתמול' : 'יום ' + ל.DAY_NAMES[ל.weekday(d)];
+        dlg.querySelector('#dp-date').textContent = `${ל.shortDate(d)}.${d.slice(0, 4)}`; dlg.querySelector('#dp-in').value = d; };
+      const step = n => { d = ל.addDays(d, n); draw(); navigator.vibrate?.(8); };
+      dlg.querySelector('.dp').onclick = e => { const b = e.target.closest('[data-dd]'); if(b) step(+b.dataset.dd); };
+      dlg.querySelector('#dp-in').onchange = e => { if(e.target.value){ d = e.target.value; draw(); } };
+      let y0 = null; const v = dlg.querySelector('#dp-v');
+      v.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, {passive: true});
+      v.addEventListener('touchmove', e => { if(y0 == null) return; const dy = e.touches[0].clientY - y0; if(Math.abs(dy) > 36){ step(dy < 0 ? 1 : -1); y0 = e.touches[0].clientY; } }, {passive: true});
+      v.addEventListener('wheel', e => { e.preventDefault(); step(e.deltaY < 0 ? 1 : -1); });
+      draw();
+    }});
+}
+/** לחיצה ארוכה על אלמנט: fn(el). הלחיצה הרגילה שאחריה לא נספרת. */
+function onHold(root, sel, fn){
+  let t = null, held = false;
+  root.addEventListener('pointerdown', e => { const el = e.target.closest(sel); if(!el) return; held = false; clearTimeout(t);
+    t = setTimeout(() => { held = true; navigator.vibrate?.(30); fn(el); }, 550); });
+  for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, () => clearTimeout(t));
+  root.addEventListener('pointermove', e => { if(Math.abs(e.movementX) + Math.abs(e.movementY) > 6) clearTimeout(t); });
+  root.addEventListener('click', e => { if(held){ held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  root.addEventListener('contextmenu', e => { if(e.target.closest(sel)) e.preventDefault(); });
+}
+const sure = (msg, ok, o) => ask(msg, [], Object.assign({ok: ok || 'מחיקה', danger: !ok || /מחק|מחיקה|ניתוק|להפסיק/.test(ok)}, o)).then(v => !!v);
+// כל חלון מקבל ✕ אדום. בחלון מלא: כפתור הביטול/הסגירה למעלה הופך ל-✕ אדום
+{ const orig = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function(){
+    if(!this.dataset.x){
+      this.dataset.x = '1';
+      const head = this.querySelector(':scope > .dlg-head');
+      if(head){ const c = head.querySelector('button'); if(c && /ביטול|סגירה/.test(c.textContent)){ c.setAttribute('aria-label', c.textContent.trim()); c.textContent = '✕'; c.classList.add('x-red'); } }
+      else if(this.id !== 'dlg-onboard'){ const b = document.createElement('button'); b.type = 'button'; b.className = 'x-close'; b.textContent = '✕'; b.setAttribute('aria-label', 'סגירה');
+        b.onclick = () => closeTop(this); this.prepend(b); }
+    }
+    return orig.call(this);
+  };
+}
+/** סגירת חלון כמו Escape (מי שמונע יציאה, למשל ההתחלה, ממשיך למנוע). בחלון מלא: כמו לחיצה על ✕ שלו. */
+function closeTop(d){
+  const head = d.querySelector(':scope > .dlg-head .x-red');
+  if(head){ head.click(); return; }
+  const ev = new Event('cancel', {cancelable: true});
+  if(d.dispatchEvent(ev)) d.close();
+}
+/** "הקודם": סוגר את החלון העליון, או את דף המשימה, ובמסך רגיל שואל אם לצאת. */
+let backAsking = false;
+function onBack(){
+  const open = [...document.querySelectorAll('dialog[open]')];
+  if(open.length){ closeTop(open[open.length - 1]); return; }
+  if(!$('task-page').hidden){ $('tp-back').click(); return; }
+  if(backAsking) return;
+  backAsking = true;
+  sure('לצאת מהאפליקציה?', 'יציאה', {no: 'להישאר'}).then(y => {
+    backAsking = false;
+    if(!y) return;
+    if(NATIVE) window.Capacitor.Plugins.Alarm.exit().catch(() => {});
+    else{ backExit = true; history.go(-2); }
+  });
+}
+window.onNativeBack = onBack;   // באפליקציית האנדרואיד: הכפתור מגיע לכאן (MainActivity)
+let backExit = false;
+if(!NATIVE){   // בדפדפן: רשומה אחת "שומרת" בהיסטוריה, ו"הקודם" מגיע ל-popstate
+  history.pushState({g: 1}, '');
+  addEventListener('popstate', () => { if(backExit || location.hash) return; history.pushState({g: 1}, ''); onBack(); });
 }
 
 /* ---------- נתונים במכשיר ---------- */
@@ -1377,7 +1548,13 @@ function statsOf(t){
   return {recs, onTime, avgLate: lateDays.length ? +(lateDays.reduce((a, b) => a + b, 0) / lateDays.length).toFixed(1) : null,
     streak, gaps, avgGap: gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null, last: recs[recs.length - 1]};
 }
+/** היסטוריה: שתי לשוניות, תחומים (ברירת מחדל) והיסטוריית ביצועים. */
+let hsTab = 'domains';
+$('hs-tabs').onclick = e => { const b = e.target.closest('[data-hs]'); if(b){ hsTab = b.dataset.hs; renderHistory(); } };
 function renderHistory(){
+  document.querySelectorAll('#hs-tabs button').forEach(b => b.classList.toggle('on', b.dataset.hs === hsTab));
+  $('hs-dom').hidden = hsTab !== 'domains'; $('hs-hist').hidden = hsTab === 'domains';
+  if(hsTab === 'domains') return renderDomains();
   const ft = $('hist-task').value, fd = $('hist-domain').value;
   const tasks = D.tasks.filter(t => !t.deleted);
   $('hist-task').innerHTML = '<option value="">כל המשימות</option>' + tasks.map(t => `<option value="${esc(t.id)}"${t.id === ft ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
@@ -1404,8 +1581,12 @@ function renderHistory(){
 /* ---------- ניווט ---------- */
 let screen = 'today';
 function show(s){
+  // מסכים שעברו (17.11.2026): ימים מיוחדים בלוח השנה, תחומים בהיסטוריה
+  if(s === 'birthdays') s = 'calendar';
+  if(s === 'domains'){ s = 'history'; hsTab = 'domains'; }
+  else if(s === 'history' && screen !== 'history') hsTab = 'domains';
   screen = s;
-  for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills'].includes(s);
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
@@ -1418,8 +1599,7 @@ function show(s){
 function renderAll(){
   if(typeof applyNav === 'function') applyNav();
   if(screen === 'today') renderToday();
-  else if(screen === 'domains') renderDomains();
-  else if(screen === 'calendar') renderCalendar();
+  else if(screen === 'calendar'){ renderCalendar(); renderBirthdays(); }
   else if(screen === 'shop') renderShop();
   else if(screen === 'recipes') renderRecipes();
   else if(screen === 'more') renderMore();
@@ -1429,7 +1609,6 @@ function renderAll(){
   else if(screen === 'todo') renderTodo();
   else if(screen === 'bills') renderBills();
   else if(screen === 'meds'){ window.medsRender?.(); }
-  else if(screen === 'birthdays') renderBirthdays();
   else if(screen === 'docs') renderDocs();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
@@ -1575,7 +1754,7 @@ function recipeMenu(r){
   sheet(r.title, [
     ['✏️ עריכת המתכון', () => openRecipeEditor(r)],
     ['🖼️ החלפת תמונה', () => openImagePicker(r)],
-    ['🗑 מחיקה', () => { if(!confirm(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
+    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
   ]);
 }
 // לחיצה ארוכה על לשונית בסרגל: לסידור הלשוניות
@@ -1587,17 +1766,19 @@ function recipeMenu(r){
   $('nav').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
   $('nav').addEventListener('contextmenu', e => e.preventDefault()); }
 onLongPress($('r-body'), '.rc-hero', el => el.dataset.img);
-// בחירת תמונה: אחת גדולה (הנבחרת), ושתיים קטנות לבחירה. "עוד" מציג שתיים אחרות
+// בחירת תמונה: גלריה. למעלה התמונה שנבחרה, ומתחת הרבה תמונות, לפי הסיכוי שהן מתאימות למתכון (ליבה: imageOptions)
 let imgPick = null;
 function renderPicker(box, st){
-  const small = st.opts.slice(1 + st.page * 2, 3 + st.page * 2).length ? st.opts.slice(1 + st.page * 2, 3 + st.page * 2) : st.opts.slice(1, 3);
+  st.n = st.n || 30;
+  const small = u => u.replace(/\/medium$/, '/small');
   box.innerHTML = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>
-    <div class="row2">${small.map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" style="background-image:url('${esc(u.replace(/\/medium$/, '/small'))}')" aria-label="תמונה אחרת"></button>`).join('')}
-    <button type="button" class="more" data-more="1">עוד<br>תמונות</button></div>`;
+    <div class="gal">${st.opts.slice(0, st.n).map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" aria-label="תמונה"><img loading="lazy" alt="" src="${esc(small(u))}"></button>`).join('')}</div>
+    ${st.opts.length > st.n ? `<button type="button" class="btn" data-more="1" style="width:100%;margin-top:10px">עוד תמונות (${st.opts.length - st.n})</button>` : ''}`;
   box.onclick = e => {
     const b = e.target.closest('[data-u]');
-    if(b){ st.sel = b.dataset.u; st.onPick && st.onPick(st.sel); renderPicker(box, st); return; }
-    if(e.target.closest('[data-more]')){ st.page = (st.page + 1) % Math.max(1, Math.floor((st.opts.length - 1) / 2)); renderPicker(box, st); }
+    if(b){ st.sel = b.dataset.u; st.onPick && st.onPick(st.sel); box.querySelector('.big').style.backgroundImage = `url('${st.sel}')`;
+      box.querySelectorAll('.gal .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); return; }
+    if(e.target.closest('[data-more]')){ st.n += 30; const y = box.closest('dialog')?.scrollTop; renderPicker(box, st); if(y != null) box.closest('dialog').scrollTop = y; }
   };
 }
 function openImagePicker(r){
@@ -1615,9 +1796,9 @@ $('im-ok').onclick = () => {
 };
 
 // דף מתכון
-let rcOpen = null, rcGot = new Set(), wake = null;
+let rcOpen = null, rcGot = new Set(), wake = null, rcScale = 1;
 function openRecipe(id){
-  if(rcOpen !== id) rcGot = new Set();
+  if(rcOpen !== id){ rcGot = new Set(); rcScale = 1; }
   rcOpen = id;
   renderRecipe();
   if(!$('dlg-recipe').open) $('dlg-recipe').showModal();
@@ -1627,11 +1808,12 @@ function renderRecipe(){
   if(!r){ $('dlg-recipe').close(); return; }
   rcImgs = ל.recipeImages(recipeList());
   $('r-title').textContent = r.title;
-  const ing = r.ingredients || [], steps = r.steps || [];
+  const ing = (r.ingredients || []).map(x => ל.scaleLine(x, rcScale)), steps = r.steps || [];
   $('r-body').innerHTML = `
     <div class="rc-hero" data-img="${esc(r.id)}"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}<button type="button" class="img-btn" id="r-img">🖼️ החלפת תמונה</button></div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
-    ${ing.length ? `<div class="rc-sec"><h3>מצרכים <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
+    ${ing.length ? `<div class="rc-scale"><span class="lbl">כמות</span><div class="opts" id="r-scale">${[[.5, 'חצי'], [1, 'רגיל'], [2, 'פי 2']].map(([f, n]) => `<button type="button" data-f="${f}" class="${rcScale === f ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
+    ${ing.length ? `<div class="rc-sec"><h3>מצרכים${rcScale !== 1 ? ` <span class="note" style="margin:0">(${rcScale === 2 ? 'פי 2' : 'חצי'})</span>` : ''} <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
       <div class="rc-box">${ing.map((x, i) => /[:：]\s*$/.test(x) ? `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`
         : `<label class="rc-ing${rcGot.has(i) ? ' got' : ''}"><input type="checkbox" data-i="${i}"${rcGot.has(i) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div></div>` : ''}
     ${steps.length ? `<div class="rc-sec"><h3>אופן ההכנה</h3><div class="rc-box">${(() => { let num = 0; return steps.map(x => {
@@ -1642,11 +1824,11 @@ function renderRecipe(){
       }).join(''); })()}</div></div>` : ''}
     ${r.notes ? `<div class="rc-sec"><h3>הערות</h3><div class="rc-box" style="padding:12px;white-space:pre-wrap">${esc(r.notes)}</div></div>` : ''}
     ${safeImg(r.source) ? `<div style="margin-top:14px"><a href="${esc(r.source)}" target="_blank" rel="noopener">🔗 המתכון המקורי</a></div>` : ''}
-    ${(() => { const m = [['זמן הכנה', r.prep], ['זמן אפייה/בישול', r.cook], ['זמן כולל', r.total], ['רמת קושי', r.level], ['מנות', r.servings]].filter(x => x[1]);
+    ${(() => { const m = [['זמן הכנה', r.prep], ['זמן אפייה/בישול', r.cook], ['זמן כולל', r.total], ['רמת קושי', r.level], ['מנות', ל.scaleServings(r.servings, rcScale)]].filter(x => x[1]);
       return m.length ? `<div class="rc-meta">${m.map(([k, v]) => `<div><span>${k}</span>${esc(v)}</div>`).join('')}</div>` : ''; })()}
     <div class="btns" style="margin-top:20px">
       <button class="btn" type="button" id="r-wa">שליחה בוואטסאפ</button>
-      ${'wakeLock' in navigator ? `<button class="btn${wake ? ' primary' : ''}" type="button" id="r-cook">${wake ? '✓ מצב בישול' : 'מצב בישול'}</button>` : ''}
+      ${steps.length ? `<button class="btn primary" type="button" id="r-cook">👨‍🍳 מצב בישול</button>` : ''}
     </div>
     <div class="btns"><button class="btn" type="button" id="r-del" style="color:var(--red)">מחיקת המתכון</button></div>`;
   $('r-body').querySelectorAll('.rc-ing input').forEach(cb => cb.onchange = () => {
@@ -1655,24 +1837,46 @@ function renderRecipe(){
   $('r-body').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
   if($('r-shop')) $('r-shop').onclick = () => recipeToShop(r);
   $('r-img').onclick = e => { e.stopPropagation(); openImagePicker(r); };
-  $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(r, picUrl(r))); if(!window.open(url, '_blank')) location.href = url; };
-  if($('r-cook')) $('r-cook').onclick = toggleCooking;
-  $('r-del').onclick = () => {
-    if(!confirm(`למחוק את "${r.title}"?`)) return;
+  $('r-body').querySelector('.rc-hero').onclick = () => { if(longPressed){ longPressed = false; return; } openImagePicker(r); };   // נגיעה בתמונה: גלריה
+  if($('r-scale')) $('r-scale').onclick = e => { const b = e.target.closest('[data-f]'); if(b){ rcScale = +b.dataset.f; renderRecipe(); } };
+  $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(Object.assign({}, r, {ingredients: ing}), picUrl(r))); if(!window.open(url, '_blank')) location.href = url; };
+  if($('r-cook')) $('r-cook').onclick = () => openCooking(r);
+  $('r-del').onclick = async () => {
+    if(!await sure(`למחוק את "${r.title}"?`)) return;
     saveRecipe(Object.assign({}, r, {deleted: true})); $('dlg-recipe').close();
     toast('המתכון נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))});
   };
 }
-/** מצב בישול: המסך לא נכבה, והטקסט גדול. */
-async function toggleCooking(){
-  try{
-    if(wake){ await wake.release(); wake = null; }
-    else{ wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; document.body.classList.remove('cooking'); }); }
-  }catch(e){ toast('המכשיר לא מאפשר להשאיר את המסך דלוק', {err: true}); wake = null; }
-  document.body.classList.toggle('cooking', !!wake);
-  renderRecipe();
+/** מצב בישול: כל שלב במסך משלו, עם המצרכים של השלב והכמות שלהם. מחליקים למעלה/למטה (או ▲ ▼). המסך לא נכבה. */
+function openCooking(r){
+  const ing = r.ingredients || [], steps = (r.steps || []).filter(x => !/[:：]\s*$/.test(x)), f = rcScale;
+  $('ck-title').textContent = r.title;
+  const cards = [];
+  if(ing.length) cards.push(`<section class="ck-card"><div class="ck-num">לפני שמתחילים</div><div class="ck-text" style="font-size:20px">מוציאים את כל המצרכים${f !== 1 ? ` (${f === 2 ? 'פי 2' : 'חצי כמות'})` : ''}:</div>
+    <div class="ck-ing">${ing.map(x => /[:：]\s*$/.test(x) ? `<b>${esc(x.replace(/[:：]\s*$/, ''))}</b>` : `• ${esc(ל.scaleLine(x, f))}`).join('<br>')}</div><div class="ck-hint">מחליקים למעלה לשלב הראשון ▼</div></section>`);
+  steps.forEach((x, i) => {
+    const need = ל.stepIngredients(x, ing, f), tm = ל.durationsIn(x);
+    cards.push(`<section class="ck-card"><div class="ck-num">שלב ${i + 1} מתוך ${steps.length}</div><div class="ck-text">${esc(x)}</div>
+      ${need.length ? `<div class="ck-ing"><b>מה צריך לשלב הזה</b>${need.map(esc).join('<br>')}</div>` : ''}
+      ${tm.length ? `<div class="rc-timers" style="margin-top:16px">${tm.map(t => `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}
+      ${i === steps.length - 1 ? '<div class="ck-hint">🎉 זה השלב האחרון. בתיאבון!</div>' : ''}</section>`);
+  });
+  $('ck-wrap').innerHTML = cards.join('');
+  $('ck-wrap').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
+  $('ck-wrap').scrollTop = 0;
+  $('dlg-cook').showModal();
+  ckPos();
+  if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => { wake = w; }).catch(() => {});
 }
-$('dlg-recipe').addEventListener('close', () => { if(wake){ wake.release().catch(() => {}); wake = null; document.body.classList.remove('cooking'); } });
+const ckIdx = () => Math.round($('ck-wrap').scrollTop / Math.max(1, $('ck-wrap').clientHeight));
+function ckPos(){ const n = $('ck-wrap').children.length, i = ckIdx(); $('ck-pos').textContent = n ? `${i + 1}/${n}` : '';
+  $('ck-prev').disabled = i <= 0; $('ck-next').textContent = i >= n - 1 ? '✓ סיום' : '▼ הבא'; }
+$('ck-wrap').addEventListener('scroll', () => requestAnimationFrame(ckPos), {passive: true});
+const ckGo = d => $('ck-wrap').scrollTo({top: (ckIdx() + d) * $('ck-wrap').clientHeight, behavior: 'smooth'});
+$('ck-prev').onclick = () => ckGo(-1);
+$('ck-next').onclick = () => { if(ckIdx() >= $('ck-wrap').children.length - 1) $('dlg-cook').close(); else ckGo(1); };
+$('ck-close').onclick = () => $('dlg-cook').close();
+$('dlg-cook').addEventListener('close', () => { if(wake){ wake.release().catch(() => {}); wake = null; } });
 $('r-close').onclick = () => $('dlg-recipe').close();
 $('r-edit').onclick = () => { const r = recipeById(rcOpen); if(r) openRecipeEditor(r); };
 /**
@@ -1746,6 +1950,7 @@ function renderTimerDlg(){
     (pushMode() ? ', גם אם תסגור את האפליקציה.' : '. המנוע לא פועל, אז רק כשהאפליקציה פתוחה.');
   // נגמר: כפתור אחד גדול, "עצור"
   $('tmr-cancel').hidden = left <= 0;
+  $('tmr-plus').hidden = !!t.stopped && left <= 0;
   $('tmr-close').textContent = left <= 0 && !t.stopped ? '⏹ עצור' : 'סגירה';
   $('dlg-timer').classList.toggle('ringing', left <= 0 && !t.stopped);
 }
@@ -1756,6 +1961,18 @@ $('tmr-close').onclick = () => {
 };
 $('dlg-timer').addEventListener('cancel', () => { if(alarm) stopAlarm(true); });
 $('dlg-timer').addEventListener('close', () => renderTimers());
+// "+1 דקה": לפני הסוף מוסיף דקה. אחרי שצלצל: הצלצול נפסק, וטיימר חדש לעוד דקה
+$('tmr-plus').onclick = () => {
+  const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen); if(!t) return;
+  const now = Date.now();
+  if(t.at > now){ saveTimers([Object.assign({}, t, {at: t.at + 6e4, updatedAt: nowIso()})]); renderTimerDlg(); toast('+1 דקה'); return; }
+  if(alarm){ clearInterval(alarm.iv); alarm = null; navigator.vibrate?.(0); }
+  if(NATIVE) NAlarm.cancel({id: t.id}).catch(() => {});
+  const n = Object.assign({}, t, {id: 'tm' + uid(), at: now + 6e4, stopped: false, updatedAt: nowIso()});
+  saveTimers([Object.assign({}, t, {stopped: true, updatedAt: nowIso()}), n]);
+  navigator.serviceWorker?.ready.then(reg => reg.getNotifications({tag: 'timer-' + t.id})).then(ns => (ns || []).forEach(x => x.close())).catch(() => {});
+  openTimer(n.id); toast('עוד דקה');
+};
 $('tmr-cancel').onclick = () => {
   const t = (D.file.timers.timers || []).find(x => x.id === tmrOpen);
   if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
@@ -1828,7 +2045,7 @@ function openRecipeEditor(r, paste){
       <button class="btn primary" type="button" id="re-parse" style="margin-top:8px;width:100%">פירוק למצרכים ושלבים</button></details>
     <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
     <div class="field"><span class="lbl">תמונה</span><div class="img-pick" id="re-pick"></div></div>
-    <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${rcEdit.cat === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
+    <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${(rcEdit.title ? ל.recipeCat(rcEdit) : rcEdit.cat || '') === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
       <div class="field"><label for="re-lv">רמת קושי</label><select id="re-lv">${lv.map(c => `<option value="${c}"${rcEdit.level === c ? ' selected' : ''}>${c || 'בלי'}</option>`).join('')}</select></div></div>
     <div class="field"><label for="re-d">תיאור קצר</label><input type="text" id="re-d" value="${esc(rcEdit.desc)}"></div>
     <div class="field"><label for="re-ing">מצרכים (שורה לכל מצרך. שורה שנגמרת ב־":" היא כותרת, למשל "לבצק:")</label><textarea id="re-ing" style="min-height:140px">${esc((rcEdit.ingredients || []).join('\n'))}</textarea></div>
@@ -1901,7 +2118,14 @@ function loadFoodDb(){
     document.head.appendChild(sc);
   }));
 }
+/** בריאות: קלוריות, כושר, שעות שינה. */
+let hTab = 'kcal';
+$('h-tabs').onclick = e => { const b = e.target.closest('[data-h]'); if(b){ hTab = b.dataset.h; renderKcal(); scrollTo(0, 0); } };
 function renderKcal(){
+  document.querySelectorAll('#h-tabs button').forEach(b => b.classList.toggle('on', b.dataset.h === hTab));
+  for(const k of ['kcal', 'fit', 'sleep']) $('h-' + k).hidden = k !== hTab;
+  $('kc-date').hidden = hTab === 'sleep'; $('kc-set').hidden = hTab !== 'kcal';
+  if(hTab === 'sleep') return renderSleep();
   loadFoodDb();
   if(!kcDate) kcDate = today();
   const x = ל.calDay(KF(), kcDate);
@@ -1924,8 +2148,84 @@ function renderKcal(){
   $('kc-act-sum').textContent = x.burned ? kNum(x.burned) : '';
   $('kc-acts').innerHTML = acts.length ? acts.map(a => { const d = ל.ACTIVITIES[a.type] || ל.ACTIVITIES.other;
     return `<button type="button" class="kc-row" data-a="${esc(a.id)}"><span>${d.emoji}</span><span class="n">${esc(a.name || d.name)}<small>${esc(actText(a))}${a.manual ? ' · תוקן ביד' : ''}</small></span><span class="k burn">${kNum(a.kcal)}</span></button>`; }).join('')
-    : '<div class="empty">עוד לא נוספה פעילות היום</div>';
+    : `<div class="empty">${kcDate === today() ? 'עוד לא נוסף אימון היום' : 'אין אימונים ביום הזה'}</div>`;
+  if(hTab === 'fit') renderFit();
 }
+/** כושר: סיכום של 7 ו-30 ימים, והיסטוריית האימונים לפי ימים. */
+function renderFit(){
+  const acts = live(KF().acts).sort((a, b) => (b.date + (b.updatedAt || '')).localeCompare(a.date + (a.updatedAt || '')));
+  const mins = a => +ל.activityMinutes(a) || +a.minutes || 0;
+  const sum = l => ({n: l.length, min: l.reduce((x, a) => x + mins(a), 0), kcal: l.reduce((x, a) => x + (+a.kcal || 0), 0)});
+  const w = sum(acts.filter(a => a.date >= ל.addDays(today(), -6))), m = sum(acts.filter(a => a.date >= ל.addDays(today(), -29)));
+  $('fit-sum').innerHTML = `<div class="kc-stats"><div><b>${w.n}</b><span>אימונים ב-7 ימים</span></div><div><b>${kNum(w.min)}</b><span>דקות</span></div>
+    <div class="burn"><b>${kNum(w.kcal)}</b><span>קלוריות</span></div></div><div class="note" style="text-align:center;margin:10px 0 0">ב-30 הימים האחרונים: ${m.n} אימונים · ${kNum(m.min)} דקות · ${kNum(m.kcal)} קלוריות</div>`;
+  const days = {}; for(const a of acts.slice(0, 80)) (days[a.date] = days[a.date] || []).push(a);
+  $('fit-hist').innerHTML = Object.keys(days).length ? Object.entries(days).map(([d, l]) => `<div class="fit-day"><h3>${esc(kDayLabel(d))}</h3><div class="kc-list">${l.map(a => {
+      const t = ל.ACTIVITIES[a.type] || ל.ACTIVITIES.other;
+      return `<button type="button" class="kc-row" data-a="${esc(a.id)}"><span>${t.emoji}</span><span class="n">${esc(a.name || t.name)}<small>${esc(actText(a))}</small></span><span class="k burn">${kNum(a.kcal)}</span></button>`; }).join('')}</div></div>`).join('')
+    : '<div class="empty">עוד אין אימונים. "+ אימון" מוסיף</div>';
+}
+$('fit-hist').onclick = e => { const b = e.target.closest('[data-a]'); if(b) openKAct(live(KF().acts).find(x => x.id === b.dataset.a)); };
+
+/* ---------- שעות שינה: מהטלפון (מתי המסך כבה בלילה ומתי נפתח בבוקר) ---------- */
+const hm = ms => ל.localTime(ms);
+const durText = m => `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+let sleepState = '', sleepAt = 0;
+async function sleepSync(){
+  if(!NATIVE) return sleepState = 'web';
+  let st;
+  try{ st = await NAlarm.status(); }catch(e){ return sleepState = 'err'; }
+  if(st.usage === undefined) return sleepState = 'old';
+  if(!st.usage) return sleepState = 'perm';
+  sleepState = 'ok';
+  if(Date.now() - sleepAt < 5 * 6e4) return;
+  sleepAt = Date.now();
+  try{
+    const r = await NAlarm.screenEvents({from: Date.now() - 10 * 864e5});
+    const have = new Map((KF().sleep || []).map(x => [x.date, x]));   // גם מה שנמחק או תוקן ביד: לא דורסים
+    const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && (o.sleep !== n.sleep || o.wake !== n.wake)); })
+      .map(n => Object.assign({id: 'sl' + n.date, updatedAt: nowIso(), deleted: false}, n));
+    if(recs.length) saveK('sleep', recs);
+  }catch(e){ sleepState = 'err'; }
+}
+async function renderSleep(){
+  await sleepSync();
+  const nights = live(KF().sleep).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30), last7 = nights.filter(n => n.date >= ל.addDays(today(), -7));
+  // ממוצע של שעה בלילה: מודדים מהצהריים, כדי ש-23:30 ו-00:30 ימוצעו ל-00:00
+  const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
+    return `${String((Math.floor(a / 60) + 12) % 24).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`; };
+  const note = {web: 'שעות השינה נמדדות באפליקציית האנדרואיד: השעה האחרונה בלילה שהטלפון היה בשימוש, והשעה הראשונה בבוקר.',
+    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.'}[sleepState];
+  $('h-sleep').innerHTML = `
+    ${sleepState === 'perm' ? `<div class="card" style="margin-top:12px"><b>צריך אישור אחד</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי הטלפון היה בשימוש, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". הנתונים נשארים בטלפון ובמאגר שלך בלבד.</div>
+      <button class="btn primary" type="button" id="sl-perm" style="width:100%">פתיחת ההגדרה</button></div>` : note ? `<div class="card note" style="margin-top:12px">${esc(note)}</div>` : ''}
+    ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
+      <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span></div>` : ''}
+    <div class="sec"><h2 class="bl-h">לילות <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></h2>
+    ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
+      return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
+        <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : ''}</div>
+        <div class="sl-bar"><i style="right:${Math.max(0, Math.min(100, x0 * 100)).toFixed(1)}%;width:${Math.min(100, n.mins / (14 * 60) * 100).toFixed(1)}%"></i></div></button>`; }).join('')
+      : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>`;
+  if($('sl-perm')) $('sl-perm').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
+  $('sl-add').onclick = () => editSleep(null);
+}
+/** תיקון ידני של לילה: מתי נרדמת ומתי קמת. */
+async function editSleep(n){
+  const d0 = n ? n.date : ל.addDays(today(), -1);
+  const v = await ask(n ? 'תיקון הלילה' : 'לילה חדש', [{label: 'נרדמתי בשעה', value: n ? hm(n.sleep) : '23:30', req: true}, {label: 'קמתי בשעה', value: n ? hm(n.wake) : '07:00', req: true}],
+    {ok: 'שמירה', note: n ? '' : 'הלילה שבין אתמול להיום'});
+  if(!v) return;
+  const ok = x => /^\d{1,2}:\d{2}$/.test(x); if(!ok(v[0]) || !ok(v[1])) return toast('שעה כמו 23:30', {err: true});
+  const pad = x => x.padStart(5, '0'), h0 = +v[0].split(':')[0];
+  const sleep = ל.at(h0 >= 12 ? d0 : ל.addDays(d0, 1), pad(v[0])), wake = ל.at(ל.addDays(d0, 1), pad(v[1]));
+  if(!(wake > sleep)) return toast('שעת הקימה צריכה להיות אחרי השינה', {err: true});
+  saveK('sleep', Object.assign({}, n || {id: 'sl' + d0, date: d0, wakeups: 0}, {sleep, wake, mins: Math.round((wake - sleep) / 6e4), manual: true, updatedAt: nowIso(), deleted: false}));
+  renderSleep();
+}
+$('h-sleep').addEventListener('click', e => { const b = e.target.closest('[data-sl]'); if(!b) return; const n = live(KF().sleep).find(x => x.id === b.dataset.sl); if(!n) return;
+  sheet(`ליל ${kDayLabel(n.date)} · ${durText(n.mins)}`, [['✏️ תיקון השעות', () => editSleep(n)],
+    ['🗑 מחיקה', () => { saveK('sleep', Object.assign({}, n, {deleted: true, manual: true, updatedAt: nowIso()})); renderSleep(); }]]); });
 const qtyText = e => e.unit === 'גרם' ? `${kNum(e.qty)} גרם` : `${+e.qty === 0.5 ? 'חצי' : String(+e.qty).replace(/\.5$/, '½').replace(/^0½$/, '½')} ${e.unit}`;
 function actText(a){
   const d = ל.ACTIVITIES[a.type] || ל.ACTIVITIES.other, lv = d.levels[+a.level || 0];
@@ -1934,9 +2234,9 @@ function actText(a){
 $('kc-prev').onclick = () => { kcDate = ל.addDays(kcDate, -1); renderKcal(); };
 $('kc-next').onclick = () => { if(kcDate < today()){ kcDate = ל.addDays(kcDate, 1); renderKcal(); } };
 $('kc-day').onclick = () => { if(kcDate !== today()){ kcDate = today(); renderKcal(); } };
-function editGoal(){
+async function editGoal(){
   const st = ל.calSettings(KF());
-  const v = prompt('יעד קלוריות יומי', st.goal);
+  const [v] = await ask('יעד קלוריות יומי', [{label: 'קלוריות ביום', value: st.goal, num: true, req: true}]) || [];
   if(v == null || !(+v > 0)) return;
   saveK('settings', Object.assign({}, st, {id: 'settings', goal: Math.round(+v), updatedAt: nowIso()}));
 }
@@ -2101,7 +2401,7 @@ $('kc-myfoods').onclick = () => {
 function favMealMenu(m){
   sheet(m.name, [
     ...ל.MEALS.map(([id, n, em]) => [`${em} הוספה ל${n} (${kDayLabel(kcDate)})`, () => addMealItems(m.items, id, m.name)]),
-    ['✏️ שינוי שם', () => { const v = prompt('שם המנה', m.name); if(v && v.trim()) saveK('meals', Object.assign({}, m, {name: v.trim(), updatedAt: nowIso()})); }],
+    ['✏️ שינוי שם', async () => { const [v] = await ask('שם המנה', [{label: 'שם', value: m.name, req: true}]) || []; if(v && v.trim()) saveK('meals', Object.assign({}, m, {name: v.trim(), updatedAt: nowIso()})); }],
     ['🗑 מחיקה', () => { saveK('meals', Object.assign({}, m, {deleted: true, updatedAt: nowIso()})); toast('נמחקה', {undo: () => saveK('meals', Object.assign({}, m, {deleted: false, updatedAt: nowIso()}))}); }],
   ], m.items.map(i => `${i.name} (${kNum(i.kcal)})`).join(' · '));
 }
@@ -2119,10 +2419,10 @@ function mealTool(tool, meal){
   const addItems = (items, label) => addMealItems(items, meal, label);
   if(tool === 'save'){
     const items = ל.calDay(KF(), kcDate).meals.find(m => m.id === meal).items;
-    const name = prompt('שם לארוחה הקבועה', `${mealName} רגיל`);
+    return ask('ארוחה קבועה', [{label: 'שם', value: `${mealName} רגיל`, req: true}]).then(r => { const name = r && r[0];
     if(!name) return;
     saveK('meals', {id: 'm' + uid(), name: name.trim(), meal, items: items.map(({foodId, name, qty, unit, grams, kcal, manual}) => ({foodId, name, qty, unit, grams, kcal, manual})), updatedAt: nowIso(), deleted: false});
-    return toast(`⭐ נשמרה: ${name}`);
+    toast(`⭐ נשמרה: ${name}`); });
   }
   if(tool === 'fav'){
     const fav = live(KF().meals);
@@ -2203,12 +2503,12 @@ $('kc-set').onclick = () => {
   const st = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
   sheet('הגדרות קלוריות', [
     [`🎯 יעד יומי: ${kNum(st.goal)} קלוריות`, editGoal],
-    [`⚖️ עדכון משקל (עכשיו: ${w} ק״ג)`, () => {
-      const v = prompt('משקל נוכחי בק״ג', w); if(v == null || !(+v > 30 && +v < 300)) return;
+    [`⚖️ עדכון משקל (עכשיו: ${w} ק״ג)`, async () => {
+      const [v] = await ask('עדכון משקל', [{label: 'משקל נוכחי בק״ג', value: w, num: true, req: true}]) || []; if(v == null || !(+v > 30 && +v < 300)) return;
       saveK('weights', {id: 'w' + today(), date: today(), kg: +(+v).toFixed(1), updatedAt: nowIso(), deleted: false});
       toast(`✓ משקל עודכן: ${(+v).toFixed(1)} ק״ג. החישובים מהיום לפי המשקל החדש`);
     }],
-    [`📏 גובה: ${st.height} ס״מ`, () => { const v = prompt('גובה בס״מ', st.height); if(v && +v > 100 && +v < 230) saveK('settings', Object.assign({}, st, {id: 'settings', height: +v, updatedAt: nowIso()})); }],
+    [`📏 גובה: ${st.height} ס״מ`, async () => { const [v] = await ask('גובה', [{label: 'גובה בס״מ', value: st.height, num: true, req: true}]) || []; if(v && +v > 100 && +v < 230) saveK('settings', Object.assign({}, st, {id: 'settings', height: +v, updatedAt: nowIso()})); }],
   ]);
 };
 
@@ -2237,7 +2537,7 @@ $('kr-ok').onclick = () => {
   $('dlg-krec').close();
   toast(`🧾 נשמר: ${name}. מופיע עכשיו בחיפוש המאכלים`);
 };
-$('kr-del').onclick = () => { if(!confirm('למחוק את המתכון?')) return; saveK('recipes', Object.assign({}, krec, {deleted: true, updatedAt: nowIso()})); $('dlg-krec').close(); };
+$('kr-del').onclick = async () => { if(!await sure('למחוק את המתכון?')) return; saveK('recipes', Object.assign({}, krec, {deleted: true, updatedAt: nowIso()})); $('dlg-krec').close(); };
 $('kc-recipe').onclick = () => openKRec(null);
 
 /* ---------- "עוד": ימי הולדת, מסמכים, ושאר המסכים ---------- */
@@ -2330,8 +2630,8 @@ $('up-ok').onclick = () => {
   $('dlg-upkeep').close();
   toast(`${upEmoji} ${upEdit ? 'נשמר' : 'נוסף'}: ${name}, כל ${ל.everyText(upEvery[0], upEvery[1])}`);
 };
-$('up-del').onclick = () => {
-  const t = upEdit; if(!t || !confirm(`למחוק את "${t.title}"?`)) return;
+$('up-del').onclick = async () => {
+  const t = upEdit; if(!t || !await sure(`למחוק את "${t.title}"?`)) return;
   saveTask(Object.assign({}, t, {deleted: true})); $('dlg-upkeep').close();
   toast('נמחק', {undo: () => saveTask(Object.assign({}, t, {deleted: false}))});
 };
@@ -2378,8 +2678,8 @@ $('bd-ok').onclick = () => {
   $('dlg-bday').close();
   toast(`${ל.OCCASIONS[bdKind].emoji} נוסף: ${t.title}. תזכורת שבוע לפני ויום לפני`);
 };
-$('bd-del').onclick = () => {
-  if(!bdEdit || !confirm(`למחוק את "${bdEdit.title}"?`)) return;
+$('bd-del').onclick = async () => {
+  if(!bdEdit || !await sure(`למחוק את "${bdEdit.title}"?`)) return;
   saveTask(Object.assign({}, bdEdit, {deleted: true})); $('dlg-bday').close();
 };
 
@@ -2471,7 +2771,7 @@ async function openDocFile(p){
 }
 $('doc-pics').onclick = async e => {
   const del = e.target.closest('[data-del]');
-  if(del){ e.stopPropagation(); if(confirm(`למחוק את ${docPics[+del.dataset.del].name}?`)) removeDocItem(+del.dataset.del); return; }
+  if(del){ e.stopPropagation(); if(await sure(`למחוק את ${docPics[+del.dataset.del].name}?`)) removeDocItem(+del.dataset.del); return; }
   const fb = e.target.closest('[data-f]');
   if(fb) return openDocFile(docPics[+fb.dataset.f]);
   const b = e.target.closest('[data-i]'); if(!b) return;
@@ -2482,7 +2782,7 @@ $('doc-pics').onclick = async e => {
 };
 $('ph-close').onclick = () => $('dlg-photo').close();
 $('ph-del').onclick = async () => {
-  if(!confirm('למחוק את התמונה?')) return;
+  if(!await sure('למחוק את התמונה?')) return;
   const p = docPics[phOpen];
   try{ const g = await gh('GET', p.path); if(g) await gh('DELETE', p.path, {message: 'משימות: מחיקת תמונה של מסמך', branch: BRANCH, sha: g.sha}); }catch(err){}
   docPics.splice(phOpen, 1); renderDocPics(); $('dlg-photo').close();
@@ -2517,8 +2817,8 @@ $('doc-ok').onclick = () => {
   $('dlg-doc').close();
   toast(renewed ? `✓ ${name} חודש, בתוקף עד ${ל.shortDate(expiry)}` : `📄 נוסף: ${name}. תזכורת ${$('doc-rem').selectedOptions[0].text}`);
 };
-$('doc-del').onclick = () => {
-  if(!docEdit || !confirm(`למחוק את ${docEdit.docName}?`)) return;
+$('doc-del').onclick = async () => {
+  if(!docEdit || !await sure(`למחוק את ${docEdit.docName}?`)) return;
   saveTask(Object.assign({}, docEdit, {deleted: true})); $('dlg-doc').close();
 };
 
@@ -2732,11 +3032,12 @@ $('dlg-snooze').addEventListener('click', e => {
 $('z-cancel').onclick = () => $('dlg-snooze').close();
 
 /* ---------- הוספה מהירה ---------- */
-const WHEN = [['today', 'היום'], ['tomorrow', 'מחר'], ['week', 'השבוע'], ['none', 'בלי תאריך']];
+const WHEN = [['today', 'היום'], ['tomorrow', 'מחר'], ['week', 'השבוע'], ['pick', '📅 תאריך אחר'], ['none', 'בלי תאריך']];
 let quick = {when: 'today', domain: 'personal'};
 function openQuick(){
   quick = {when: 'today', date: null, repeat: '', repTouched: false, domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal'), touched: false};
   $('q-title').value = ''; $('q-time').value = '';
+  $('q-clock-t').textContent = ל.localTime(Date.now());
   quick.cal = store(K.toCal) === '1';   // נזכר בבחירה האחרונה
   renderQuick();
   $('dlg-quick').showModal();
@@ -2774,8 +3075,15 @@ $('q-title').addEventListener('input', () => {
   $('q-time').value = p.time || '';
   renderQuick();
 });
+// השעון: השעה עכשיו (מעוגלת ל-5 דקות קדימה), ונפתח בחירת שעה ממנה
+const timeNow5 = () => { const [h, m] = ל.localTime(Date.now() + 5 * 6e4).split(':').map(Number), mm = Math.floor(m / 5) * 5; return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; };
+$('q-clock').onclick = () => { if(!$('q-time').value) $('q-time').value = timeNow5(); $('q-time').dispatchEvent(new Event('input')); try{ $('q-time').showPicker(); }catch(e){ $('q-time').focus(); } };
+$('q-time').addEventListener('pointerdown', () => { if(!$('q-time').value){ $('q-time').value = timeNow5(); $('q-time').dispatchEvent(new Event('input')); } });
+$('q-time-x').onclick = () => { $('q-time').value = ''; renderQuick(); };
 $('q-time').addEventListener('input', () => { quick.touched = true; if(quick.when === 'none') quick.when = 'today'; renderQuick(); });
-$('q-when').onclick = e => { const b = e.target.closest('[data-w]'); if(b){ quick.touched = true; quick.when = b.dataset.w; if(quick.when === 'none') $('q-time').value = ''; renderQuick(); } };
+$('q-when').onclick = e => { const b = e.target.closest('[data-w]');
+  if(b && b.dataset.w === 'pick') return pickDate(quickDate() || today(), 'מתי?').then(d => { if(d){ quick.touched = true; quick.when = 'date'; quick.date = d; renderQuick(); } });
+  if(b){ quick.touched = true; quick.when = b.dataset.w; if(quick.when === 'none') $('q-time').value = ''; renderQuick(); } };
 $('q-cal').onclick = () => { quick.cal = !quick.cal; renderQuick(); toast(quick.cal ? '📅 ייכנס גם ליומן גוגל' : 'בלי יומן', {ms: 1500}); };
 $('q-rep').onclick = e => { const b = e.target.closest('[data-r]'); if(b){ quick.repTouched = true; quick.repeat = b.dataset.r; if(quick.repeat && quick.when === 'none') quick.when = 'today'; renderQuick(); } };
 $('q-domain').onclick = e => { const b = e.target.closest('[data-d]'); if(b){ quick.domain = b.dataset.d; renderQuick(); } };
@@ -2813,7 +3121,18 @@ $('q-save').onclick = () => {
 };
 $('q-title').addEventListener('keydown', e => { if(e.key === 'Enter') $('q-save').click(); });
 $('q-more').onclick = () => { const t = quickTask(); $('dlg-quick').close(); openEditor(null, t); };
-$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'birthdays' ? openBday() : screen === 'docs' ? openDoc() : screen === 'upkeep' ? openUpkeep() : openQuick();
+$('bd-add').onclick = () => openBday();
+onHold(document.body, '#fab', () => sheet('מה להוסיף?', [
+  ['🔔 משימה עם תזכורת', () => openQuick()],
+  ['📅 אירוע ביומן', () => { openQuick(); quick.cal = true; renderQuick(); }],
+  ['📝 משימה לרשימה', () => { show('todo'); setTimeout(() => $('td-new').focus(), 50); }],
+  ['🛒 מוצר לקניות', () => { show('shop'); setTimeout(() => $('shop-in').focus(), 50); }],
+  ['🎂 יום מיוחד', () => openBday()],
+  ['🧾 מתכון', () => $('dlg-radd').showModal()],
+  ['📄 מסמך', () => openDoc()],
+  ['🔧 פריט תחזוקה', () => openUpkeep()],
+]));
+$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'docs' ? openDoc() : screen === 'upkeep' ? openUpkeep() : openQuick();
 document.addEventListener('click', e => { const b = e.target.closest('[data-back]'); if(b) show(b.dataset.back); });
 /* ---------- יומן גוגל ---------- */
 // כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
@@ -2982,14 +3301,14 @@ $('e-save').onclick = () => {
   $('dlg-editor').close();
   toast(ed.isNew ? `נוספה: ${t.title}` : 'נשמר');
 };
-function deleteTask(){
+async function deleteTask(){
   const t = ed.t;
   if(isRecurring(t)){
-    if(!confirm('להעביר לארכיון? ההיסטוריה נשמרת, ואפשר להחזיר מהעריכה.')) return;
+    if(!await sure('להעביר לארכיון?', 'לארכיון', {note: 'ההיסטוריה נשמרת, ואפשר להחזיר מהעריכה'})) return;
     saveTask(Object.assign({}, taskById(t.id), {archived: true}));
     toast('הועברה לארכיון');
   }else{
-    if(!confirm(`למחוק את "${t.title}"?`)) return;
+    if(!await sure(`למחוק את "${t.title}"?`)) return;
     saveTask(Object.assign({}, taskById(t.id), {deleted: true}));
     toast('נמחקה');
   }
@@ -3380,8 +3699,8 @@ function renderSettings(){
   $('s-dom-add').onclick = () => { const rows = readDomRows(); rows.push({id: 'd' + uid(), name: '', color: '#64748B', hidden: false, _new: true}); renderDomRows(rows); };
   $('s-connect').onclick = () => connect($('s-token').value.trim()).then(ok => ok && renderSettings());
   $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); renderSettings(); };
-  $('s-disc') && ($('s-disc').onclick = () => {
-    if(!confirm('לנתק את המכשיר מגיטהאב? הנתונים נשארים במאגר ובמכשיר.')) return;
+  $('s-disc') && ($('s-disc').onclick = async () => {
+    if(!await sure('לנתק את המכשיר מגיטהאב?', 'ניתוק', {note: 'הנתונים נשארים במאגר ובמכשיר'})) return;
     store(K.token, null); token = ''; kvSet('token', '').catch(() => {}); Object.values(FILES).forEach(f => f.sha = null); renderSettings(); renderStatus();
   });
   $('s-test') && ($('s-test').onclick = testNotification);
@@ -3389,21 +3708,30 @@ function renderSettings(){
   $('s-export').onclick = exportAll;
 }
 function openSettings(){ show('prefs'); }
+/** תחומים בהגדרות: לכל תחום שורה מסודרת: צבע, שם, הצגה/הסתרה, מחיקה. תחום שיש בו משימות אי אפשר למחוק (מסבירים למה). */
 function renderDomRows(rows){
-  const used = new Set(D.tasks.filter(t => !t.deleted).map(t => t.domain));
-  $('s-doms').innerHTML = rows.map(x => `<div class="row dom-row" data-id="${esc(x.id)}" style="align-items:center;margin:6px 0">
-    <input type="color" value="${esc(x.color)}" aria-label="צבע" style="flex:none;width:48px;height:48px;border:0;background:transparent">
-    <input type="text" value="${esc(x.name)}" aria-label="שם התחום" placeholder="שם">
-    <label class="check-row" style="flex:none;font-size:14px"><input type="checkbox"${x.hidden ? ' checked' : ''}> מוסתר</label>
-    ${used.has(x.id) ? '' : `<button type="button" class="icon-btn" data-del aria-label="מחיקת תחום"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`}
+  const cnt = {}; D.tasks.filter(t => !t.deleted).forEach(t => cnt[t.domain] = (cnt[t.domain] || 0) + 1);
+  $('s-doms').innerHTML = rows.map(x => `<div class="dom-row${x.hidden ? ' off' : ''}" data-id="${esc(x.id)}" data-hidden="${x.hidden ? 1 : ''}">
+    <label class="dom-color" style="--c:${esc(x.color)}"><input type="color" value="${esc(x.color)}" aria-label="צבע"></label>
+    <span class="dom-name"><input type="text" value="${esc(x.name)}" aria-label="שם התחום" placeholder="שם התחום"><small>${cnt[x.id] ? cnt[x.id] + ' משימות' : 'אין משימות'}${x.hidden ? ' · מוסתר' : ''}</small></span>
+    <button type="button" class="dom-ic" data-hide aria-label="${x.hidden ? 'הצגה' : 'הסתרה'}">${x.hidden ? '🙈' : '👁'}</button>
+    <button type="button" class="dom-ic" data-del aria-label="מחיקת תחום">🗑</button>
   </div>`).join('');
-  $('s-doms').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { b.closest('.dom-row').dataset.deleted = '1'; b.closest('.dom-row').hidden = true; });
+  $('s-doms').querySelectorAll('.dom-color input').forEach(c => c.oninput = () => c.parentNode.style.setProperty('--c', c.value));
+  $('s-doms').querySelectorAll('[data-hide]').forEach(b => b.onclick = () => {
+    const r = b.closest('.dom-row'), h = !r.dataset.hidden; r.dataset.hidden = h ? '1' : ''; r.classList.toggle('off', h); b.textContent = h ? '🙈' : '👁';
+    r.querySelector('small').textContent = r.querySelector('small').textContent.replace(/ · מוסתר$/, '') + (h ? ' · מוסתר' : '');
+  });
+  $('s-doms').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    const r = b.closest('.dom-row'), n = cnt[r.dataset.id];
+    if(n) return toast(`יש בתחום ${n} משימות. מעבירים אותן לתחום אחר, או מסתירים את התחום (👁)`, {ms: 5000});
+    if(!await sure(`למחוק את התחום "${r.querySelector('.dom-name input').value || 'בלי שם'}"?`)) return;
+    r.dataset.deleted = '1'; r.hidden = true;
+  });
 }
 function readDomRows(){
-  return [...document.querySelectorAll('.dom-row')].map(r => {
-    const [c, n] = r.querySelectorAll('input');
-    return {id: r.dataset.id, color: c.value, name: n.value.trim(), hidden: r.querySelector('[type=checkbox]').checked, deleted: r.dataset.deleted === '1'};
-  });
+  return [...document.querySelectorAll('.dom-row')].map(r => ({id: r.dataset.id, color: r.querySelector('.dom-color input').value, name: r.querySelector('.dom-name input').value.trim(),
+    hidden: !!r.dataset.hidden, deleted: r.dataset.deleted === '1'}));
 }
 function saveSettings(){
   const c = D.config;
@@ -3929,6 +4257,8 @@ function צייר_כרטיסים(){
     if(t.סוג === 'יומית'){
       const נלקח = של_תרופה(t.id).find(r => r.תאריך === היום);
       if(נלקח){ צבע = t.מצבים.נלקח; מחלקת_סטטוס = צבע; סטטוס = `✓ נלקח היום ב-${נלקח.שעה}`; }
+      // תרופה יומית לוקחים מ-06:00. רק מאז היא נהיית אדומה
+      else if(new Date().getHours() < 6){ צבע = t.מצבים.רגיל; סטטוס = 'עוד לא נלקח היום · אפשר מ-06:00'; }
       else    { צבע = t.מצבים.חסר; מחלקת_סטטוס = צבע; סטטוס = 'עוד לא נלקח היום'; }
     }else{
       const א = אחרונה(t.id);
@@ -4153,8 +4483,8 @@ $('טופס').addEventListener('submit', e => {
   שנה_רשומה(r, `${r.תרופה} ${r.תאריך} ${r.שעה}`, `נרשם: ${r.תרופה} ${r.שעה}`);
 });
 
-$('כפתור-מחיקה').addEventListener('click', () => {
-  if(!confirm('למחוק את הרישום?')) return;
+$('כפתור-מחיקה').addEventListener('click', async () => {
+  if(!await sure('למחוק את הרישום?')) return;
   שנה_רשומה({id: $('מזהה').value, נמחק: true, עודכן: עכשיו_iso()}, 'מחיקת רישום', 'הרישום נמחק');
 });
 
@@ -4534,8 +4864,8 @@ $('מ-קניתי').addEventListener('click', () => {
   const כמות = (m && m.יחידה === $('מ-יחידה').value ? m.נותר : +$('מ-כמות').value || 0) + a;
   שמור_מלאי(כמות); טוסט(`🛒 עכשיו יש ${יחידה_קצרה($('מ-יחידה').value, כמות)}`);
 });
-$('מ-הסר').addEventListener('click', () => {
-  if(!confirm('להפסיק לעקוב אחרי המלאי של התרופה הזו?')) return;
+$('מ-הסר').addEventListener('click', async () => {
+  if(!await sure('להפסיק לעקוב אחרי המלאי של התרופה הזו?', 'להפסיק')) return;
   קבע(קבצים.מלאי, מזג(מלאי, [{id: מלאי_בעריכה, נמחק: true, עודכן: עכשיו_iso()}])); אחסון(קבצים.מלאי.ממתין, '1');
   $('חלונית-מלאי').close(); צייר_הכל(); סנכרן();
 });
@@ -4609,8 +4939,34 @@ async function nativeEvents(){
     const stopped = (ev.stopped || []).map(id => (D.file.timers.timers || []).find(x => x.id === id)).filter(t => t && !t.stopped);
     if(stopped.length) saveTimers(stopped.map(t => Object.assign({}, t, {stopped: true, updatedAt: nowIso()})));
     for(const t of stopped) announced.add(t.id);
+    // "+1 דקה" מההתראה של הטלפון: הזמן החדש
+    const ext = Object.entries(ev.extended || {}).map(([id, at]) => { const t = (D.file.timers.timers || []).find(x => x.id === id);
+      return t && +at > t.at ? Object.assign({}, t, {at: +at, stopped: false, updatedAt: nowIso()}) : null; }).filter(Boolean);
+    if(ext.length){ saveTimers(ext); ext.forEach(t => announced.delete(t.id)); }
     if(ev.opened){ announced.add(ev.opened); tmrOpen = ev.opened; openTimer(ev.opened); }
   }catch(e){}
+  meetingSuggestions();
+}
+/* ---------- הצעות ליומן: הודעה נכנסת שנראית כמו פגישה (נקלטה בטלפון, MeetingListener) ---------- */
+let suggesting = false;
+async function meetingSuggestions(){
+  if(!NATIVE || suggesting || !NAlarm.takeMessages) return;
+  let r; try{ r = await NAlarm.takeMessages(); }catch(e){ return; }
+  const list = (r.messages || []).filter(m => Date.now() - m.t < 3 * 864e5).slice(-3);
+  suggesting = true;
+  try{ for(const m of list) await suggestMeeting(m); } finally { suggesting = false; }
+}
+async function suggestMeeting(m){
+  const p = ל.parseQuick(m.text, Date.now());
+  if(!p.date && !p.time) return;
+  const d = p.date || today(), whenTxt = `${d === today() ? 'היום' : d === ל.addDays(today(), 1) ? 'מחר' : dayName(d) + ' ' + ל.shortDate(d)}${p.time ? ' ב-' + p.time : ''}`;
+  const v = await ask('📅 להוסיף ליומן?', [{label: 'שם האירוע', value: `פגישה${m.title ? ' עם ' + m.title : ''}`, req: true}], {ok: 'הוספה', no: 'לא עכשיו',
+    html: `<div class="card" style="margin:0 0 6px;font-size:14px"><b>${esc(m.app || 'הודעה')}${m.title ? ' · ' + esc(m.title) : ''}</b><div style="margin-top:4px;white-space:pre-wrap">${esc(m.text.slice(0, 220))}</div></div>
+      <div class="q-when-line" style="font-size:16px;font-weight:600">🗓️ ${esc(whenTxt)}</div>`});
+  if(!v) return;
+  openQuick();
+  $('q-title').value = m.text; $('q-title').dispatchEvent(new Event('input'));   // התאריך והשעה מההודעה
+  $('q-title').value = v[0]; quick.touched = true; quick.cal = true; renderQuick();
 }
 async function nativeInit(){
   if(!NATIVE) return;
@@ -4659,7 +5015,7 @@ $('bl-hist').onclick = e => {
     [c.paid ? '↺ עוד לא שולם' : '✓ שולם', () => upd(c.paid ? {paid: false, paidAt: null} : {paid: true, paidAt: today()})],
     ['📤 שליחה שוב בוואטסאפ', () => sendWa(msg)],
     ['📋 העתקת ההודעה', () => navigator.clipboard?.writeText(msg).then(() => toast('הועתק'))],
-    ['🗑 מחיקה', () => { if(confirm('למחוק את החשבון?')) upd({deleted: true}); }],
+    ['🗑 מחיקה', async () => { if(await sure('למחוק את החשבון?')) upd({deleted: true}); }],
   ]);
 };
 $('bl-led').onclick = e => {
@@ -4668,18 +5024,23 @@ $('bl-led').onclick = e => {
   const upd = patch => saveTenant({ledger: tc.ledger.map(x => x.id === l.id ? Object.assign({}, x, patch) : x)});
   sheet(`${l.text} · ${shekel(l.amount)}`, [
     ['✓ שולם (סגירה)', () => upd({settled: true, settledAt: today()})],
-    ['✏️ עריכה', () => { const t = prompt('על מה', l.text); if(t == null) return; const a = prompt('סכום', l.amount); if(a == null || !(+a > 0)) return; upd({text: t.trim() || l.text, amount: +a}); }],
+    ['✏️ עריכה', () => ledgerDialog(l).then(v => v && upd(v))],
     ['🗑 מחיקה', () => upd({deleted: true})],
   ]);
 };
-$('bl-led-add').onclick = () => sheet('חוב חדש', [
-  ['➖ אני חייב לדייר', () => addLedger('me')],
-  ['➕ הדייר חייב לי', () => addLedger('him')],
-]);
-function addLedger(dir){
-  const t = prompt('על מה (למשל: ועד בית)'); if(!t || !t.trim()) return;
-  const a = prompt('סכום בשקלים'); if(!(+a > 0)) return toast('סכום לא תקין', {err: true});
-  saveTenant({ledger: [...(TC().ledger || []), {id: 'lg' + uid(), date: today(), text: t.trim(), amount: +a, dir, settled: false}]});
+$('bl-led-add').onclick = () => addLedger('me');   // חלון אחד: על מה, כמה, ומי חייב למי
+/** חלון חוב: על מה, כמה, ומי חייב למי. הכול בחלון אחד. */
+function ledgerDialog(l){
+  l = l || {dir: 'me'};
+  let dir = l.dir;
+  return ask(l.id ? 'עריכת חוב' : 'חוב חדש', [{label: 'על מה', value: l.text || '', ph: 'למשל: ועד בית', req: true}, {label: 'סכום בשקלים', value: l.amount ?? '', ph: '0', num: true, req: true}], {
+    ok: 'שמירה', html: `<div class="opts led-dir">${[['me', '➖ אני חייב לו'], ['him', '➕ הוא חייב לי']].map(([k, n]) => `<button type="button" data-dir="${k}" class="${dir === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
+    init: d => { d.querySelector('.led-dir').onclick = e => { const b = e.target.closest('[data-dir]'); if(!b) return; dir = b.dataset.dir; d.querySelectorAll('[data-dir]').forEach(x => x.classList.toggle('on', x === b)); }; },
+  }).then(v => v && +v[1] > 0 ? {text: v[0], amount: +v[1], dir} : null);
+}
+async function addLedger(dir){
+  const v = await ledgerDialog({dir}); if(!v) return;
+  saveTenant({ledger: [...(TC().ledger || []), Object.assign({id: 'lg' + uid(), date: today(), settled: false}, v)]});
   toast('נוסף');
 }
 // חשבון חדש
@@ -4771,7 +5132,7 @@ function renderTodo(){
 }
 $('td-cats').onclick = e => {
   const b = e.target.closest('[data-c]'); if(!b) return;
-  if(b.dataset.c === '+'){ const n = prompt('שם הקטגוריה'); if(n && n.trim() && !todoCats().includes(n.trim())) saveConfig({todoCats: [...todoCats(), n.trim()]}); todoCat = n?.trim() || todoCat; }
+  if(b.dataset.c === '+'){ ask('קטגוריה חדשה', [{label: 'שם', req: true}]).then(r => { const n = r && r[0]; if(n && !todoCats().includes(n)) saveConfig({todoCats: [...todoCats(), n]}); if(n) todoCat = n; renderTodo(); }); return; }
   else todoCat = b.dataset.c;
   renderTodo();
 };
@@ -4782,6 +5143,32 @@ function addTodo(){
   $('td-new').value = '';
 }
 $('td-add').onclick = addTodo;
+function addTodoWith(patch){
+  const title = $('td-new').value.trim(); if(!title){ $('td-new').focus(); toast('קודם כותבים את המשימה'); return null; }
+  const x = Object.assign({id: 'td' + uid(), title, cat: todoCat === 'all' ? todoCats()[0] : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false}, patch);
+  saveTodo(x); $('td-new').value = ''; return x;
+}
+onHold($('td-add-row'), '#td-add', () => sheet('הוספה עם…', [
+  ['🔴 דחוף', () => addTodoWith({urg: 2})],
+  ['🟠 חשוב', () => addTodoWith({urg: 1})],
+  ['📅 תאריך יעד', () => { if(!$('td-new').value.trim()) return addTodoWith({}); pickDate(today(), 'תאריך יעד').then(d => d && addTodoWith({due: d})); }],
+  ...todoCats().map(c => [`🏷️ לקטגוריה ${c}`, () => addTodoWith({cat: c})]),
+  ['✏️ עם כל הפרטים', () => { const x = addTodoWith({}); if(x) openTodo(x.id); }],
+]));
+onHold($('td-list'), '[data-id]', el => {
+  const x = todoItems().find(y => y.id === el.dataset.id); if(!x) return;
+  if(x.done || x.removed) return sheet(x.title, [
+    ['↺ החזרה לרשימה', () => saveTodo(Object.assign({}, x, {done: false, removed: false}))],
+    ['🗑 מחיקה לצמיתות', () => { saveTodo(Object.assign({}, x, {deleted: true})); toast('נמחקה', {undo: () => saveTodo(Object.assign({}, x, {deleted: false}))}); }],
+  ]);
+  sheet(x.title, [
+    ['✓ בוצע', () => saveTodo(Object.assign({}, x, {done: true, doneAt: nowIso()}))],
+    ['✏️ עריכה', () => openTodo(x.id)],
+    ...URG.map(([n], i) => i !== (x.urg || 0) ? [`${['⚪', '🟠', '🔴'][i]} ${n}`, () => saveTodo(Object.assign({}, x, {urg: i}))] : null).filter(Boolean),
+    ['📅 תאריך יעד', () => pickDate(x.due || today(), 'תאריך יעד').then(d => d && saveTodo(Object.assign({}, x, {due: d})))],
+    ['🗑 מחיקה (להיסטוריה)', () => { saveTodo(Object.assign({}, x, {removed: true, removedAt: nowIso()})); toast('עבר להיסטוריה', {undo: () => saveTodo(Object.assign({}, x, {removed: false}))}); }],
+  ]);
+});
 $('td-new').addEventListener('keydown', e => { if(e.key === 'Enter') addTodo(); });
 $('td-list').onclick = e => {
   const d = e.target.closest('[data-done]');
@@ -4810,7 +5197,7 @@ $('td-e-ok').onclick = () => {
 };
 $('td-e-del').onclick = () => {
   const x = tdEdit;
-  if(x.removed || x.done){ if(confirm('למחוק לצמיתות?')) saveTodo(Object.assign({}, x, {deleted: true})); }
+  if(x.removed || x.done){ sure('למחוק לצמיתות?').then(y => y && saveTodo(Object.assign({}, x, {deleted: true}))); }
   else { saveTodo(Object.assign({}, x, {removed: true, removedAt: nowIso()})); toast('עבר להיסטוריה', {undo: () => saveTodo(Object.assign({}, x, {removed: false}))}); }
   $('dlg-todo').close();
 };
@@ -4857,7 +5244,10 @@ async function renderNativePrefs(){
   box.innerHTML = `<div class="sec"><h2>📱 אפליקציית אנדרואיד</h2><div class="pf-stat">
       ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
     <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
-    <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>`;
+    <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
+    ${st.usage === undefined ? '' : `<div class="sec"><h2>אישורים נוספים</h2><div class="pf-stat">${ok(st.usage)} שעות שינה (גישה לנתוני שימוש)<br>${ok(st.listener)} הצעות ליומן מהודעות (גישה להתראות)</div>
+      <div class="btns">${st.usage ? '' : '<button class="btn" type="button" id="pf-usage">אישור שעות שינה</button>'}${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות ליומן</button>'}</div>
+      ${st.usage && st.listener ? '' : `<div class="note" style="margin-top:8px">אם האפשרות אפורה ("הגדרה מוגבלת"): <a href="#" id="pf-app">פרטי האפליקציה</a> ← ⋮ למעלה ← "התרת הגדרות מוגבלות", ואז שוב כאן.</div>`}</div>`}`;
   $('pf-t1').onclick = async () => {
     try{ await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: 'reminders', smallIcon: 'ic_stat_notify',
       schedule: {at: new Date(Date.now() + 10e3), allowWhileIdle: true}}]}); toast('✓ נקבע. אפשר לצאת מהאפליקציה'); }
@@ -4869,6 +5259,9 @@ async function renderNativePrefs(){
   };
   $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
   if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-usage')) $('pf-usage').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-lis')) $('pf-lis').onclick = () => NAlarm.openSettings({what: 'listener'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-app')) $('pf-app').onclick = e => { e.preventDefault(); NAlarm.openSettings({what: 'app'}).catch(err => toast(err.message, {err: true})); };
 }
 
 function handleHash(){
