@@ -387,6 +387,23 @@
   .meds .תפריט{top:60px}
 
   .back-more{display:none !important}
+  .td-head{display:flex;align-items:center;justify-content:space-between}
+  .td-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .td-row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:16px;padding:10px 12px;min-height:56px}
+  .td-row .b{flex:1;min-width:0;display:flex;flex-direction:column}
+  .td-row .t{font-weight:600}
+  .td-row .s{font-size:13px;color:var(--muted)}
+  .td-row.late{background:var(--red-soft)} .td-row.late .s{color:var(--red);font-weight:600}
+  .td-chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:transparent;flex:none;font-size:15px;color:var(--accent)}
+  .td-u{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;flex:none}
+  .td-u.imp{background:color-mix(in srgb,#E07A1F 18%,var(--card));color:#B45309}
+  .td-u.urg{background:var(--red);color:#fff}
+  .bl-bal{background:var(--card);border-radius:18px;padding:6px 14px;margin-top:10px}
+  .bl-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .bl-row:last-child{border:0} .bl-row.tot{font-size:17px;font-weight:700}
+  .bl-h{display:flex;align-items:center;justify-content:space-between}
+  .bl-pre{white-space:pre-wrap;background:var(--bg);border-radius:14px;padding:12px;font:14px/1.6 inherit;margin-top:10px}
+  .bl-sum{font-weight:700;font-size:18px;margin-top:10px}
   .pf-list{display:flex;flex-direction:column;gap:6px}
   .pf-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:6px 10px;min-height:52px}
   .pf-row .n{flex:1;font-weight:600}
@@ -506,7 +523,7 @@
       <h1 class="hello" id="hello"></h1>
     </div>
     <div class="ring" id="ring" role="img" aria-label=""><span id="ring-txt"></span></div>
-    <button class="icon-btn" id="btn-menu" aria-label="הגדרות">
+    <button class="icon-btn" id="btn-menu" aria-label="הגדרות" hidden>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
     </button>
   </div>
@@ -734,6 +751,19 @@
     </div>
   </form>
 </dialog>
+<main class="screen" id="scr-todo" hidden>
+  <div class="td-head"><h1 class="hello">משימות</h1><button class="txt-btn" type="button" id="td-hist" aria-label="היסטוריית המשימות"></button></div>
+  <div class="opts" id="td-cats" style="margin-top:8px"></div>
+  <div class="row" id="td-add-row" style="margin-top:12px"><input type="text" id="td-new" placeholder="משימה חדשה" aria-label="משימה חדשה"><button class="btn primary" type="button" id="td-add" style="flex:none">הוספה</button></div>
+  <div id="td-list" class="td-list"></div>
+</main>
+<main class="screen" id="scr-bills" hidden>
+  <h1 class="hello">חשבונות</h1>
+  <div id="bl-bal" class="bl-bal"></div>
+  <div class="btns"><button class="btn primary" type="button" id="bl-new">＋ חשבון חדש</button><button class="btn" type="button" id="bl-imp">📥 הודעה שכבר נשלחה</button></div>
+  <div class="sec"><h2 class="bl-h">חובות פתוחים <button class="txt-btn" type="button" id="bl-led-add">＋ חוב</button></h2><div id="bl-led" class="more-list"></div></div>
+  <div class="sec"><h2>חשבונות שנשלחו</h2><div id="bl-hist" class="more-list"></div></div>
+</main>
 <main class="screen" id="scr-prefs" hidden>
   <h1 class="hello">הגדרות</h1>
   <div id="pf-native"></div>
@@ -742,7 +772,7 @@
     <div class="field"><span class="lbl">ערכת צבע</span><div class="opts" id="pf-theme"></div></div>
     <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
   </div>
-  <button class="btn" type="button" id="pf-all" style="width:100%;margin-top:18px">כל ההגדרות (התראות, שעות, גיטהאב)</button>
+  <div id="pf-more"></div>
 </main>
 <main class="screen" id="scr-upkeep" hidden>
   <h1 class="hello">תחזוקה שוטפת</h1>
@@ -771,6 +801,7 @@
 <button id="fab" aria-label="משימה חדשה"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav id="nav">
   <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
+  <button data-scr="todo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>משימות</button>
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
   <button data-scr="kcal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-5.6-3.6-7.6-.4 1.6-1.3 2.8-2.4 3.4.1-3.3-1.2-6.4-4-8.8.2 3.6-1.6 5.6-3.2 7.6C4.6 11.3 5 13.4 5 15c0 4.2 3 7 7 7z"/></svg>קלוריות</button>
@@ -781,6 +812,7 @@
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
   <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>תחומים</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
+  <button data-scr="bills"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>חשבונות</button>
   <button data-scr="prefs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 6.5l2 1.2M17.8 16.3l2 1.2M4.2 17.5l2-1.2M17.8 7.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>הגדרות</button>
 </nav>
 
@@ -927,6 +959,40 @@
   <div class="field"><label for="up-last">מתי בפעם האחרונה</label><input type="date" id="up-last"></div>
   <div class="btns"><button class="btn" id="up-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="up-cancel" type="button">ביטול</button><button class="btn primary" id="up-ok" type="button">שמירה</button></div>
 </div></dialog>
+<dialog id="dlg-bill" class="full" aria-label="חשבון לדייר"><div class="dlg-head">
+    <button class="txt-btn" id="bl-close" type="button">ביטול</button><h2>חשבון חדש</h2><button class="txt-btn" id="bl-save" type="button">שמירה</button></div>
+  <div class="dlg">
+    <label class="check-row"><input type="checkbox" id="bl-on-elec"> <b>⚡ חשמל</b></label>
+    <div id="bl-elec">
+      <div class="row"><div class="field"><label for="bl-from">מתאריך</label><input type="date" id="bl-from"></div><div class="field"><label for="bl-to">עד</label><input type="date" id="bl-to"></div></div>
+      <div class="row"><div class="field"><label for="bl-prev">קריאה קודמת</label><input type="text" inputmode="decimal" id="bl-prev"></div><div class="field"><label for="bl-cur">קריאה נוכחית</label><input type="text" inputmode="decimal" id="bl-cur"></div></div>
+      <div class="row"><div class="field"><label for="bl-house">צריכת הבית, קוט"ש</label><input type="text" inputmode="decimal" id="bl-house"></div><div class="field"><label for="bl-total">עלות כוללת, ₪</label><input type="text" inputmode="decimal" id="bl-total"></div></div>
+    </div>
+    <label class="check-row"><input type="checkbox" id="bl-on-arnona"> <b>🏛️ ארנונה</b></label>
+    <div id="bl-arnona" class="row"><div class="field"><label for="bl-arp">תקופה</label><input type="text" id="bl-arp" placeholder="נובמבר-דצמבר"></div><div class="field"><label for="bl-ara">סכום, ₪</label><input type="text" inputmode="decimal" id="bl-ara"></div></div>
+    <label class="check-row"><input type="checkbox" id="bl-on-water"> <b>💧 מים (חצי חצי)</b></label>
+    <div id="bl-water" class="row"><div class="field"><label for="bl-wp">תקופה</label><input type="text" id="bl-wp" placeholder="אוגוסט-ספטמבר"></div><div class="field"><label for="bl-wt">סכום החשבון, ₪</label><input type="text" inputmode="decimal" id="bl-wt"></div></div>
+    <div id="bl-off" style="margin-top:8px"></div>
+    <div class="bl-sum" id="bl-sum"></div>
+    <pre class="bl-pre" id="bl-pre"></pre>
+    <div class="btns"><button class="btn" type="button" id="bl-copy">העתקה</button><button class="btn primary" type="button" id="bl-wa">📤 שליחה בוואטסאפ</button></div>
+  </div>
+</dialog>
+<dialog id="dlg-billimp" aria-label="ייבוא הודעה"><div class="dlg">
+  <h2>הודעה שכבר נשלחה לדייר</h2>
+  <div class="field"><label for="bi-text">מדביקים את ההודעה מוואטסאפ</label><textarea id="bi-text" style="min-height:180px"></textarea></div>
+  <label class="check-row"><input type="checkbox" id="bi-paid" checked> כבר שולם</label>
+  <div class="bl-sum" id="bi-sum"></div>
+  <div class="btns"><button class="btn" id="bi-cancel" type="button">ביטול</button><button class="btn primary" id="bi-ok" type="button">שמירה</button></div>
+</div></dialog>
+<dialog id="dlg-todo" aria-label="משימה"><div class="dlg">
+  <div class="field"><label for="td-e-title">משימה</label><input type="text" id="td-e-title"></div>
+  <div class="field"><span class="lbl">קטגוריה</span><div class="opts" id="td-e-cat"></div></div>
+  <div class="field"><span class="lbl">דחיפות</span><div class="opts" id="td-e-urg"></div></div>
+  <div class="field"><label for="td-e-due">תאריך יעד (לא חובה)</label><input type="date" id="td-e-due"></div>
+  <div class="field"><label for="td-e-notes">הערות</label><textarea id="td-e-notes"></textarea></div>
+  <div class="btns"><button class="btn" id="td-e-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="td-e-cancel" type="button">ביטול</button><button class="btn primary" id="td-e-ok" type="button">שמירה</button></div>
+</div></dialog>
 <dialog id="dlg-bday" aria-label="יום הולדת"><div class="dlg">
   <h2 id="bd-title">יום מיוחד</h2>
   <div class="opts" id="bd-kinds"></div>
@@ -1045,6 +1111,8 @@ const FILES = {
            merge: (a, b) => ל.mergeOccFile(a, b), msg: 'עדכון ביצועים'},
   kcal: {path: 'משימות/קלוריות.json', cache: 'משימות.קלוריות', pending: 'משימות.קלוריות.ממתין', sha: null,
            merge: (a, b) => ל.mergeCaloriesFile(a, b), msg: 'עדכון קלוריות'},
+  todos: {path: 'משימות/רשימת משימות.json', cache: 'משימות.רשימה', pending: 'משימות.רשימה.ממתין', sha: null,
+           merge: (a, b) => ({v: 1, items: ל.mergeById(a?.items, b?.items)}), msg: 'עדכון רשימת משימות'},
   timers: {path: 'משימות/טיימרים.json', cache: 'משימות.טיימרים', pending: 'משימות.טיימרים.ממתין', sha: null,
            merge: (a, b) => ל.mergeTimersFile(a, b), msg: 'טיימר'},
   recipes: {path: 'משימות/מתכונים.json', cache: 'משימות.מתכונים', pending: 'משימות.מתכונים.ממתין', sha: null,
@@ -1062,6 +1130,7 @@ const D = {
     config: ל.mergeConfig(storeJson(FILES.config.cache, null) || seed.config),
     shop: FILES.shop.merge(storeJson(FILES.shop.cache, null) || {items: []}, null),
     kcal: FILES.kcal.merge(storeJson(FILES.kcal.cache, null) || {}, null),
+    todos: FILES.todos.merge(storeJson(FILES.todos.cache, null) || {}, null),
     timers: FILES.timers.merge(storeJson(FILES.timers.cache, null) || {timers: []}, null),
     recipes: FILES.recipes.merge(storeJson(FILES.recipes.cache, null) || {recipes: []}, null),
   },
@@ -1336,10 +1405,11 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal' || s === 'meds' || s === 'prefs';
+  for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills'].includes(s);
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
+  if(s === 'prefs') renderSettings();
   const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
   if(on){ const n = $('nav'), r = on.getBoundingClientRect(), nr = n.getBoundingClientRect();
     if(r.left < nr.left) n.scrollBy({left: r.left - nr.left - 24}); else if(r.right > nr.right) n.scrollBy({left: r.right - nr.right + 24}); }
@@ -1356,6 +1426,8 @@ function renderAll(){
   else if(screen === 'kcal') renderKcal();
   else if(screen === 'upkeep') renderUpkeep();
   else if(screen === 'prefs') renderPrefs();
+  else if(screen === 'todo') renderTodo();
+  else if(screen === 'bills') renderBills();
   else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'birthdays') renderBirthdays();
   else if(screen === 'docs') renderDocs();
@@ -1488,16 +1560,32 @@ $('rc-cats').onclick = e => { const b = e.target.closest('[data-c]'); if(b){ rcC
 $('rc-list').onclick = e => { if(longPressed){ longPressed = false; return; } const b = e.target.closest('[data-r]'); if(b) openRecipe(b.dataset.r); };
 // לחיצה ארוכה על תמונה (ברשימה או בדף המתכון): בחירת תמונה אחרת
 let longPressed = false, lpTimer = null;
-function onLongPress(root, sel, getId){
+function onLongPress(root, sel, getId, menu){
   root.addEventListener('pointerdown', e => {
     const el = e.target.closest(sel); if(!el) return;
     clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) openImagePicker(r); }, 550);
+    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? recipeMenu(r) : openImagePicker(r)); }, 550);
   });
   for(const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) root.addEventListener(ev, e => { if(ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(lpTimer); });
   root.addEventListener('contextmenu', e => { if(e.target.closest(sel)) e.preventDefault(); });
 }
-onLongPress($('rc-list'), '.rc-pic', el => el.closest('[data-r]').dataset.r);
+// ברשימת המתכונים: לחיצה ארוכה על מתכון = עריכה, תמונה או מחיקה, בלי לפתוח אותו
+onLongPress($('rc-list'), '[data-r]', el => el.closest('[data-r]').dataset.r, true);
+function recipeMenu(r){
+  sheet(r.title, [
+    ['✏️ עריכת המתכון', () => openRecipeEditor(r)],
+    ['🖼️ החלפת תמונה', () => openImagePicker(r)],
+    ['🗑 מחיקה', () => { if(!confirm(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
+  ]);
+}
+// לחיצה ארוכה על לשונית בסרגל: לסידור הלשוניות
+{ let t = null, lp = false;
+  $('nav').addEventListener('pointerdown', e => { const b = e.target.closest('button[data-scr]'); if(!b) return; lp = false; clearTimeout(t);
+    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); show('prefs'); setTimeout(() => $('pf-nav').scrollIntoView({block: 'start'}), 50); toast('כאן משנים את סדר הלשוניות'); }, 600); });
+  for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('nav').addEventListener(ev, () => clearTimeout(t));
+  $('nav').addEventListener('pointermove', e => { if(Math.abs(e.movementX) > 4) clearTimeout(t); });
+  $('nav').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
+  $('nav').addEventListener('contextmenu', e => e.preventDefault()); }
 onLongPress($('r-body'), '.rc-hero', el => el.dataset.img);
 // בחירת תמונה: אחת גדולה (הנבחרת), ושתיים קטנות לבחירה. "עוד" מציג שתיים אחרות
 let imgPick = null;
@@ -2977,7 +3065,7 @@ async function sync(){
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
     await readPending();
-    await syncFile('occ'); await syncFile('shop'); await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal');
+    await syncFile('occ'); await syncFile('shop'); await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal'); await syncFile('todos');
     // המנות הקבועות של נדב נכנסות פעם אחת, רק אחרי שהקובץ מהמאגר נקרא (כדי לא להחזיר מה שנמחק)
     const ks = ל.kcalSeed(D.file.kcal, nowIso());
     if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); await syncFile('kcal'); }
@@ -2993,7 +3081,7 @@ async function sync(){
   }finally{
     syncing = false; renderAll();
     // ההגדרות פתוחות: מעדכנים רק את שורת המנוע (בלי לדרוס מה שנדב מקליד שם)
-    if($('dlg-settings').open && $('s-engine')) $('s-engine').innerHTML = engineText();
+    if($('s-engine')) $('s-engine').innerHTML = engineText();
     if(again){ again = false; sync(); }
   }
 }
@@ -3157,7 +3245,7 @@ async function enablePush(){
   }catch(err){
     toast('ההפעלה נכשלה: ' + (err.message || err), {err: true, ms: 6000});
   }
-  if($('dlg-settings').open) openSettings();
+  if(screen === 'prefs') renderSettings();
   sync();
 }
 /** פעם בפתיחה: מוודא שהרישום עדיין בתוקף (הדפדפן מחליף אותו לפעמים) ושהוא במאגר. */
@@ -3179,7 +3267,7 @@ if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('messa
 /* ---------- חשבונות הדייר ---------- */
 // החישוב עצמו בליבה.js (calcElec, calcWater, calcArnona). הסכומים נשמרים רק במאגר הפרטי, ולא יוצאים בהתראות.
 let calcKind = 'elec', calcAmount = null;
-function openCalc(kind, amount){
+function openCalcOld(kind, amount){
   calcKind = kind || calcKind; calcAmount = amount ?? null;
   renderCalc();
   if(!$('dlg-calc').open) $('dlg-calc').showModal();
@@ -3255,10 +3343,10 @@ function engineText(){
   if(e?.lastFull) return `המנוע בגוגל לא רץ מאז ${esc(fullDate(ל.localDate(ל.toMs(e.lastFull))))}.`;
   return 'המנוע בגוגל עוד לא הותקן.';
 }
-function openSettings(){
+function renderSettings(){
   const c = D.config, topics = storeJson(K.topics, null);
-  $('s-body').innerHTML = `
-    <div class="group" style="border:0;margin:0"><h3>התראות</h3>
+  $('pf-more').innerHTML = `
+    <div class="group"${NATIVE ? ' hidden' : ''}><h3>התראות</h3>
       <div class="note" id="s-engine">${engineText()}</div>
       ${pushOn() ? `<div class="note" style="margin-top:8px">✓ במכשיר הזה ההתראות מגיעות ישר לאפליקציה, עם "✓ בוצע" ו"עוד שעה".</div>
         <div class="btns"><button class="btn" id="s-test" type="button">שלח התראת בדיקה</button></div>`
@@ -3266,8 +3354,6 @@ function openSettings(){
             ? 'ההתראות חסומות במכשיר הזה. בכרום: ⋮ ← הגדרות ← הגדרות אתר ← התראות, ולאפשר לאתר הזה. אחר כך ללחוץ כאן:'
             : 'כדי שההתראות יגיעו ישר מהאפליקציה, עם כפתורים:'}</div>
         <div class="btns"><button class="btn primary" id="s-push" type="button">הפעלת התראות באפליקציה</button></div>`}
-      ${!pushMode() && topics?.ntfy ? `<div class="note" style="margin-top:12px">${pushOn() ? 'עד שהמנוע ירוץ' : 'בינתיים'}: ההתראות מגיעות דרך אפליקציית ntfy, מהערוץ:</div><div class="mono" style="margin-top:6px">${esc(topics.ntfy)}</div>
-        <div class="btns"><button class="btn" id="s-copy" type="button">העתקת שם הערוץ</button>${pushOn() ? '' : '<button class="btn" id="s-test" type="button">שלח התראת בדיקה</button>'}</div>` : ''}
     </div>
     <div class="group"><h3>שעות</h3>
       <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
@@ -3277,43 +3363,32 @@ function openSettings(){
       <div class="note">התראה שנופלת מחוץ לשעות לא נשלחת. דחייה שנופלת אחרי השעה האחרונה עוברת ל־08:00 בבוקר. סיכום הבוקר נשלח מהמנוע בגוגל.</div>
     </div>
     <div class="group"><h3>מראה</h3>
-      <div class="row"><div class="field"><label for="s-theme">מצב כהה</label>${sel('s-theme', [['system', 'לפי המערכת'], ['light', 'בהיר'], ['dark', 'כהה']], c.theme)}</div>
-        <div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" value="${esc(c.accent)}" style="width:100%;min-height:48px;border:0;background:transparent"></div></div>
+      <div class="row"><div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" value="${esc(c.accent)}" style="width:100%;min-height:48px;border:0;background:transparent"></div></div>
     </div>
     <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
-    <div class="group"><h3>כללי מייל</h3>
-      <div class="note">המיילים נקראים מתיבת הג'ימייל שלך. יעבוד עם המנוע, בשלב 3.</div>
-      ${(c.mailRules || []).map((r, k) => `<div class="card" style="margin-top:10px"><div style="font-weight:600">${esc(r.title)}</div>
-        <label class="check-row"><input type="checkbox" id="s-mail-on-${k}"${r.enabled ? ' checked' : ''}> פעיל</label>
-        <div class="field"><label for="s-mail-from-${k}">כתובת השולח</label><input type="text" id="s-mail-from-${k}" dir="ltr" value="${esc(r.from)}" placeholder="billing@example.co.il"></div>
-        <div class="field"><label for="s-mail-subj-${k}">מילים בנושא (לא חובה)</label><input type="text" id="s-mail-subj-${k}" value="${esc(r.subject)}"></div></div>`).join('') || '<div class="note">אין כללים</div>'}
-    </div>
-    <div class="group"><h3>חשבונות הדייר</h3>
-      <div class="note">חיוב אחד בכל חשבון חשמל: חשמל לפי מונה המשנה, ארנונה ${esc(ל.money(ל.tenantCfg(c).arnona))}, ומים חצי.</div>
       <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
-    <div class="group"><h3>יומנים</h3><div class="note">היומן הראשי. בחירת יומנים נוספים תגיע בשלב 3.</div></div>
     <div class="group"><h3>גיטהאב וסנכרון</h3>
       <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
       <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
       <div class="btns"><button class="btn" id="s-connect" type="button">${token ? 'החלפה' : 'חיבור'}</button><button class="btn" id="s-sync" type="button"${token ? '' : ' disabled'}>סנכרון עכשיו</button>${token ? '<button class="btn danger" id="s-disc" type="button">ניתוק</button>' : ''}</div>
     </div>
-    <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>`;
+    <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>
+    <div class="btns"><button class="btn primary" id="s-save" type="button">שמירת ההגדרות</button></div>`;
+  $('s-save').onclick = saveSettings;
   renderDomRows(clone(D.domains.filter(x => !x.deleted)));
   $('s-dom-add').onclick = () => { const rows = readDomRows(); rows.push({id: 'd' + uid(), name: '', color: '#64748B', hidden: false, _new: true}); renderDomRows(rows); };
-  $('s-calc').onclick = () => openCalc();
-  $('s-connect').onclick = () => connect($('s-token').value.trim()).then(ok => ok && openSettings());
-  $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); openSettings(); };
+  $('s-connect').onclick = () => connect($('s-token').value.trim()).then(ok => ok && renderSettings());
+  $('s-sync').onclick = async () => { await sync(); toast(syncErr || 'סונכרן', {err: !!syncErr}); renderSettings(); };
   $('s-disc') && ($('s-disc').onclick = () => {
     if(!confirm('לנתק את המכשיר מגיטהאב? הנתונים נשארים במאגר ובמכשיר.')) return;
-    store(K.token, null); token = ''; kvSet('token', '').catch(() => {}); Object.values(FILES).forEach(f => f.sha = null); openSettings(); renderStatus();
+    store(K.token, null); token = ''; kvSet('token', '').catch(() => {}); Object.values(FILES).forEach(f => f.sha = null); renderSettings(); renderStatus();
   });
-  $('s-copy') && ($('s-copy').onclick = () => navigator.clipboard?.writeText(topics.ntfy).then(() => toast('הועתק'), () => toast('ההעתקה נכשלה', {err: true})));
   $('s-test') && ($('s-test').onclick = testNotification);
   $('s-push') && ($('s-push').onclick = enablePush);
   $('s-export').onclick = exportAll;
-  if(!$('dlg-settings').open) $('dlg-settings').showModal();
 }
+function openSettings(){ show('prefs'); }
 function renderDomRows(rows){
   const used = new Set(D.tasks.filter(t => !t.deleted).map(t => t.domain));
   $('s-doms').innerHTML = rows.map(x => `<div class="row dom-row" data-id="${esc(x.id)}" style="align-items:center;margin:6px 0">
@@ -3330,17 +3405,12 @@ function readDomRows(){
     return {id: r.dataset.id, color: c.value, name: n.value.trim(), hidden: r.querySelector('[type=checkbox]').checked, deleted: r.dataset.deleted === '1'};
   });
 }
-$('s-close').onclick = () => $('dlg-settings').close();
-$('s-save').onclick = () => {
+function saveSettings(){
   const c = D.config;
-  const rules = clone(c.mailRules || []);
-  rules.forEach((r, k) => { if($('s-mail-from-' + k)) Object.assign(r, {enabled: $('s-mail-on-' + k).checked, from: val('s-mail-from-' + k).trim(), subject: val('s-mail-subj-' + k).trim()}); });
-  const noFrom = rules.find(r => r.enabled && !r.from);
-  if(noFrom) return toast(`כדי להפעיל את "${noFrom.title}" צריך כתובת שולח`, {err: true});
   const from = val('s-from') || '07:00', to = val('s-to') || '21:00';
   if(from >= to) return toast('שעת הסיום צריכה להיות אחרי שעת ההתחלה', {err: true});
   saveConfig({activeFrom: from, activeTo: to, summaryTime: val('s-sum') || '07:30', defaultTime: val('s-def') || '10:00',
-    theme: val('s-theme'), accent: val('s-accent'), mailRules: rules});
+    accent: val('s-accent')});
   const now = nowIso(), changedDoms = [];
   for(const r of readDomRows()){
     const old = D.domains.find(x => x.id === r.id);
@@ -3350,10 +3420,9 @@ $('s-save').onclick = () => {
       changedDoms.push({id: r.id, name: r.name, color: r.color, hidden: r.hidden, updatedAt: now});
   }
   if(changedDoms.length) saveDomains(changedDoms);
-  $('dlg-settings').close();
   toast('ההגדרות נשמרו');
-};
-$('btn-menu').onclick = openSettings;
+}
+
 function exportAll(){
   const blob = new Blob([JSON.stringify({exportedAt: nowIso(), ...data(), inbox}, null, 1)], {type: 'application/json'});
   const a = document.createElement('a');
@@ -4558,6 +4627,194 @@ async function nativeInit(){
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') nativeEvents(); });
 }
 
+
+/* ---------- לשונית "חשבונות": חיוב לדייר, היסטוריה וחובות ---------- */
+// החישוב וההודעה בליבה (tenantCharge, tenantMsg). הכול בתצורה (tenant), במאגר הפרטי בלבד.
+const TC = () => ל.tenantCfg(D.config);
+const shekel = x => ל.money(+x);
+function saveTenant(patch){ saveConfig({tenant: Object.assign({}, TC(), patch)}); }
+function renderBills(){
+  const tc = TC(), b = ל.tenantBalance(tc), net = b.unpaid + b.heOwes - b.iOwe;
+  $('bl-bal').innerHTML = `
+    <div class="bl-row"><span>הדייר חייב (חשבונות שלא שולמו)</span><b>${shekel(b.unpaid + b.heOwes)}</b></div>
+    <div class="bl-row"><span>אתה חייב לו</span><b>${shekel(b.iOwe)}</b></div>
+    <div class="bl-row tot"><span>${net >= 0 ? 'בסך הכול הוא חייב לך' : 'בסך הכול אתה חייב לו'}</span><b>${shekel(Math.abs(net))}</b></div>`;
+  const led = (tc.ledger || []).filter(l => !l.deleted && !l.settled);
+  $('bl-led').innerHTML = led.length ? led.map(l => `<button type="button" class="more-row" data-l="${esc(l.id)}"><span class="i">${l.dir === 'me' ? '➖' : '➕'}</span>
+      <span class="b"><span class="t" style="display:block">${esc(l.text)}</span><span class="s" style="display:block">${l.dir === 'me' ? 'אתה חייב לו' : 'הוא חייב לך'} · ${esc(ל.shortDate(l.date))}</span></span>
+      <span class="side">${shekel(l.amount)}</span></button>`).join('') : '<div class="empty">אין חובות פתוחים</div>';
+  const ch = (tc.charges || []).filter(c => !c.deleted).sort((x, y) => y.date.localeCompare(x.date));
+  $('bl-hist').innerHTML = ch.length ? ch.map(c => `<button type="button" class="more-row" data-c="${esc(c.id)}"><span class="i">${c.paid ? '✅' : '⏳'}</span>
+      <span class="b"><span class="t" style="display:block">${esc(chargeTitle(c))}</span><span class="s" style="display:block">${esc(ל.shortDate(c.date))} · ${c.paid ? 'שולם' : 'עוד לא שולם'}</span></span>
+      <span class="side">${shekel(c.total)}</span></button>`).join('') : '<div class="empty">עוד אין חשבונות</div>';
+}
+const chargeTitle = c => [c.elec && 'חשמל', c.arnona && 'ארנונה', c.water && 'מים'].filter(Boolean).join(', ') + (c.elec ? ` עד ${ל.shortDate(c.elec.to)}` : '');
+const waLink = text => 'https://wa.me/?text=' + encodeURIComponent(text);
+function sendWa(text){ window.open(waLink(text), '_blank'); }
+$('bl-hist').onclick = e => {
+  const b = e.target.closest('[data-c]'); if(!b) return;
+  const tc = TC(), c = (tc.charges || []).find(x => x.id === b.dataset.c), msg = ל.tenantMsg(c, tc.ledger);
+  const upd = patch => saveTenant({charges: tc.charges.map(x => x.id === c.id ? Object.assign({}, x, patch) : x)});
+  sheet(chargeTitle(c), [
+    [c.paid ? '↺ עוד לא שולם' : '✓ שולם', () => upd(c.paid ? {paid: false, paidAt: null} : {paid: true, paidAt: today()})],
+    ['📤 שליחה שוב בוואטסאפ', () => sendWa(msg)],
+    ['📋 העתקת ההודעה', () => navigator.clipboard?.writeText(msg).then(() => toast('הועתק'))],
+    ['🗑 מחיקה', () => { if(confirm('למחוק את החשבון?')) upd({deleted: true}); }],
+  ]);
+};
+$('bl-led').onclick = e => {
+  const b = e.target.closest('[data-l]'); if(!b) return;
+  const tc = TC(), l = tc.ledger.find(x => x.id === b.dataset.l);
+  const upd = patch => saveTenant({ledger: tc.ledger.map(x => x.id === l.id ? Object.assign({}, x, patch) : x)});
+  sheet(`${l.text} · ${shekel(l.amount)}`, [
+    ['✓ שולם (סגירה)', () => upd({settled: true, settledAt: today()})],
+    ['✏️ עריכה', () => { const t = prompt('על מה', l.text); if(t == null) return; const a = prompt('סכום', l.amount); if(a == null || !(+a > 0)) return; upd({text: t.trim() || l.text, amount: +a}); }],
+    ['🗑 מחיקה', () => upd({deleted: true})],
+  ]);
+};
+$('bl-led-add').onclick = () => sheet('חוב חדש', [
+  ['➖ אני חייב לדייר', () => addLedger('me')],
+  ['➕ הדייר חייב לי', () => addLedger('him')],
+]);
+function addLedger(dir){
+  const t = prompt('על מה (למשל: ועד בית)'); if(!t || !t.trim()) return;
+  const a = prompt('סכום בשקלים'); if(!(+a > 0)) return toast('סכום לא תקין', {err: true});
+  saveTenant({ledger: [...(TC().ledger || []), {id: 'lg' + uid(), date: today(), text: t.trim(), amount: +a, dir, settled: false}]});
+  toast('נוסף');
+}
+// חשבון חדש
+const billOn = new Proxy({}, {get: (o, k) => $('bl-on-' + k).checked});   // מה כלול: ישר מהתיבות
+function openBill(o){
+  const tc = TC(), last = (tc.charges || []).filter(c => !c.deleted && c.elec).sort((x, y) => y.date.localeCompare(x.date))[0];
+  $('bl-on-elec').checked = true; $('bl-on-arnona').checked = true; $('bl-on-water').checked = false;
+  const v = (id, x) => { $(id).value = x ?? ''; };
+  v('bl-from', last?.elec?.to || ''); v('bl-to', today()); v('bl-prev', tc.lastSub ?? ''); v('bl-cur'); v('bl-house'); v('bl-total', o?.total ?? '');
+  v('bl-arp'); v('bl-ara', tc.arnona); v('bl-wp'); v('bl-wt');
+  const led = (tc.ledger || []).filter(l => !l.deleted && !l.settled);
+  $('bl-off').innerHTML = led.length ? `<span class="lbl">קיזוז בהודעה</span>` + led.map(l => `<label class="check-row"><input type="checkbox" value="${esc(l.id)}"> ${l.dir === 'me' ? '➖' : '➕'} ${esc(l.text)}: ${shekel(l.amount)}</label>`).join('') : '';
+  renderBillForm();
+  $('dlg-bill').showModal();
+}
+function billInput(){
+  const g = id => $(id).value.trim();
+  return {elec: billOn.elec ? {from: g('bl-from'), to: g('bl-to'), prev: g('bl-prev'), cur: g('bl-cur'), house: g('bl-house'), total: g('bl-total')} : null,
+    arnona: billOn.arnona ? {period: g('bl-arp'), amount: g('bl-ara')} : null,
+    water: billOn.water ? {period: g('bl-wp'), total: g('bl-wt'), share: 0.5} : null,
+    offsets: [...$('bl-off').querySelectorAll('input:checked')].map(x => x.value)};
+}
+function renderBillForm(){
+  for(const k of ['elec', 'arnona', 'water']) $('bl-' + k).hidden = !billOn[k];
+  const i = billInput(), r = ל.tenantCharge(i, TC().ledger);
+  if(i.elec && (!i.elec.from || !i.elec.to)) return void ($('bl-pre').textContent = 'ממלאים תאריכים לחשמל');
+  $('bl-pre').textContent = r.ok ? ל.tenantMsg(i, TC().ledger) : (r.err === 'חסר מספר' || r.err === 'חסר סכום' ? 'ממלאים את השדות, וההודעה תופיע כאן' : r.err);
+  $('bl-sum').textContent = r.ok ? `לתשלום: ${shekel(r.total)}` : '';
+}
+$('dlg-bill').addEventListener('input', renderBillForm);
+$('bl-close').onclick = () => $('dlg-bill').close();
+$('bl-wa').onclick = () => { const t = $('bl-pre').textContent; if(t.startsWith('היי')) sendWa(t); else toast('קודם ממלאים את החשבון', {err: true}); };
+$('bl-copy').onclick = () => navigator.clipboard?.writeText($('bl-pre').textContent).then(() => toast('הועתק'));
+$('bl-save').onclick = () => {
+  const i = billInput(), tc = TC(), r = ל.tenantCharge(i, tc.ledger);
+  if(!r.ok) return toast(r.err, {err: true});
+  if(i.elec && (!i.elec.from || !i.elec.to)) return toast('חסרים תאריכים לחשמל', {err: true});
+  const c = Object.assign({id: 'ch' + uid(), date: today(), total: r.total, paid: false, paidAt: null}, i);
+  const patch = {charges: [...(tc.charges || []), c],
+    ledger: (tc.ledger || []).map(l => i.offsets.includes(l.id) ? Object.assign({}, l, {settled: true, settledAt: today(), via: c.id}) : l)};
+  if(i.elec) Object.assign(patch, {lastSub: +String(i.elec.cur).replace(/,/g, ''), lastSubDate: i.elec.to});
+  if(i.arnona) patch.arnona = +i.arnona.amount;
+  saveTenant(patch);
+  $('dlg-bill').close(); toast(`נשמר: ${shekel(r.total)}. אפשר לשלוח מההיסטוריה`);
+};
+$('bl-new').onclick = () => openBill();
+// הודעה שכבר נשלחה (למשל החשבון הקודם): נקראת מהטקסט ונשמרת, כך שבחשבון הבא הקריאה והתאריך ממשיכים ממנה
+$('bl-imp').onclick = () => { $('bi-text').value = ''; $('bi-sum').textContent = ''; $('dlg-billimp').showModal(); };
+$('bi-cancel').onclick = () => $('dlg-billimp').close();
+$('bi-text').addEventListener('input', () => { const c = ל.parseTenantMsg($('bi-text').value, today());
+  $('bi-sum').textContent = c.ok ? `${chargeTitle(c)} · לתשלום ${shekel(c.total)}` : ($('bi-text').value.trim() ? c.err : ''); });
+$('bi-ok').onclick = () => {
+  const c = ל.parseTenantMsg($('bi-text').value, today());
+  if(!c.ok) return toast(c.err, {err: true});
+  const tc = TC(), paid = $('bi-paid').checked;
+  const ch = Object.assign({id: 'ch' + uid(), date: today(), paid, paidAt: paid ? today() : null}, c); delete ch.ok;
+  const patch = {charges: [...(tc.charges || []), ch]};
+  if(c.elec && (!tc.lastSubDate || c.elec.to >= tc.lastSubDate)) Object.assign(patch, {lastSub: c.elec.cur, lastSubDate: c.elec.to});
+  if(c.arnona) patch.arnona = c.arnona.amount;
+  saveTenant(patch);
+  $('dlg-billimp').close(); toast(`נשמר: ${chargeTitle(ch)}, ${shekel(ch.total)}`);
+};
+// משימה מהמייל של חברת החשמל ("מחשבון"): פותחת חשבון חדש עם הסכום
+function openCalc(kind, amount){ show('bills'); openBill({total: amount}); }
+
+/* ---------- לשונית "משימות": רשימה פשוטה לפי קטגוריה, דחיפות ותאריך יעד ---------- */
+// משימות/רשימת משימות.json: {v, items: [{id, title, cat, due, urg (0 לא דחוף, 1 חשוב, 2 דחוף), notes, done, doneAt, removed, removedAt}]}
+const URG = [['לא דחוף', ''], ['חשוב', 'imp'], ['דחוף', 'urg']];
+let todoCat = 'all', todoHist = false;
+const todoCats = () => D.config.todoCats || ['עבודה', 'חיים'];
+const todoItems = () => (D.file.todos?.items || []).filter(x => !x.deleted);
+function saveTodo(x){ D.file.todos = {v: 1, items: ל.mergeById(D.file.todos?.items, [Object.assign({}, x, {updatedAt: nowIso()})])}; persist('todos', true); changed(); }
+function renderTodo(){
+  const t = today(), cats = todoCats();
+  $('td-cats').innerHTML = [['all', 'הכל'], ...cats.map(c => [c, c])].map(([k, n]) => `<button type="button" data-c="${esc(k)}" class="${todoCat === k ? 'on' : ''}">${esc(n)}</button>`).join('')
+    + '<button type="button" data-c="+" aria-label="קטגוריה חדשה">＋</button>';
+  $('td-hist').textContent = todoHist ? '‹ חזרה למשימות' : '🕘 היסטוריה';
+  $('td-add-row').hidden = todoHist;
+  let list = todoItems().filter(x => todoHist ? (x.done || x.removed) : !(x.done || x.removed)).filter(x => todoCat === 'all' || x.cat === todoCat);
+  list.sort(todoHist ? (a, b) => (b.doneAt || b.removedAt || '').localeCompare(a.doneAt || a.removedAt || '')
+    : (a, b) => ((b.due && b.due < t) - (a.due && a.due < t)) || (b.urg || 0) - (a.urg || 0) || (a.due || '9').localeCompare(b.due || '9') || (a.createdAt || '').localeCompare(b.createdAt || ''));
+  $('td-list').innerHTML = list.length ? list.map(x => {
+    const late = !todoHist && x.due && x.due < t, u = URG[x.urg || 0];
+    return `<div class="td-row${late ? ' late' : ''}" data-id="${esc(x.id)}">
+      <button type="button" class="td-chk" data-done="${esc(x.id)}" aria-label="${todoHist ? 'החזרה' : 'בוצע'}">${todoHist ? '↺' : ''}</button>
+      <span class="b"><span class="t">${esc(x.title)}</span><span class="s">${todoCat === 'all' && x.cat ? esc(x.cat) + ' · ' : ''}${x.due ? (late ? 'באיחור · ' : '') + esc(ל.shortDate(x.due)) : 'בלי תאריך'}${todoHist ? (x.done ? ' · בוצע' : ' · נמחק') : ''}</span></span>
+      ${u[1] && !todoHist ? `<span class="td-u ${u[1]}">${u[0]}</span>` : ''}</div>`;
+  }).join('') : `<div class="empty">${todoHist ? 'ההיסטוריה ריקה' : 'אין משימות. כותבים למעלה ומוסיפים'}</div>`;
+}
+$('td-cats').onclick = e => {
+  const b = e.target.closest('[data-c]'); if(!b) return;
+  if(b.dataset.c === '+'){ const n = prompt('שם הקטגוריה'); if(n && n.trim() && !todoCats().includes(n.trim())) saveConfig({todoCats: [...todoCats(), n.trim()]}); todoCat = n?.trim() || todoCat; }
+  else todoCat = b.dataset.c;
+  renderTodo();
+};
+$('td-hist').onclick = () => { todoHist = !todoHist; renderTodo(); };
+function addTodo(){
+  const title = $('td-new').value.trim(); if(!title) return;
+  saveTodo({id: 'td' + uid(), title, cat: todoCat === 'all' ? todoCats()[0] : todoCat, due: null, urg: 0, notes: '', done: false, removed: false, createdAt: nowIso(), deleted: false});
+  $('td-new').value = '';
+}
+$('td-add').onclick = addTodo;
+$('td-new').addEventListener('keydown', e => { if(e.key === 'Enter') addTodo(); });
+$('td-list').onclick = e => {
+  const d = e.target.closest('[data-done]');
+  if(d){ const x = todoItems().find(y => y.id === d.dataset.done);
+    if(todoHist) saveTodo(Object.assign({}, x, {done: false, removed: false}));
+    else { saveTodo(Object.assign({}, x, {done: true, doneAt: nowIso()})); toast('בוצע ✓', {undo: () => saveTodo(Object.assign({}, x, {done: false}))}); }
+    return; }
+  const r = e.target.closest('[data-id]'); if(r) openTodo(r.dataset.id);
+};
+let tdEdit = null;
+function openTodo(id){
+  tdEdit = todoItems().find(x => x.id === id); if(!tdEdit) return;
+  $('td-e-title').value = tdEdit.title; $('td-e-due').value = tdEdit.due || ''; $('td-e-notes').value = tdEdit.notes || '';
+  $('td-e-cat').innerHTML = todoCats().map(c => `<button type="button" data-c="${esc(c)}" class="${tdEdit.cat === c ? 'on' : ''}">${esc(c)}</button>`).join('');
+  $('td-e-urg').innerHTML = URG.map(([n], i) => `<button type="button" data-u="${i}" class="${(tdEdit.urg || 0) === i ? 'on' : ''}">${n}</button>`).join('');
+  $('td-e-del').textContent = tdEdit.removed || tdEdit.done ? 'מחיקה לצמיתות' : 'מחיקה (להיסטוריה)';
+  $('dlg-todo').showModal();
+}
+$('td-e-cat').onclick = e => { const b = e.target.closest('[data-c]'); if(b){ tdEdit.cat = b.dataset.c; $('td-e-cat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); } };
+$('td-e-urg').onclick = e => { const b = e.target.closest('[data-u]'); if(b){ tdEdit.urg = +b.dataset.u; $('td-e-urg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); } };
+$('td-e-cancel').onclick = () => $('dlg-todo').close();
+$('td-e-ok').onclick = () => {
+  const title = $('td-e-title').value.trim(); if(!title) return toast('צריך שם', {err: true});
+  saveTodo(Object.assign({}, tdEdit, {title, due: $('td-e-due').value || null, notes: $('td-e-notes').value.trim()}));
+  $('dlg-todo').close();
+};
+$('td-e-del').onclick = () => {
+  const x = tdEdit;
+  if(x.removed || x.done){ if(confirm('למחוק לצמיתות?')) saveTodo(Object.assign({}, x, {deleted: true})); }
+  else { saveTodo(Object.assign({}, x, {removed: true, removedAt: nowIso()})); toast('עבר להיסטוריה', {undo: () => saveTodo(Object.assign({}, x, {removed: false}))}); }
+  $('dlg-todo').close();
+};
+
 /* ---------- לשונית "הגדרות": סדר הלשוניות, תצוגה, ובאפליקציה בדיקת התראות ---------- */
 // הסדר והמוסתרים נשמרים בתצורה (navOrder, navHidden, startScreen), ולכן זהים בכל המכשירים
 const NAV_FIXED = ['today', 'prefs'];   // תמיד מוצגות
@@ -4590,7 +4847,6 @@ $('pf-nav').onclick = e => {
 };
 $('pf-theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ saveConfig({theme: b.dataset.th}); renderPrefs(); } };
 $('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
-$('pf-all').onclick = () => openSettings();
 /** באפליקציית האנדרואיד: מצב ההרשאות, ובדיקה אמיתית של התראה ושל שעון מעורר בעוד 10 שניות. */
 async function renderNativePrefs(){
   const box = $('pf-native');
