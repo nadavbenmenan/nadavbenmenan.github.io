@@ -241,6 +241,9 @@
   .kc-list{display:flex;flex-direction:column;gap:6px}
   .kc-row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:10px 12px;border:0;width:100%;text-align:right;color:inherit}
   .kc-row .n{flex:1;min-width:0}
+  .kc-favs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+  .kc-favs button{border:0;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,var(--card));color:inherit;min-height:40px;padding:6px 12px;font-size:14px}
+  .kc-favs .h{width:100%;font-size:13px;color:var(--muted)}
   .kc-row .n small{display:block;color:var(--muted);font-size:12px}
   .kc-row .k{font-weight:700;font-variant-numeric:tabular-nums}
   .kc-row .k.burn{color:#D35400}
@@ -384,6 +387,13 @@
   .meds .תפריט{top:60px}
 
   .back-more{display:none !important}
+  .pf-list{display:flex;flex-direction:column;gap:6px}
+  .pf-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:6px 10px;min-height:52px}
+  .pf-row .n{flex:1;font-weight:600}
+  .pf-row.off .n{color:var(--muted);text-decoration:line-through}
+  .pf-row button{border:0;background:var(--soft);border-radius:12px;min-width:44px;min-height:40px}
+  .pf-row button:disabled{opacity:.3}
+  .pf-stat{background:var(--card);border-radius:16px;padding:12px;font-size:14px;line-height:1.7}
   .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .more-grid button{border:0;background:var(--card);border-radius:18px;padding:16px 12px;text-align:right;color:inherit;min-height:96px;display:flex;flex-direction:column;gap:4px}
   .more-grid .i{font-size:28px}
@@ -549,7 +559,7 @@
 
 <main class="screen" id="scr-kcal" hidden>
   <div class="kc-top"><h1 class="hello">קלוריות</h1><button class="icon-btn" id="kc-set" type="button" aria-label="הגדרות קלוריות"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
-  <div class="kc-date"><button type="button" id="kc-prev" aria-label="יום קודם">›</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-next" aria-label="יום הבא">‹</button></div>
+  <div class="kc-date"><button type="button" id="kc-next" aria-label="יום הבא">›</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-prev" aria-label="יום קודם">‹</button></div>
   <div class="kc-dash" id="kc-dash"></div>
   <div id="kc-meals"></div>
   <div class="sec"><h2 class="kc-h">🏃 פעילות <span id="kc-act-sum"></span><button class="btn" type="button" id="kc-act-add">+ פעילות</button></h2><div id="kc-acts" class="kc-list"></div></div>
@@ -724,6 +734,16 @@
     </div>
   </form>
 </dialog>
+<main class="screen" id="scr-prefs" hidden>
+  <h1 class="hello">הגדרות</h1>
+  <div id="pf-native"></div>
+  <div class="sec"><h2>סדר הלשוניות</h2><div id="pf-nav" class="pf-list"></div></div>
+  <div class="sec"><h2>תצוגה</h2>
+    <div class="field"><span class="lbl">ערכת צבע</span><div class="opts" id="pf-theme"></div></div>
+    <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
+  </div>
+  <button class="btn" type="button" id="pf-all" style="width:100%;margin-top:18px">כל ההגדרות (התראות, שעות, גיטהאב)</button>
+</main>
 <main class="screen" id="scr-upkeep" hidden>
   <h1 class="hello">תחזוקה שוטפת</h1>
   <div id="up-list" class="more-list"></div>
@@ -761,6 +781,7 @@
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
   <button data-scr="domains"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>תחומים</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
+  <button data-scr="prefs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 6.5l2 1.2M17.8 16.3l2 1.2M4.2 17.5l2-1.2M17.8 7.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>הגדרות</button>
 </nav>
 
 <!-- ===== מסך משימה ===== -->
@@ -862,9 +883,9 @@
       <span class="lbl">כמות</span><div class="opts" id="kf-qtys"></div>
       <div class="row" style="margin-top:8px"><input type="number" inputmode="decimal" id="kf-qty" aria-label="כמות" step="any"><select id="kf-unit" aria-label="יחידה"></select></div>
       <div class="kc-kcal"><span>קלוריות</span><input type="number" inputmode="numeric" id="kf-kcal" aria-label="קלוריות"><span class="note" id="kf-calc"></span></div>
-      <div class="btns"><button class="btn" id="kf-fix" type="button">✏️ תיקון ערך המאכל</button><button class="btn" id="kf-del" type="button" style="color:var(--red)">מחיקה</button></div>
+      <div class="btns"><button class="btn" id="kf-fav" type="button">☆ למועדפים</button><button class="btn" id="kf-fix" type="button">✏️ עריכת המאכל</button><button class="btn" id="kf-del" type="button" style="color:var(--red)">מחיקה</button></div>
     </div>
-    <button class="btn" id="kf-new" type="button" style="width:100%;margin-top:12px">＋ מאכל חדש למאגר</button>
+    <div class="btns" id="kf-newrow"><button class="btn" id="kf-new" type="button">＋ מאכל חדש</button><button class="btn" id="kf-newrec" type="button">🧾 מנה חדשה ממרכיבים</button></div>
   </div>
 </dialog>
 <dialog id="dlg-kmy" aria-label="מאכל במאגר"><div class="dlg">
@@ -1315,8 +1336,8 @@ function renderHistory(){
 let screen = 'today';
 function show(s){
   screen = s;
-  for(const x of ['today', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal' || s === 'meds';
+  for(const x of ['today', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'birthdays', 'docs', 'domains', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = s === 'shop' || s === 'more' || s === 'kcal' || s === 'meds' || s === 'prefs';
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
@@ -1325,6 +1346,7 @@ function show(s){
   renderAll(); scrollTo(0, 0);
 }
 function renderAll(){
+  if(typeof applyNav === 'function') applyNav();
   if(screen === 'today') renderToday();
   else if(screen === 'domains') renderDomains();
   else if(screen === 'calendar') renderCalendar();
@@ -1333,6 +1355,7 @@ function renderAll(){
   else if(screen === 'more') renderMore();
   else if(screen === 'kcal') renderKcal();
   else if(screen === 'upkeep') renderUpkeep();
+  else if(screen === 'prefs') renderPrefs();
   else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'birthdays') renderBirthdays();
   else if(screen === 'docs') renderDocs();
@@ -1831,10 +1854,43 @@ function editGoal(){
 }
 $('kc-meals').onclick = e => {
   const add = e.target.closest('[data-add]'); if(add) return openKFood({meal: add.dataset.add});
-  const row = e.target.closest('[data-e]'); if(row) return openKFood({edit: live(KF().entries).find(x => x.id === row.dataset.e)});
+  const row = e.target.closest('[data-e]'); if(row){ if(kcLong){ kcLong = false; return; } return openKFood({edit: live(KF().entries).find(x => x.id === row.dataset.e)}); }
   const t = e.target.closest('[data-tool]'); if(t) return mealTool(t.dataset.tool, t.dataset.m);
 };
 const live = l => (l || []).filter(x => !x.deleted);
+
+// --- מועדפים: ארוחות קבועות (meals) ומאכלים מועדפים (favs) ---
+const favIds = () => new Set(live(KF().favs).map(f => f.id));
+function toggleFav(food){
+  const on = favIds().has(food.id);
+  saveK('favs', {id: food.id, updatedAt: nowIso(), deleted: on});
+  toast(on ? `הוסר מהמועדפים: ${food.name}` : `⭐ במועדפים: ${food.name}`);
+}
+function addMealItems(items, meal, label){
+  const t = nowIso(), mealName = ל.MEALS.find(m => m[0] === meal)[1];
+  saveK('entries', items.map((i, n) => Object.assign({}, i, {id: 'e' + uid() + n, date: kcDate, meal, addedAt: t, updatedAt: t, deleted: false})));
+  toast(`נוסף ל${mealName}: ${label}`);
+}
+// לחיצה ארוכה על מאכל ביום: מועדפים, עריכה, כמות, מחיקה
+let kcPress = null, kcLong = false;
+$('kc-meals').addEventListener('pointerdown', e => {
+  const row = e.target.closest('[data-e]'); if(!row) return;
+  kcLong = false; clearTimeout(kcPress);
+  kcPress = setTimeout(() => { kcLong = true; navigator.vibrate?.(15); entryMenu(row.dataset.e); }, 550);
+});
+for(const ev of ['pointerup', 'pointercancel', 'pointerleave', 'pointermove']) $('kc-meals').addEventListener(ev, e => { if(ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(kcPress); });
+$('kc-meals').addEventListener('contextmenu', e => { if(e.target.closest('[data-e]')) e.preventDefault(); });
+function entryMenu(id){
+  const e = live(KF().entries).find(x => x.id === id); if(!e) return;
+  const food = ל.calFoods(KF()).find(f => f.id === e.foodId), fav = food && favIds().has(food.id);
+  const meal = ל.calDay(KF(), kcDate).meals.find(m => m.id === e.meal);
+  sheet(e.name, [
+    ...(food ? [[fav ? '★ הסרה מהמועדפים' : '☆ הוספה למועדפים', () => toggleFav(food)], ['✏️ עריכת המאכל (שם, קלוריות)', () => food.recipe ? openKRec(live(KF().recipes).find(r => r.id === food.id)) : openKMy(food)]] : []),
+    ['🔢 שינוי הכמות', () => openKFood({edit: e})],
+    [`⭐ שמירת כל ה${meal.name} כמנה קבועה`, () => mealTool('save', e.meal)],
+    ['🗑 מחיקה מהיום', () => { saveK('entries', Object.assign({}, e, {deleted: true, updatedAt: nowIso()})); toast('נמחק', {undo: () => saveK('entries', Object.assign({}, e, {deleted: false, updatedAt: nowIso()}))}); }],
+  ]);
+}
 
 // --- הוספה ועריכה של מאכל ---
 let kf = null;   // {meal, food, edit, onPick (למתכון)}
@@ -1851,10 +1907,16 @@ function openKFood(o){
 }
 function renderKFood(){
   $('kf-meal').innerHTML = ל.MEALS.map(([id, n, e]) => `<button type="button" data-m="${id}" class="${kf.meal === id ? 'on' : ''}">${e} ${n}</button>`).join('');
-  const sug = kf.food && !$('kf-q').value ? [] : ל.foodSuggest(KF(), $('kf-q').value, $('kf-q').value ? 15 : 8);
-  $('kf-sug').innerHTML = sug.map(f => { const u = f.units[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${esc(f.name)}${f.uses ? ' ⭐' : ''}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
+  const q = $('kf-q').value, favs = favIds();
+  let sug = kf.food && !q ? [] : ל.foodSuggest(KF(), q, q ? 15 : 8);
+  if(!q && !kf.food){ const all = ל.calFoods(KF()), fv = all.filter(f => favs.has(f.id)); sug = [...fv, ...sug.filter(f => !favs.has(f.id))].slice(0, 12); }
+  const favMeals = !q && !kf.food && !kf.onPick && !kf.edit ? live(KF().meals) : [];
+  $('kf-sug').innerHTML = (favMeals.length ? `<div class="kc-favs"><span class="h">⭐ מנות קבועות</span>${favMeals.map(m => `<button type="button" data-fm="${esc(m.id)}">${esc(m.name)} · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))}</button>`).join('')}</div>` : '')
+    + sug.map(f => { const u = f.units?.[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${favs.has(f.id) ? '★ ' : ''}${esc(f.name)}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
     + ($('kf-q').value && !sug.length ? `<div class="empty">"${esc($('kf-q').value)}" לא במאגר. אפשר להוסיף למטה</div>` : '');
   $('kf-sel').hidden = !kf.food;
+  $('kf-newrow').hidden = !!kf.food || !!kf.onPick;
+  if(kf.food) $('kf-fav').textContent = favs.has(kf.food.id) ? '★ במועדפים' : '☆ למועדפים';
   $('kf-del').hidden = !kf.edit;
 }
 function fillKSel(qty, unit, kcal){
@@ -1874,7 +1936,10 @@ function calcKSel(force){
 }
 $('kf-meal').onclick = e => { const b = e.target.closest('[data-m]'); if(b){ kf.meal = b.dataset.m; renderKFood(); } };
 $('kf-q').addEventListener('input', () => { kf.food = null; renderKFood(); });
-$('kf-sug').onclick = e => { const b = e.target.closest('[data-f]'); if(!b) return; kf.food = ל.calFoods(KF()).find(f => f.id === b.dataset.f); $('kf-q').value = ''; renderKFood(); fillKSel(); };
+$('kf-sug').onclick = e => {
+  const fm = e.target.closest('[data-fm]');
+  if(fm){ const m = live(KF().meals).find(x => x.id === fm.dataset.fm); if(m){ addMealItems(m.items, kf.meal, m.name); $('dlg-kfood').close(); } return; }
+  const b = e.target.closest('[data-f]'); if(!b) return; kf.food = ל.calFoods(KF()).find(f => f.id === b.dataset.f); $('kf-q').value = ''; renderKFood(); fillKSel(); };
 $('kf-qtys').onclick = e => { const b = e.target.closest('[data-q]'); if(b){ $('kf-qty').value = b.dataset.q; $('kf-kcal').dataset.manual = ''; calcKSel(); } };
 $('kf-qty').addEventListener('input', () => { $('kf-kcal').dataset.manual = ''; calcKSel(); });
 $('kf-unit').onchange = () => { $('kf-qty').value = $('kf-unit').value === 'גרם' ? 100 : 1; $('kf-kcal').dataset.manual = ''; calcKSel(); };
@@ -1896,6 +1961,8 @@ $('kf-del').onclick = () => {
   toast('נמחק', {undo: () => saveK('entries', Object.assign({}, e, {deleted: false, updatedAt: nowIso()}))});
 };
 $('kf-new').onclick = () => openKMy(null, $('kf-q').value);
+$('kf-newrec').onclick = () => openKRec(null);
+$('kf-fav').onclick = () => { if(kf.food){ toggleFav(kf.food); renderKFood(); } };
 $('kf-fix').onclick = () => { if(kf.food && !kf.food.recipe) openKMy(kf.food); else if(kf.food?.recipe) openKRec(live(KF().recipes).find(r => r.id === kf.food.id)); };
 
 // --- מאכל אישי, או תיקון ערך של מאכל מהמאגר ---
@@ -1904,7 +1971,7 @@ function openKMy(food, name){
   kmEdit = food;
   $('km-title').textContent = food ? (food.builtin ? `תיקון: ${food.name}` : 'עריכת מאכל') : 'מאכל חדש';
   $('km-name').value = food ? food.name : (name || '');
-  $('km-name').disabled = !!food?.builtin;
+  $('km-name').disabled = false;
   const u = food?.units?.[0];
   if(food && u && food.perUnitKcal != null){ $('km-per').value = u.name; $('km-kcal').value = food.perUnitKcal; }
   else{ $('km-per').value = '100g'; $('km-kcal').value = food ? Math.round(food.kcal100) : ''; }
@@ -1939,8 +2006,17 @@ $('kc-myfoods').onclick = () => {
   const mine = live(KF().foods), recs = live(KF().recipes);
   sheet('המאכלים שלי', [...mine.map(f => [`${FOOD_ICON(f)} ${f.name}${ל.FOODS.some(b => b.id === f.id) ? ' (תיקון)' : ''} · ${kNum(f.perUnitKcal ?? f.kcal100)} ל${f.perUnitKcal != null ? f.units[0].name : '־100 גרם'}`, () => openKMy(ל.calFoods(KF()).find(x => x.id === f.id))]),
     ...recs.map(r => [`🧾 ${r.name} · ${kNum(ל.recipeFood(r).perServing)} למנה`, () => openKRec(r)]),
+    ...live(KF().meals).map(m => [`⭐ ${m.name} · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))}`, () => favMealMenu(m)]),
+    ['🧾 מנה חדשה ממרכיבים', () => openKRec(null)],
     ['＋ מאכל חדש', () => openKMy(null)]], mine.length || recs.length ? '' : 'עוד אין מאכלים אישיים. מאכל שלא במאגר: מוסיפים אותו מחלון ההוספה');
 };
+function favMealMenu(m){
+  sheet(m.name, [
+    ...ל.MEALS.map(([id, n, em]) => [`${em} הוספה ל${n} (${kDayLabel(kcDate)})`, () => addMealItems(m.items, id, m.name)]),
+    ['✏️ שינוי שם', () => { const v = prompt('שם המנה', m.name); if(v && v.trim()) saveK('meals', Object.assign({}, m, {name: v.trim(), updatedAt: nowIso()})); }],
+    ['🗑 מחיקה', () => { saveK('meals', Object.assign({}, m, {deleted: true, updatedAt: nowIso()})); toast('נמחקה', {undo: () => saveK('meals', Object.assign({}, m, {deleted: false, updatedAt: nowIso()}))}); }],
+  ], m.items.map(i => `${i.name} (${kNum(i.kcal)})`).join(' · '));
+}
 const FOOD_ICON = f => ל.FOODS.some(b => b.id === f.id) ? '✏️' : '🍽️';
 function sheet(title, items, note){
   $('ks-title').textContent = title;
@@ -1952,11 +2028,7 @@ function sheet(title, items, note){
 // --- ארוחות קבועות ושכפול ---
 function mealTool(tool, meal){
   const mealName = ל.MEALS.find(m => m[0] === meal)[1];
-  const addItems = (items, label) => {
-    const t = nowIso();
-    saveK('entries', items.map((i, n) => Object.assign({}, i, {id: 'e' + uid() + n, date: kcDate, meal, addedAt: t, updatedAt: t, deleted: false})));
-    toast(`נוסף ל${mealName}: ${label}`);
-  };
+  const addItems = (items, label) => addMealItems(items, meal, label);
   if(tool === 'save'){
     const items = ל.calDay(KF(), kcDate).meals.find(m => m.id === meal).items;
     const name = prompt('שם לארוחה הקבועה', `${mealName} רגיל`);
@@ -4442,7 +4514,8 @@ async function nativeScheduleNow(){
   const want = timers.filter(t => t.kind !== 'med' && !t.deleted && !t.stopped && t.at > now - 6e4);
   const had = storeJson('משימות.שעונים', []);
   for(const id of had) if(!want.some(t => t.id === id)) await NAlarm.cancel({id}).catch(() => {});
-  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר'}).catch(() => {});
+  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר'})
+    .catch(e => toast('השעון המעורר לא נקבע: ' + (e.message || e), {err: true, ms: 8000}));
   store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
   const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), title: n.title, body: n.message || '', at: n.at,
@@ -4457,7 +4530,7 @@ async function nativeScheduleNow(){
     if(list.length) await NLN.schedule({notifications: list.map(n => ({id: n.id, title: n.title, body: n.body, channelId: n.channelId,
       smallIcon: 'ic_stat_notify', extra: n.extra, schedule: {at: new Date(n.at), allowWhileIdle: true}}))});
     store('משימות.מקומי', sig);
-  }catch(e){ /* ננסה שוב בסנכרון הבא */ }
+  }catch(e){ toast('התזכורות לא נקבעו בטלפון: ' + (e.message || e), {err: true, ms: 8000}); }
 }
 /** מה קרה כשהאפליקציה הייתה סגורה: טיימרים שנעצרו מההתראה, או פתיחה מהתראת טיימר. */
 async function nativeEvents(){
@@ -4483,6 +4556,63 @@ async function nativeInit(){
   await nativeEvents();
   nativeSchedule();
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') nativeEvents(); });
+}
+
+/* ---------- לשונית "הגדרות": סדר הלשוניות, תצוגה, ובאפליקציה בדיקת התראות ---------- */
+// הסדר והמוסתרים נשמרים בתצורה (navOrder, navHidden, startScreen), ולכן זהים בכל המכשירים
+const NAV_FIXED = ['today', 'prefs'];   // תמיד מוצגות
+function navButtons(){ return [...document.querySelectorAll('#nav button[data-scr]')]; }
+function applyNav(){
+  const key = JSON.stringify([D.config.navOrder || [], D.config.navHidden || []]);
+  if(key === applyNav.k) return;   // רק כשהסדר השתנה (כדי לא להזיז את הגלילה של הסרגל)
+  applyNav.k = key;
+  const nav = $('nav'), btns = navButtons(), order = D.config.navOrder || [], hidden = new Set(D.config.navHidden || []);
+  const idx = id => { const i = order.indexOf(id); return id === 'prefs' ? 999 : i < 0 ? 500 + btns.findIndex(b => b.dataset.scr === id) : i; };
+  btns.sort((a, b) => idx(a.dataset.scr) - idx(b.dataset.scr)).forEach(b => { b.hidden = hidden.has(b.dataset.scr) && !NAV_FIXED.includes(b.dataset.scr); nav.appendChild(b); });
+}
+const navName = b => b.textContent.trim();
+function renderPrefs(){
+  const btns = navButtons().filter(b => b.dataset.scr !== 'prefs'), hidden = new Set(D.config.navHidden || []);
+  $('pf-nav').innerHTML = btns.map((b, i) => `<div class="pf-row${hidden.has(b.dataset.scr) ? ' off' : ''}"><span class="n">${esc(navName(b))}</span>
+    ${NAV_FIXED.includes(b.dataset.scr) ? '' : `<button type="button" data-hide="${b.dataset.scr}" aria-label="${hidden.has(b.dataset.scr) ? 'הצגה' : 'הסתרה'}">${hidden.has(b.dataset.scr) ? '👁' : '🙈'}</button>`}
+    <button type="button" data-up="${i}" aria-label="למעלה"${i ? '' : ' disabled'}>▲</button><button type="button" data-down="${i}" aria-label="למטה"${i < btns.length - 1 ? '' : ' disabled'}>▼</button></div>`).join('');
+  $('pf-theme').innerHTML = [['system', 'לפי הטלפון'], ['light', 'בהיר'], ['dark', 'כהה']].map(([k, n]) => `<button type="button" data-th="${k}" class="${(D.config.theme || 'system') === k ? 'on' : ''}">${n}</button>`).join('');
+  $('pf-start').innerHTML = btns.filter(b => !hidden.has(b.dataset.scr)).map(b => `<option value="${b.dataset.scr}"${(D.config.startScreen || 'today') === b.dataset.scr ? ' selected' : ''}>${esc(navName(b))}</option>`).join('');
+  renderNativePrefs();
+}
+$('pf-nav').onclick = e => {
+  const ids = navButtons().filter(b => b.dataset.scr !== 'prefs').map(b => b.dataset.scr);
+  const h = e.target.closest('[data-hide]'), u = e.target.closest('[data-up]'), d = e.target.closest('[data-down]');
+  if(h){ const set = new Set(D.config.navHidden || []); set.has(h.dataset.hide) ? set.delete(h.dataset.hide) : set.add(h.dataset.hide); saveConfig({navHidden: [...set]}); }
+  else if(u || d){ const i = +(u || d).dataset[u ? 'up' : 'down'], j = u ? i - 1 : i + 1; [ids[i], ids[j]] = [ids[j], ids[i]]; saveConfig({navOrder: ids}); }
+  else return;
+  applyNav(); renderPrefs();
+};
+$('pf-theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ saveConfig({theme: b.dataset.th}); renderPrefs(); } };
+$('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
+$('pf-all').onclick = () => openSettings();
+/** באפליקציית האנדרואיד: מצב ההרשאות, ובדיקה אמיתית של התראה ושל שעון מעורר בעוד 10 שניות. */
+async function renderNativePrefs(){
+  const box = $('pf-native');
+  if(!NATIVE){ box.innerHTML = ''; return; }
+  let st = {};
+  try{ st = await NAlarm.status(); }catch(e){ st = {err: e.message}; }
+  const ok = v => v ? '✓' : '✗';
+  box.innerHTML = `<div class="sec"><h2>📱 אפליקציית אנדרואיד</h2><div class="pf-stat">
+      ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
+    <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
+    <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>`;
+  $('pf-t1').onclick = async () => {
+    try{ await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: 'reminders', smallIcon: 'ic_stat_notify',
+      schedule: {at: new Date(Date.now() + 10e3), allowWhileIdle: true}}]}); toast('✓ נקבע. אפשר לצאת מהאפליקציה'); }
+    catch(e){ toast('שגיאה בהתראה: ' + (e.message || e), {err: true, ms: 8000}); }
+  };
+  $('pf-t2').onclick = async () => {
+    try{ await NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 10e3, title: 'בדיקת שעון מעורר', body: 'לוחצים "עצור"'}); toast('✓ נקבע. אפשר לנעול את הטלפון'); }
+    catch(e){ toast('שגיאה בשעון המעורר: ' + (e.message || e), {err: true, ms: 8000}); }
+  };
+  $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
 }
 
 function handleHash(){
@@ -4519,9 +4649,12 @@ setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60
 // הנעילה בוטלה (16.11.2026). מנקים קוד שנשמר בגרסה הקודמת
 store('משימות.נעילה', null); store('משימות.נעילה.ניסיונות', null);
 if(migrate()) renderAll();
+{ const ks = ל.kcalSeed(D.file.kcal, nowIso()); if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); } }
 if(!store(K.onboard)) onboard(1);
 else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
 nativeInit();
+applyNav();
+if(!location.hash && D.config.startScreen && D.config.startScreen !== 'today' && $('scr-' + D.config.startScreen)) show(D.config.startScreen);
 sync();
 </script>
 </body>
