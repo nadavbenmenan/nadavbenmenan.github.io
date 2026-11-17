@@ -7,7 +7,7 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v6';
+const מטמון = 'mesimot-v7';
 const קבצים = ['./', 'index.html', 'ליבה.js', 'מאכלים.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
@@ -36,6 +36,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   if(u.origin !== location.origin) return;
+  if(u.pathname.endsWith('.apk')) return;   // קובץ ההתקנה: תמיד מהרשת, בלי עותק ישן במטמון
   e.respondWith(fetch(e.request).then(ת => {
     const עותק = ת.clone();
     caches.open(מטמון).then(c => c.put(e.request, עותק));
