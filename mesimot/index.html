@@ -443,6 +443,10 @@
   .q-time-row{display:flex;gap:8px;align-items:center} .q-time-row input{flex:1}
   .q-clock{flex:none;display:flex;align-items:center;gap:6px;border:0;border-radius:14px;min-height:48px;padding:0 14px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
   .q-clock svg{flex:none}
+  .kc-prot{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;width:100%;margin-top:10px;border:0;background:color-mix(in srgb,#16A34A 10%,var(--bg));border-radius:14px;padding:10px 12px;color:inherit;text-align:right}
+  .kc-prot b{font-size:20px;color:#15803D;font-variant-numeric:tabular-nums} .kc-prot .of{color:var(--muted);font-size:14px}
+  .kc-pbar{display:block;flex-basis:100%;height:7px;border-radius:999px;background:var(--soft);overflow:hidden}
+  .kc-pbar i{display:block;height:100%;background:#16A34A;border-radius:999px}
   .dom-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:8px 10px;margin:8px 0;border:1px solid var(--line)}
   .dom-row.off{opacity:.6}
   .dom-color{width:36px;height:36px;border-radius:50%;background:var(--c);flex:none;position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
@@ -908,6 +912,7 @@
   <div class="field"><span class="lbl">תחום</span><div class="opts" id="q-domain"></div></div>
   <div class="btns">
     <button class="btn cal-tog" id="q-cal" type="button" aria-pressed="false" aria-label="גם ביומן גוגל" title="גם ביומן גוגל"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg></button>
+    <button class="btn cal-tog" id="q-leave" type="button" aria-pressed="false" aria-label="להזכיר כשיוצאים מהבית" title="להזכיר כשיוצאים מהבית" hidden>🚪</button>
     <button class="btn" id="q-more">עוד אפשרויות</button>
     <button class="btn primary" id="q-save">הוספה</button>
   </div>
@@ -990,6 +995,7 @@
   <h2 id="km-title">מאכל חדש</h2>
   <div class="field"><label for="km-name">שם</label><input type="text" id="km-name" placeholder="למשל: סלט של אמא"></div>
   <div class="row"><div class="field"><label for="km-kcal">קלוריות</label><input type="number" inputmode="numeric" id="km-kcal"></div>
+    <div class="field"><label for="km-prot">חלבון (ג׳)</label><input type="number" inputmode="decimal" step="any" id="km-prot"></div>
     <div class="field"><label for="km-per">ל־</label><select id="km-per"><option value="100g">100 גרם</option><option value="יחידה">יחידה</option><option value="מנה">מנה</option><option value="כוס">כוס</option><option value="כף">כף</option><option value="פרוסה">פרוסה</option></select></div></div>
   <div class="field" id="km-g-f" hidden><label for="km-g">כמה גרם ביחידה (לא חובה)</label><input type="number" inputmode="numeric" id="km-g"></div>
   <div class="btns"><button class="btn" id="km-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="km-cancel" type="button">ביטול</button><button class="btn primary" id="km-ok" type="button">שמירה</button></div>
@@ -2163,11 +2169,14 @@ function renderKcal(){
       <div><b>${kNum(x.eaten)}</b><span>נאכלו</span></div>
       <button type="button" id="kc-goal" style="border:0;background:var(--bg);border-radius:14px;padding:8px 4px;color:inherit"><b>${kNum(x.goal)}</b><span>יעד ✏️</span></button>
       <div class="burn"><b>${kNum(x.burned)}</b><span>נשרפו בפעילות</span></div>
-    </div>`;
+    </div>
+    <button type="button" class="kc-prot" id="kc-prot"><span>💪 חלבון</span><b>${kNum(x.protein)}</b><span class="of">/ ${kNum(x.protGoal)} ג׳</span>
+      <i class="kc-pbar"><i style="width:${x.protPct}%"></i></i></button>`;
   $('kc-goal').onclick = editGoal;
+  $('kc-prot').onclick = editProtGoal;
   $('kc-meals').innerHTML = x.meals.map(m => `<div class="sec"><h2 class="kc-h">${m.emoji} ${m.name} <span>${m.kcal ? kNum(m.kcal) : ''}</span>
       <button class="btn" type="button" data-add="${m.id}">+ הוספה</button></h2>
-      <div class="kc-list">${m.items.map(e => `<button type="button" class="kc-row" data-e="${esc(e.id)}"><span class="n">${esc(e.name)}<small>${esc(qtyText(e))}${e.manual ? ' · תוקן ביד' : ''}</small></span><span class="k">${kNum(e.kcal)}</span></button>`).join('')}</div>
+      <div class="kc-list">${m.items.map(e => `<button type="button" class="kc-row" data-e="${esc(e.id)}"><span class="n">${esc(e.name)}<small>${esc(qtyText(e))}${e.protein ? ` · ${String(Math.round(e.protein * 10) / 10)} ג׳ חלבון` : ''}${e.manual ? ' · תוקן ביד' : ''}</small></span><span class="k">${kNum(e.kcal)}</span></button>`).join('')}</div>
       <div class="kc-meal-tools"><button type="button" data-tool="fav" data-m="${m.id}">⭐ ארוחה קבועה</button><button type="button" data-tool="copy" data-m="${m.id}">↺ מיום קודם</button>${m.items.length ? `<button type="button" data-tool="save" data-m="${m.id}">💾 שמירה כקבועה</button>` : ''}</div></div>`).join('');
   const acts = x.acts;
   $('kc-act-sum').textContent = x.burned ? kNum(x.burned) : '';
@@ -2259,6 +2268,12 @@ function actText(a){
 $('kc-prev').onclick = () => { kcDate = ל.addDays(kcDate, -1); renderKcal(); };
 $('kc-next').onclick = () => { if(kcDate < today()){ kcDate = ל.addDays(kcDate, 1); renderKcal(); } };
 $('kc-day').onclick = () => { if(kcDate !== today()){ kcDate = today(); renderKcal(); } };
+async function editProtGoal(){
+  const st = ל.calSettings(KF()), w = ל.weightOn(KF(), today()), cur = Math.round(+st.protGoal || 1.6 * w);
+  const [v] = await ask('יעד חלבון יומי', [{label: 'גרם חלבון ביום', value: cur, num: true, req: true}], {note: `ברירת המחדל: 1.6 גרם לכל ק״ג (${w} ק״ג = ${Math.round(1.6 * w)} גרם)`}) || [];
+  if(v == null || !(+v > 0)) return;
+  saveK('settings', Object.assign({}, st, {id: 'settings', protGoal: Math.round(+v), updatedAt: nowIso()}));
+}
 async function editGoal(){
   const st = ל.calSettings(KF());
   const [v] = await ask('יעד קלוריות יומי', [{label: 'קלוריות ביום', value: st.goal, num: true, req: true}]) || [];
@@ -2345,7 +2360,8 @@ function calcKSel(force){
   $('kf-qtys').innerHTML = (unit === 'גרם' ? [50, 100, 150, 200, 250] : [0.5, 1, 1.5, 2, 3]).map(q => `<button type="button" data-q="${q}" class="${+q === qty ? 'on' : ''}">${q === 0.5 ? '½' : q === 1.5 ? '1½' : q}</button>`).join('');
   if(force != null && $('kf-kcal').dataset.manual) $('kf-kcal').value = force;
   else $('kf-kcal').value = auto;
-  $('kf-calc').textContent = `${kNum(ל.foodGrams(f, qty, unit))} גרם × ${kNum(f.kcal100)} ל־100 גרם${f.corrected ? ' (ערך מתוקן)' : ''}`;
+  const pr = ל.foodProt(f, qty, unit);
+  $('kf-calc').textContent = `${kNum(ל.foodGrams(f, qty, unit))} גרם × ${kNum(f.kcal100)} ל־100 גרם${f.corrected ? ' (ערך מתוקן)' : ''}${pr != null ? ` · 💪 ${pr} ג׳ חלבון` : ''}`;
 }
 $('kf-meal').onclick = e => { const b = e.target.closest('[data-m]'); if(b){ kf.meal = b.dataset.m; renderKFood(); } };
 $('kf-q').addEventListener('input', () => { kf.food = null; renderKFood(); });
@@ -2389,6 +2405,7 @@ function openKMy(food, name){
   if(food && u && food.perUnitKcal != null){ $('km-per').value = u.name; $('km-kcal').value = food.perUnitKcal; }
   else{ $('km-per').value = '100g'; $('km-kcal').value = food ? Math.round(food.kcal100) : ''; }
   $('km-g').value = ''; $('km-g-f').hidden = $('km-per').value === '100g';
+  $('km-prot').value = food ? (food.perUnitProt ?? ל.prot100Of(food) ?? '') : '';
   $('km-del').hidden = !food || (food.builtin && !food.corrected);
   $('km-del').textContent = food?.builtin ? 'חזרה לערך המקורי' : 'מחיקה';
   $('dlg-kmy').showModal();
@@ -2399,9 +2416,11 @@ $('km-ok').onclick = () => {
   const name = $('km-name').value.trim(), k = +$('km-kcal').value, per = $('km-per').value, g = +$('km-g').value;
   if(!name || !(k >= 0) || $('km-kcal').value === '') return toast('צריך שם וקלוריות', {err: true});
   let rec;
-  if(per === '100g') rec = {kcal100: k, units: kmEdit?.units?.length ? kmEdit.units : [{name: 'מנה', g: 100}]};
+  const pv = $('km-prot').value === '' ? null : +$('km-prot').value;
+  if(per === '100g') rec = {kcal100: k, prot100: pv, units: kmEdit?.units?.length ? kmEdit.units : [{name: 'מנה', g: 100}]};
   // לפי יחידה: אם ידוע המשקל, קלוריות ל-100 גרם מחושבות. אחרת "יחידה" = 100 גרם מדומים, כך שיחידה אחת = הקלוריות שהוזנו
-  else rec = {kcal100: g > 0 ? Math.round(k / g * 100) : k, units: [{name: per, g: g > 0 ? g : 100}, ...(kmEdit?.units || []).filter(u => u.name !== per)], perUnitKcal: k};
+  else rec = {kcal100: g > 0 ? Math.round(k / g * 100) : k, prot100: pv == null ? null : g > 0 ? Math.round(pv / g * 1000) / 10 : pv, perUnitProt: pv,
+    units: [{name: per, g: g > 0 ? g : 100}, ...(kmEdit?.units || []).filter(u => u.name !== per)], perUnitKcal: k};
   const f = Object.assign({id: kmEdit ? kmEdit.id : 'my' + uid(), name, updatedAt: nowIso(), deleted: false}, rec);
   saveK('foods', f);
   $('dlg-kmy').close();
@@ -2521,13 +2540,14 @@ $('kc-acts').onclick = e => { const b = e.target.closest('[data-a]'); if(b) open
 // --- היסטוריה והגדרות ---
 $('kc-hist').onclick = () => {
   const h = ל.calHistory(KF(), 60);
-  sheet('היסטוריה', h.map(d => [`${kDayLabel(d.date)} · ${kNum(d.eaten)} / ${kNum(d.goal)}${d.burned ? ` · 🔥 ${kNum(d.burned)}` : ''}`, () => { kcDate = d.date; renderKcal(); scrollTo(0, 0); }]),
+  sheet('היסטוריה', h.map(d => [`${kDayLabel(d.date)} · ${kNum(d.eaten)} / ${kNum(d.goal)} · 💪 ${kNum(d.protein)}/${kNum(d.protGoal)} ג׳${d.burned ? ` · 🔥 ${kNum(d.burned)}` : ''}`, () => { kcDate = d.date; renderKcal(); scrollTo(0, 0); }]),
     h.length ? '' : 'עוד אין היסטוריה');
 };
 $('kc-set').onclick = () => {
   const st = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
   sheet('הגדרות קלוריות', [
     [`🎯 יעד יומי: ${kNum(st.goal)} קלוריות`, editGoal],
+    [`💪 יעד חלבון: ${kNum(Math.round(+st.protGoal || 1.6 * w))} גרם`, editProtGoal],
     [`⚖️ עדכון משקל (עכשיו: ${w} ק״ג)`, async () => {
       const [v] = await ask('עדכון משקל', [{label: 'משקל נוכחי בק״ג', value: w, num: true, req: true}]) || []; if(v == null || !(+v > 30 && +v < 300)) return;
       saveK('weights', {id: 'w' + today(), date: today(), kg: +(+v).toFixed(1), updatedAt: nowIso(), deleted: false});
@@ -3087,6 +3107,7 @@ function renderQuick(){
   const calOk = !!date || !!quick.repeat;   // בלי תאריך אין מה לשים ביומן
   $('q-cal').disabled = !calOk; $('q-cal').style.opacity = calOk ? '' : '.4';
   $('q-cal').setAttribute('aria-pressed', String(calOk && quick.cal));
+  $('q-leave').hidden = !NATIVE; $('q-leave').setAttribute('aria-pressed', String(!!quick.leave));
   const dd = date || today(), dayTxt = dd === today() ? 'היום' : dd === ל.addDays(today(), 1) ? 'מחר' : `ב${dayName(dd)} ${ל.shortDate(dd)}`;
   $('q-line').textContent = quick.repeat ? `🔁 ${ל.repeatText(quick.repeat)}, החל מ${dayTxt === 'היום' || dayTxt === 'מחר' ? dayTxt : dayTxt.slice(1)}${time ? ` ב־${time}` : ''}`
     : time && date ? `🔔 התראה ${dayTxt} ב־${time}` : '';
@@ -3111,6 +3132,7 @@ $('q-time').addEventListener('input', () => { quick.touched = true; if(quick.whe
 $('q-when').onclick = e => { const b = e.target.closest('[data-w]');
   if(b && b.dataset.w === 'pick') return pickDate(quickDate() || today(), 'מתי?').then(d => { if(d){ quick.touched = true; quick.when = 'date'; quick.date = d; renderQuick(); } });
   if(b){ quick.touched = true; quick.when = b.dataset.w; if(quick.when === 'none') $('q-time').value = ''; renderQuick(); } };
+$('q-leave').onclick = () => { quick.leave = !quick.leave; renderQuick(); toast(quick.leave ? '🚪 תזכורת כשיוצאים מהבית' : 'בלי תזכורת ביציאה', {ms: 1500}); };
 $('q-cal').onclick = () => { quick.cal = !quick.cal; renderQuick(); toast(quick.cal ? '📅 ייכנס גם ליומן גוגל' : 'בלי יומן', {ms: 1500}); };
 $('q-rep').onclick = e => { const b = e.target.closest('[data-r]'); if(b){ quick.repTouched = true; quick.repeat = b.dataset.r; if(quick.repeat && quick.when === 'none') quick.when = 'today'; renderQuick(); } };
 $('q-domain').onclick = e => { const b = e.target.closest('[data-d]'); if(b){ quick.domain = b.dataset.d; renderQuick(); } };
@@ -3138,7 +3160,8 @@ function quickTask(){
 $('q-save').onclick = () => {
   if(!$('q-title').value.trim()) return toast('כתוב מה צריך לעשות', {err: true});
   const qt = quickTask();
-  if(quick.cal && qt.kind !== 'inbox') qt.calendar = true;   // המנוע ייצור את האירוע ביומן גוגל
+  if(quick.cal && qt.kind !== 'inbox') qt.calendar = true;   // ייכנס ליומן גוגל (באפליקציה העצמאית: ישר ליומן של הטלפון)
+  if(quick.leave) qt.onLeave = true;   // ביציאה מהבית ("🚪 לא לשכוח")
   const t = saveTask(qt);
   store(K.toCal, quick.cal ? '1' : '0');
   $('dlg-quick').close();
@@ -5001,8 +5024,10 @@ async function meetingSuggestions(){
 }
 async function suggestMeeting(m){
   const p = ל.parseQuick(m.text, Date.now());
-  if(!p.date && !p.time) return;
-  const d = p.date || today(), whenTxt = `${d === today() ? 'היום' : d === ל.addDays(today(), 1) ? 'מחר' : dayName(d) + ' ' + ל.shortDate(d)}${p.time ? ' ב-' + p.time : ''}`;
+  // פגישה צריכה יום או שעה. משימה ("צריך לשלם") גם בלי
+  const isTask = /צריך ל|צריכה ל|צריכים ל|תזכיר|תזכורת|לא לשכוח|אל תשכח|לשלם|תשלום|להגיש|דדליין|להביא|לאסוף|להחזיר/.test(m.text);
+  if(!p.date && !p.time && !isTask) return;
+  const d = p.date || today(), whenTxt = !p.date && !p.time ? 'בלי תאריך (אפשר לבחור)' : `${d === today() ? 'היום' : d === ל.addDays(today(), 1) ? 'מחר' : dayName(d) + ' ' + ל.shortDate(d)}${p.time ? ' ב-' + p.time : ''}`;
   const meet = /פגיש|נפגש|ניפגש|נתראה|ישיבה|זימון|תור |זום|zoom|meet|teams|ראיון|אירוע/i.test(m.text);
   const v = await ask(meet ? '📅 להוסיף ליומן?' : '🔔 להוסיף משימה?', [{label: meet ? 'שם האירוע' : 'המשימה', value: meet ? `פגישה${m.title ? ' עם ' + m.title : ''}` : ל.parseQuick(m.text, Date.now()).title.slice(0, 80), req: true}], {ok: 'הוספה', no: 'לא עכשיו',
     html: `<div class="card" style="margin:0 0 6px;font-size:14px"><b>${esc(m.app || 'הודעה')}${m.title ? ' · ' + esc(m.title) : ''}</b><div style="margin-top:4px;white-space:pre-wrap">${esc(m.text.slice(0, 220))}</div></div>
@@ -5128,12 +5153,17 @@ function dailyInfo(){
     for(const x of v.todays) lines.push('• ' + ל.displayTitle(x.task));
     for(const m of meds) if(i || !m.taken) lines.push('💊 ' + m.name);
     for(const x of todoItems().filter(x => !x.done && !x.removed && ((x.due && x.due <= d) || (!i && x.urg === 2)))) lines.push('📝 ' + x.title);
-    days[d] = {title: `היום · ${dayName(d)} ${ל.shortDate(d)}`, morning: `☀️ בוקר טוב · ${lines.length ? (lines.length === 1 ? 'דבר אחד' : lines.length + ' דברים') + ' להיום' : 'יום פנוי'}`, lines};
+    // ביציאה מהבית: מה שסומן 🚪, ומה לקחת לפי מה שיש היום (אימון ← בגדי אימון)
+    const titles = [...v.overdue, ...v.todays].map(x => ל.displayTitle(x.task));
+    const leave = [...[...v.overdue, ...v.todays].filter(x => x.task.onLeave).map(x => '🔔 ' + ל.displayTitle(x.task)),
+      ...D.tasks.filter(t => t.onLeave && !t.deleted && !t.archived && t.kind === 'inbox').map(t => '🔔 ' + t.title),
+      ...ל.leaveItems(titles)];
+    days[d] = {leave, title: `היום · ${dayName(d)} ${ל.shortDate(d)}`, morning: `☀️ בוקר טוב · ${lines.length ? (lines.length === 1 ? 'דבר אחד' : lines.length + ' דברים') + ' להיום' : 'יום פנוי'}`, lines};
   }
   return days;
 }
 let dailyT = null;
-function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo()}).catch(() => {}); }catch(e){} }, 1500); }
+function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
 function localInit(){
   if(!NATIVE) return;
   dailySoon();
@@ -5458,6 +5488,8 @@ async function renderNativePrefs(){
       ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
     <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
     <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
+    ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית</h2><div class="pf-stat" id="pf-home">בודק…</div>
+      <div class="btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית שלי = המיקום עכשיו</button><button class="btn" type="button" id="pf-home-test">בדיקה</button></div></div>` : ''}
     ${st.usage === undefined ? '' : `<div class="sec"><h2>אישורים נוספים</h2><div class="pf-stat">${ok(st.usage)} שעות שינה (גישה לנתוני שימוש)<br>${ok(st.listener)} הצעות ליומן מהודעות (גישה להתראות)</div>
       <div class="btns">${st.usage ? '' : '<button class="btn" type="button" id="pf-usage">אישור שעות שינה</button>'}${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות ליומן</button>'}</div>
       ${st.usage && st.listener ? '' : `<div class="note" style="margin-top:8px">אם האפשרות אפורה ("הגדרה מוגבלת"): <a href="#" id="pf-app">פרטי האפליקציה</a> ← ⋮ למעלה ← "התרת הגדרות מוגבלות", ואז שוב כאן.</div>`}</div>`}`;
@@ -5472,6 +5504,16 @@ async function renderNativePrefs(){
   };
   $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
   if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-home')){
+    const hs = await NPhone.homeStatus().catch(() => ({}));
+    $('pf-home').innerHTML = hs.home ? (hs.always ? '✓ פועל: כשיוצאים מהבית מגיעה התראה מה לקחת (לפי מה שיש היום, ומה שסומן 🚪)'
+      : '✗ חסר אישור מיקום "כל הזמן". בלי זה הטלפון לא יודע שיצאת כשהאפליקציה סגורה.<br><button class="btn primary" type="button" id="pf-home-always" style="margin-top:8px;width:100%">אישור מיקום כל הזמן</button>')
+      : 'עוד לא נקבע איפה הבית. כשאתה בבית, לוחצים "הבית שלי = המיקום עכשיו". צורך סוללה זניח: הטלפון מזהה יציאה לפי האנטנות וה-WiFi.';
+    $('pf-home-set').onclick = async () => { try{ const r = await NPhone.setHome(); toast(r.always ? '✓ הבית נשמר. ביציאה תגיע התראה' : '✓ הבית נשמר. עכשיו מאשרים מיקום "כל הזמן"', {ms: 4000}); if(!r.always) await NPhone.alwaysLocation().catch(() => {}); }
+      catch(e){ toast(e.message || String(e), {err: true}); } renderNativePrefs(); };
+    $('pf-home-test').onclick = async () => { dailySoon(); setTimeout(() => NPhone.testLeave().then(() => toast('נשלחה התראת בדיקה (אם יש מה לקחת היום)')).catch(e => toast(e.message, {err: true})), 1800); };
+    if($('pf-home-always')) $('pf-home-always').onclick = () => NPhone.alwaysLocation().then(renderNativePrefs).catch(e => toast(e.message || String(e), {err: true}));
+  }
   if($('pf-usage')) $('pf-usage').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
   if($('pf-lis')) $('pf-lis').onclick = () => NAlarm.openSettings({what: 'listener'}).catch(e => toast(e.message, {err: true}));
   if($('pf-app')) $('pf-app').onclick = e => { e.preventDefault(); NAlarm.openSettings({what: 'app'}).catch(err => toast(err.message, {err: true})); };
