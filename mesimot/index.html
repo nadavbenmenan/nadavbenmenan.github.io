@@ -447,6 +447,17 @@
   .kc-prot b{font-size:20px;color:#15803D;font-variant-numeric:tabular-nums} .kc-prot .of{color:var(--muted);font-size:14px}
   .kc-pbar{display:block;flex-basis:100%;height:7px;border-radius:999px;background:var(--soft);overflow:hidden}
   .kc-pbar i{display:block;height:100%;background:#16A34A;border-radius:999px}
+  .wz{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+  .wz-logo{width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:34px;font-weight:700}
+  .wz-big{display:flex;flex-direction:column;align-items:center;min-height:64px;font-size:18px;width:100%}
+  .wz-big small{font-size:13px;opacity:.8;font-weight:400}
+  .wz-steps{display:flex;gap:6px} .wz-steps i{flex:1;height:5px;border-radius:9px;background:var(--soft)} .wz-steps i.on{background:var(--accent)}
+  .wz-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .wz-grid button{border:2px solid var(--line);background:var(--card);border-radius:14px;min-height:52px;font-size:15px;color:var(--muted)}
+  .wz-grid button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card));font-weight:600}
+  .wz-tips{display:flex;flex-direction:column;gap:10px}
+  .wz-tips div{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:12px}
+  .wz-tips b{font-size:24px;width:32px;text-align:center;flex:none}
   .dom-row{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:8px 10px;margin:8px 0;border:1px solid var(--line)}
   .dom-row.off{opacity:.6}
   .dom-color{width:36px;height:36px;border-radius:50%;background:var(--c);flex:none;position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
@@ -1168,6 +1179,9 @@ function store(k, v){
 /* ---------- עצמאי: עותק של כל הנתונים בקובץ בטלפון (נכנס לגיבוי של גוגל) ---------- */
 const LOCAL_DONE = 'משימות.עצמאי';   // מתי הנתונים הועברו מגיטהאב (אחרי זה גיטהאב לא בשימוש)
 let mirrorReady = !LOCAL || !!localStorage.getItem('משימות.משימות'), mirrorT = null;
+// התקנה חדשה (לא עדכון, ובלי גיבוי שחזר): מתחילים נקי, בלי הנתונים של נדב, ועם שאלון פתיחה
+try{ if(LOCAL && !localStorage.getItem('משימות.משימות') && !localStorage.getItem('משימות.הוכנס')) localStorage.setItem('משימות.משתמש-חדש', '1'); }catch(e){}
+const NEW_USER = (() => { try{ return !!localStorage.getItem('משימות.משתמש-חדש'); }catch(e){ return false; } })();
 function mirrorData(){
   const o = {};
   for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k !== 'משימות.אסימון') o[k] = localStorage.getItem(k); }
@@ -1183,7 +1197,7 @@ if(LOCAL){
   // התקנה מחדש (או טלפון חדש): הנתונים חוזרים מהקובץ שגוגל שחזר
   if(!mirrorReady) NPhone.read({name: 'mirror'}).then(r => {
     const m = r && r.text ? JSON.parse(r.text) : null;
-    if(m && m.data && m.data['משימות.משימות']){ for(const [k, v] of Object.entries(m.data)) localStorage.setItem(k, v); location.reload(); }
+    if(m && m.data && m.data['משימות.משימות']){ localStorage.clear(); for(const [k, v] of Object.entries(m.data)) localStorage.setItem(k, v); location.reload(); }
     else mirrorReady = true;
   }).catch(() => { mirrorReady = true; });
 }
@@ -1325,7 +1339,13 @@ const FILES = {
   config: {path: 'משימות/תצורה.json', cache: 'משימות.תצורה', pending: 'משימות.תצורה.ממתין', sha: null,
            merge: (a, b) => ל.mergeConfig(a, b), msg: 'עדכון הגדרות משימות'},
 };
-const seed = ל.initialData(today());
+/** משתמש חדש: רק פריטי תחזוקה כלליים (מברשת, מסנן, סכין, תספורת), בלי התחום "דירה מושכרת", ובלי לשונית חשבונות. */
+function newUserSeed(){
+  const s = ל.initialData(today()), keep = new Set(['haircut', 'toothbrush', 'filter', 'razor']);
+  return {tasks: s.tasks.filter(t => keep.has(t.id)), domains: s.domains.filter(d => d.id !== 'rental'),
+    config: Object.assign({}, s.config, {mailRules: [], seedV: 5, navHidden: ['bills']})};
+}
+const seed = NEW_USER ? newUserSeed() : ל.initialData(today());
 const D = {
   file: {
     tasks: FILES.tasks.merge(storeJson(FILES.tasks.cache, null) || {tasks: seed.tasks, domains: seed.domains}, null),
@@ -1452,7 +1472,7 @@ function todayEvents(){
 function renderToday(){
   const now = Date.now(), d = today(), v = ל.buildView(data(), now);
   $('dateline').textContent = `${dayName(d)} · ${ל.longDate(d)}`;
-  $('hello').textContent = `${greeting()}, נדב`;
+  $('hello').textContent = NEW_USER ? (D.config.userName ? `${greeting()}, ${D.config.userName}` : greeting()) : `${greeting()}, נדב`;
   const p = v.total ? Math.round(v.doneToday / v.total * 100) : 0;
   $('ring').style.setProperty('--p', p);
   $('ring-txt').textContent = `${v.doneToday}/${v.total}`;
@@ -3961,6 +3981,80 @@ function onboard(step){
   if(!$('dlg-onboard').open) $('dlg-onboard').showModal();
 }
 
+/* ---------- התקנה חדשה: גיבוי, כמה שאלות, והסבר קצר ---------- */
+const NAV_PICK = [['todo', '📝 משימות'], ['shop', '🛒 קניות'], ['recipes', '🍳 מתכונים'], ['kcal', '❤️ בריאות'], ['meds', '💊 תרופות'], ['upkeep', '🔧 תחזוקה'],
+  ['docs', '📄 מסמכים'], ['calendar', '📅 לוח שנה'], ['history', '🕘 היסטוריה'], ['bills', '🧾 חשבונות לדייר']];
+let wz = {};
+function welcome(step){
+  const b = $('o-body'), done = () => { store(K.onboard, '1'); $('dlg-onboard').close(); renderAll(); handleHash(); };
+  if(step === 1){
+    b.innerHTML = `<div class="wz"><div class="wz-logo">✓</div><h1 class="hello">ברוך הבא ל"ניהול שיגרה"</h1>
+      <p class="note">משימות, תזכורות, קניות, מתכונים, בריאות ותרופות. הכול נשמר בטלפון שלך.</p>
+      <h3>יש לך גיבוי?</h3>
+      <button class="btn primary wz-big" type="button" id="wz-restore">📥 שחזור מגיבוי<small>מהטלפון או מגוגל דרייב</small></button>
+      <button class="btn wz-big" type="button" id="wz-new">✨ התחלה חדשה</button></div>`;
+    $('wz-restore').onclick = restoreBackup;
+    $('wz-new').onclick = () => welcome(2);
+  }else if(step === 2){
+    const st = ל.calSettings(KF());
+    b.innerHTML = `<div class="wz"><div class="wz-steps"><i class="on"></i><i></i><i></i></div><h1 class="hello">קצת עליך</h1>
+      <p class="note">לחישוב קלוריות וחלבון. אפשר לשנות אחר כך.</p>
+      <div class="field"><label for="wz-name">שם (לא חובה)</label><input type="text" id="wz-name" value="${esc(D.config.userName || '')}"></div>
+      <div class="opts" id="wz-sex">${[['m', 'גבר'], ['f', 'אישה']].map(([k, n]) => `<button type="button" data-s="${k}" class="${(wz.sex || 'm') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="row"><div class="field"><label for="wz-age">גיל</label><input type="number" inputmode="numeric" id="wz-age" value="${wz.age || ''}"></div>
+        <div class="field"><label for="wz-w">משקל (ק״ג)</label><input type="number" inputmode="decimal" id="wz-w" value="${wz.w || ''}"></div>
+        <div class="field"><label for="wz-h">גובה (ס״מ)</label><input type="number" inputmode="numeric" id="wz-h" value="${wz.h || ''}"></div></div>
+      <span class="lbl">המטרה</span><div class="opts" id="wz-goal">${[['lose', 'לרדת במשקל'], ['keep', 'לשמור'], ['gain', 'לעלות']].map(([k, n]) => `<button type="button" data-g="${k}" class="${(wz.goal || 'keep') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="btns"><button class="btn" type="button" id="wz-skip">דילוג</button><button class="btn primary" type="button" id="wz-next">הבא</button></div></div>`;
+    wz.sex = wz.sex || 'm'; wz.goal = wz.goal || 'keep';
+    $('wz-sex').onclick = e => { const x = e.target.closest('[data-s]'); if(x){ wz.sex = x.dataset.s; $('wz-sex').querySelectorAll('button').forEach(y => y.classList.toggle('on', y === x)); } };
+    $('wz-goal').onclick = e => { const x = e.target.closest('[data-g]'); if(x){ wz.goal = x.dataset.g; $('wz-goal').querySelectorAll('button').forEach(y => y.classList.toggle('on', y === x)); } };
+    $('wz-skip').onclick = () => welcome(3);
+    $('wz-next').onclick = () => {
+      const w = +$('wz-w').value, h = +$('wz-h').value, age = +$('wz-age').value, name = $('wz-name').value.trim();
+      Object.assign(wz, {w, h, age});
+      if(name) saveConfig({userName: name});
+      if(w > 30 && w < 300 && h > 100 && h < 230){
+        // קלוריות ליום: מיפלין-סנט ז'אור × 1.4 (פעילות קלה), ולפי המטרה
+        const bmr = 10 * w + 6.25 * h - 5 * (age > 10 ? age : 30) + (wz.sex === 'f' ? -161 : 5);
+        const goal = Math.round((bmr * 1.4 + {lose: -500, keep: 0, gain: 300}[wz.goal]) / 50) * 50;
+        saveK('settings', Object.assign({}, st, {id: 'settings', weight: w, height: h, age: age || null, sex: wz.sex, goal, updatedAt: nowIso(), deleted: false}));
+        saveK('weights', {id: 'w' + today(), date: today(), kg: w, updatedAt: nowIso(), deleted: false});
+        toast(`✓ יעד: ${kNum(goal)} קלוריות, ${Math.round(1.6 * w)} ג׳ חלבון ביום`, {ms: 4000});
+      }else if(w || h) return toast('משקל וגובה לא תקינים', {err: true});
+      welcome(3);
+    };
+  }else if(step === 3){
+    const hidden = new Set(D.config.navHidden || []);
+    b.innerHTML = `<div class="wz"><div class="wz-steps"><i class="on"></i><i class="on"></i><i></i></div><h1 class="hello">מה תרצה באפליקציה?</h1>
+      <p class="note">הלשוניות בסרגל למטה. אפשר לשנות בהגדרות.</p>
+      <div class="wz-grid" id="wz-nav">${NAV_PICK.map(([k, n]) => `<button type="button" data-k="${k}" class="${hidden.has(k) ? '' : 'on'}">${n}</button>`).join('')}</div>
+      <div class="row" style="margin-top:14px"><div class="field"><label for="wz-from">התראות מ־</label><input type="time" id="wz-from" value="${esc(D.config.activeFrom)}"></div>
+        <div class="field"><label for="wz-to">עד</label><input type="time" id="wz-to" value="${esc(D.config.activeTo)}"></div></div>
+      <div class="btns"><button class="btn primary" type="button" id="wz-next">הבא</button></div></div>`;
+    $('wz-nav').onclick = e => { const x = e.target.closest('[data-k]'); if(x) x.classList.toggle('on'); };
+    $('wz-next').onclick = () => {
+      const off = [...$('wz-nav').querySelectorAll('button:not(.on)')].map(x => x.dataset.k);
+      saveConfig({navHidden: off, activeFrom: $('wz-from').value || '07:00', activeTo: $('wz-to').value || '21:00'});
+      applyNav(); welcome(4);
+    };
+  }else{
+    b.innerHTML = `<div class="wz"><div class="wz-steps"><i class="on"></i><i class="on"></i><i class="on"></i></div><h1 class="hello">איך משתמשים</h1>
+      <div class="wz-tips">
+        <div><b>＋</b><span>הוספה. כותבים בשפה רגילה: "לקנות חלב מחר ב-8"</span></div>
+        <div><b>👆</b><span>לחיצה ארוכה על כל דבר: עריכה, מחיקה ועוד אפשרויות</span></div>
+        <div><b>☀️</b><span>"היום": מה צריך לעשות עכשיו, וסימון ✓ כשבוצע</span></div>
+        <div><b>📤</b><span>שיתוף מוואטסאפ, מייל או הדפדפן ← "ניהול שיגרה": משימה, אירוע, קניות או מתכון</span></div>
+        <div><b>📱</b><span>ווידג'ט: לחיצה ארוכה על מסך הבית ← ווידג'טים ← ניהול שיגרה</span></div>
+        <div><b>💾</b><span>גיבוי כל יום, בטלפון ובגוגל. בהגדרות: "שליחה לדרייב"</span></div>
+      </div>
+      <div class="btns"><button class="btn primary" type="button" id="wz-done" style="font-size:18px">יאללה, מתחילים</button></div></div>`;
+    // הסימון "משתמש-חדש" נשאר לתמיד (וגם בגיבוי שלו): בלי התרופות והארוחות של נדב גם בהמשך
+    $('wz-done').onclick = done;
+  }
+  if(!$('dlg-onboard').open) $('dlg-onboard').showModal();
+}
+
 /* ---------- כתובת: #o=<מופע> או #new ---------- */
 
 /* ---------- תרופות (הועבר מאפליקציית מעקב התרופות, על אותם קבצים במאגר) ---------- */
@@ -4005,7 +4099,7 @@ const תבנית_תרופה = {
 };
 const תצורת_ברירת_מחדל = () => עותק({
   כללי: {עודכן:'', תאריך_התחלה:'2026-11-13', תחילת_יום:'05:00', סיווגים:סיווגי_ברירת_מחדל, ntfy:''},
-  תרופות: [
+  תרופות: NEW_USER ? [] : [
     {...תבנית_תרופה, id:'propecia', עודכן:'', סדר:1, שם:'פרופסיה', תיאור:'כל בוקר', סוג:'יומית',
      תזכורות:[8,10], התראת_מרווח:false, צבע:'#2e7d4f'},
     // זמני ההשפעה בדקות, הערכה כללית לפי העלונים: אופטלגין (מטמיזול) מתחיל תוך כחצי שעה,
@@ -5205,7 +5299,7 @@ function restoreBackup(){
   inp.click();
 }
 /** יומן הטלפון (גוגל): משימה עם "גם ביומן" נכנסת ליומן ישירות, מתעדכנת ונמחקת איתה. */
-let calBusy = false, calT = null;
+var calBusy = false, calT = null;
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 async function phoneCalendarSync(){
   if(!LOCAL || !store(LOCAL_DONE) || calBusy) return;
@@ -5246,7 +5340,7 @@ function dailyInfo(){
   }
   return days;
 }
-let dailyT = null;
+var dailyT = null;   // var: נקרא גם מקוד שרץ לפני השורה הזו
 function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
 function localInit(){
   if(!NATIVE) return;
@@ -5626,7 +5720,7 @@ addEventListener('hashchange', () => { if(location.hash !== '#t') handleHash(); 
 
 /* ---------- אתחול ---------- */
 if('serviceWorker' in navigator && !LOCAL) navigator.serviceWorker.register('sw.js').catch(() => {});
-if(LOCAL && !store(K.onboard) && !store(K.token)) store(K.onboard, '1');   // התקנה חדשה של האפליקציה העצמאית: בלי חיבור לגיטהאב
+
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 renderAll();
@@ -5639,8 +5733,8 @@ setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60
 // הנעילה בוטלה (16.11.2026). מנקים קוד שנשמר בגרסה הקודמת
 store('משימות.נעילה', null); store('משימות.נעילה.ניסיונות', null);
 if(migrate()) renderAll();
-{ const ks = ל.kcalSeed(D.file.kcal, nowIso()); if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); } }
-if(!store(K.onboard)) onboard(1);
+{ const ks = NEW_USER ? null : ל.kcalSeed(D.file.kcal, nowIso()); if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); } }
+if(!store(K.onboard)) (LOCAL ? welcome(1) : onboard(1));
 else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
 nativeInit();
 localInit();
