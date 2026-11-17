@@ -293,6 +293,8 @@
   .meds .כרטיס{border:1.5px solid var(--אפור-קו);background:var(--אפור-נייר);border-radius:16px;
          padding:14px 16px;margin-top:14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   .meds .כרטיס.כחול{border-color:var(--כחול-קו);background:var(--כחול-נייר)}
+  .meds .כרטיס{position:relative}
+  .meds .גלגל{position:absolute;top:8px;left:8px;width:36px;height:36px;border:0;border-radius:50%;background:var(--soft);font-size:17px;color:var(--muted);z-index:1}
   .meds .כרטיס.אדום{border-color:var(--אדום-קו);background:var(--אדום-נייר)}
   .meds .כרטיס.ירוק{border-color:var(--ירוק-קו);background:var(--ירוק-נייר)}
   .meds .ראש-כרטיס{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap}
@@ -1233,7 +1235,7 @@ function toast(text, opts){
   const t = document.createElement('div');
   t.className = 'toast' + (opts.err ? ' err' : '');
   t.setAttribute('role', 'status');
-  t.innerHTML = `<span>${esc(text)}</span>` + (opts.undo ? '<button type="button">ביטול</button>' : '');
+  t.innerHTML = `<span>${esc(text)}</span>` + (opts.undo ? `<button type="button">${esc(opts.btn || 'ביטול')}</button>` : '');
   if(opts.undo) t.querySelector('button').onclick = () => { t.remove(); opts.undo(); };
   topLayer().appendChild(t);
   toastTimer = setTimeout(() => t.remove(), opts.ms || (opts.undo ? 5000 : 2600));
@@ -1699,7 +1701,8 @@ const CAT_COLOR = {veg: '#3F9D4F', bread: '#C08A3E', dry: '#9A6B3F', cans: '#C03
   drink: '#2E86C1', dairy: '#5D8AA8', deli: '#B9770E', meat: '#A93226', frozen: '#48A9C5', clean: '#7D3C98', care: '#D4589A', other: '#7F8C8D'};
 const letterPic = x => `<span class="pic letter" style="--c:${CAT_COLOR[x.catId || x.cat] || '#7F8C8D'}">${esc((x.name || '?').replace(/^[^א-תA-Za-z0-9]+/, '').charAt(0))}</span>`;
 function prodPic(x){
-  const fallback = x.emoji ? `<span class="pic">${x.emoji}</span>` : letterPic(x);
+  const em = x.emoji || (x.name ? ל.shopInfo(x).textEmoji : '');   // מוצר חדש: האייקון של המחלקה
+  const fallback = em ? `<span class="pic">${em}</span>` : letterPic(x);
   if(!x.photo) return fallback;
   // התמונה לא נטענה (בלי רשת וגם לא במטמון): חוזרים לאמוג'י או לאות
   return `<span class="pic photo" data-fb="${esc(fallback)}"><img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.parentNode.outerHTML = this.parentNode.dataset.fb"></span>`;
@@ -1727,10 +1730,10 @@ $('shop-wa').onclick = () => {
   if(!window.open(url, '_blank')) location.href = url;
 };
 let shopCatItem = null;
-function openShopCat(x){
+function openShopCat(x, isNew){
   shopCatItem = x;
   const cur = ל.shopInfo(x).cat;
-  $('sc-title').textContent = `באיזו מחלקה: ${x.name}?`;
+  $('sc-title').textContent = isNew ? `מוצר חדש: "${x.name}". באיזו מחלקה?` : `באיזו מחלקה: ${x.name}?`;
   $('sc-opts').innerHTML = ל.SHOP_CATS.map(c => `<button type="button" data-c="${c.id}" class="${c.id === cur ? 'on' : ''}">${c.emoji} ${esc(c.name)}</button>`).join('');
   $('dlg-shopcat').showModal();
 }
@@ -1744,6 +1747,8 @@ function shopAddName(name){
   const r = ל.shopAdd(D.file.shop.items, name, nowIso());
   if(!r){ if(name.trim()) toast('כבר ברשימה'); return; }
   saveShop(r);
+  // מוצר שלא מכירים: שואלים מחלקה פעם אחת. הבחירה נשמרת עם המוצר, ומשם גם האייקון והחיפושים הבאים
+  if(!r.cat && !ל.shopMatch(r.name)) setTimeout(() => openShopCat(r, true), 80);
 }
 $('shop-add').onclick = () => { shopAddName($('shop-in').value); $('shop-in').value = ''; renderShop(); $('shop-in').focus(); };
 $('shop-in').addEventListener('keydown', e => { if(e.key === 'Enter') $('shop-add').click(); });
@@ -2460,7 +2465,7 @@ function renderKFood(){
   const favMeals = !q && !kf.food && !kf.onPick && !kf.edit ? live(KF().meals) : [];
   $('kf-sug').innerHTML = (favMeals.length ? `<div class="kc-favs"><span class="h">⭐ מנות קבועות</span>${favMeals.map(m => `<button type="button" data-fm="${esc(m.id)}">${esc(m.name)} · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))}</button>`).join('')}</div>` : '')
     + sug.map(f => { const u = f.units?.[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${favs.has(f.id) ? '★ ' : ''}${esc(f.name)}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
-    + ($('kf-q').value && !sug.length ? `<div class="empty">"${esc($('kf-q').value)}" לא במאגר. אפשר להוסיף למטה</div>` : '');
+    + ($('kf-q').value && !sug.length ? `<button type="button" class="btn primary" id="kf-add-missing" style="width:100%;margin-top:10px">＋ להוסיף "${esc($('kf-q').value)}" (קלוריות וחלבון)</button>` : '');
   $('kf-sel').hidden = !kf.food;
   $('kf-newrow').hidden = !!kf.food || !!kf.onPick;
   if(kf.food) $('kf-fav').textContent = favs.has(kf.food.id) ? '★ במועדפים' : '☆ למועדפים';
@@ -2509,6 +2514,7 @@ $('kf-del').onclick = () => {
   toast('נמחק', {undo: () => saveK('entries', Object.assign({}, e, {deleted: false, updatedAt: nowIso()}))});
 };
 $('kf-new').onclick = () => openKMy(null, $('kf-q').value);
+$('kf-sug').addEventListener('click', e => { if(e.target.closest('#kf-add-missing')) openKMy(null, $('kf-q').value.trim()); });
 $('kf-newrec').onclick = () => openKRec(null);
 $('kf-fav').onclick = () => { if(kf.food){ toggleFav(kf.food); renderKFood(); } };
 $('kf-fix').onclick = () => { if(kf.food && !kf.food.recipe) openKMy(kf.food); else if(kf.food?.recipe) openKRec(live(KF().recipes).find(r => r.id === kf.food.id)); };
@@ -4518,6 +4524,7 @@ function צייר_כרטיסים(){
     const כפתורים = t.מנות.map((מ, i) =>
       `<button data-מנה="${i}">${בטוח(תווית_מנה(t, מ))}</button>`).join('');
     return `<div class="כרטיס ${צבע}" data-תרופה="${בטוח(t.id)}">
+      <button type="button" class="גלגל" data-הגדרות-תרופה="${בטוח(t.id)}" aria-label="הגדרות ${בטוח(t.שם)}">⚙</button>
       <div class="ראש-כרטיס"><h2>${בטוח(t.שם)}</h2>${t.משנה ? `<span class="תת">${בטוח(t.משנה)}</span>` : ''}
         <span class="תת">· ${בטוח(תיאור)}</span></div>
       <div class="סטטוס ${מחלקת_סטטוס}">${סטטוס}</div>
@@ -4922,7 +4929,9 @@ $('כרטיסים').addEventListener('pointerdown', e => {
   טיימר_ארוך = setTimeout(() => {
     הייתה_ארוכה = true;
     if(navigator.vibrate) navigator.vibrate(30);
-    פתח_עורך(כרטיס.dataset.תרופה);
+    // לחיצה ארוכה: עריכת הרישום האחרון (שעה, כמות). אין רישום: הגדרות התרופה
+    const א = אחרונה(כרטיס.dataset.תרופה);
+    if(א) פתח_חלונית(א); else פתח_עורך(כרטיס.dataset.תרופה);
   }, 550);
 });
 const בטל_ארוך = () => { clearTimeout(טיימר_ארוך); טיימר_ארוך = null; };
@@ -4937,6 +4946,8 @@ $('כרטיסים').addEventListener('click', e => {
   if(הייתה_ארוכה){ הייתה_ארוכה = false; e.preventDefault(); return; }
   const ב_מלאי = e.target.closest('[data-מלאי]');
   if(ב_מלאי) return פתח_מלאי(ב_מלאי.dataset.מלאי);
+  const גלגל = e.target.closest('[data-הגדרות-תרופה]');
+  if(גלגל) return פתח_עורך(גלגל.dataset.הגדרות_תרופה || גלגל.getAttribute('data-הגדרות-תרופה'));
   const b = e.target.closest('button[data-מנה]');
   if(!b) return;
   const t = תרופה(b.closest('.כרטיס').dataset.תרופה), מ = t?.מנות[+b.dataset.מנה];
@@ -5315,14 +5326,31 @@ async function phoneCalendarSync(){
       if(spec && (!old || old.sig !== spec.sig)){
         let rr = ל.rruleOf(spec.rule);
         if(rr && spec.rule.type === 'weekly' && (spec.rule.days || []).length) rr += ';BYDAY=' + spec.rule.days.map(d => BYDAY[d]).join(',');
-        const r = await NPhone.calendarUpsert({eid: old ? old.eid : -1, title: spec.title, date: spec.date, time: spec.time || null, rrule: rr || null, desc: 'מניהול שיגרה'});
+        const calId = +store('משימות.יומן-בחירה') || -1;
+        const r = await NPhone.calendarUpsert({eid: old ? old.eid : -1, calId, title: spec.title, date: spec.date, time: spec.time || null, rrule: rr || null, desc: 'מניהול שיגרה'});
         map[t.id] = {eid: r.eid, sig: spec.sig};
-        if(!old) toast(`📅 נוסף ליומן: ${spec.title}`);
+        // לאיזה יומן נכנס ומתי, וכפתור לפתוח אותו שם
+        if(!old) toast(`📅 ביומן "${r.calendar || 'הטלפון'}"${r.account ? ' (' + r.account + ')' : ''}: ${spec.title}${r.start ? ' · ' + ל.shortDate(ל.localDate(r.start)) + (spec.time ? ' ' + ל.localTime(r.start) : '') : ''}`,
+          {undo: () => NPhone.openEvent({eid: r.eid}).catch(e => toast(e.message, {err: true})), btn: 'פתיחה', ms: 7000});
       }else if(!spec && old){ await NPhone.calendarDelete({eid: old.eid}); delete map[t.id]; }
     }
     if(JSON.stringify(map) !== had) store('משימות.יומן-טלפון', JSON.stringify(map));
   }catch(e){ toast('היומן: ' + (e.message || e), {err: true, ms: 6000}); }
   finally{ calBusy = false; }
+}
+/** בחירת יומן: כל היומנים בטלפון. בהחלפה, האירועים שכבר נוצרו עוברים ליומן החדש. */
+async function pickCalendar(list){
+  list = list || await NPhone.calendars().catch(e => (toast(e.message || String(e), {err: true}), null));
+  if(!list) return;
+  const cur = +store('משימות.יומן-בחירה') || list.auto;
+  sheet('לאיזה יומן להכניס?', list.calendars.map(c => [`${c.id === cur ? '✓ ' : ''}${c.name}${c.account && c.account !== c.name ? ' · ' + c.account : ''}${c.type === 'com.google' ? '' : ' (בטלפון בלבד)'}${c.sync ? '' : ' · לא מסונכרן'}${c.visible ? '' : ' · מוסתר'}`,
+    async () => {
+      if(c.id === cur) return;
+      const map = storeJson('משימות.יומן-טלפון', {});
+      for(const x of Object.values(map)) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
+      store('משימות.יומן-טלפון', '{}'); store('משימות.יומן-בחירה', String(c.id));
+      await phoneCalendarSync(); renderNativePrefs(); toast(`✓ מעכשיו ביומן "${c.name}"`);
+    }]), 'יומן גוגל (com.google) מסונכרן לכל המכשירים. "בטלפון בלבד" לא יופיע ביומן גוגל.');
 }
 /** הסיכום של היום (ושל יומיים קדימה) לווידג'ט ולסיכום הבוקר: משימות, תרופות יומיות, ומשימות דחופות מהרשימה. */
 /** מה יש ביום: משימות (גם תחזוקה וימים מיוחדים), משימות פתוחות מהרשימה (בלי תאריך או עד היום), תרופות יומיות, מלאי שנגמר. */
@@ -5716,6 +5744,8 @@ async function renderNativePrefs(){
       ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
     <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
     <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
+    ${LOCAL && NPhone?.calendars ? `<div class="sec"><h2>📅 יומן <span id="pf-cal" class="note" style="margin:0"></span></h2>
+      <div class="btns"><button class="btn" type="button" id="pf-cal-pick">בחירת יומן</button></div></div>` : ''}
     ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית <span id="pf-home" class="note" style="margin:0"></span></h2>
       <div class="btns" id="pf-home-btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית כאן</button></div></div>` : ''}
     ${st.usage === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
@@ -5731,6 +5761,12 @@ async function renderNativePrefs(){
   };
   $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
   if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-cal')){
+    const list = await NPhone.calendars().catch(() => null);
+    const cur = list && list.calendars.find(c => c.id === (+store('משימות.יומן-בחירה') || list.auto));
+    $('pf-cal').textContent = cur ? `${cur.name}${cur.account && cur.account !== cur.name ? ' · ' + cur.account : ''}` : '';
+    $('pf-cal-pick').onclick = () => pickCalendar(list);
+  }
   if($('pf-home')){
     const hs = await NPhone.homeStatus().catch(() => ({}));
     $('pf-home').textContent = hs.home ? (hs.always ? '✓ פועל' : '✗ חסר מיקום "כל הזמן"') : '';
