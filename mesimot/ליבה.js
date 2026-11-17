@@ -836,6 +836,25 @@ function guessRecipeCat(r){
 }
 const recipeCat = r => (RECIPE_CATS.includes(r.cat) && r.cat !== 'אחר' ? r.cat : '') || guessRecipeCat(r) || OLD_CATS[r.cat] || 'אחר';
 
+/* ---------- יציאה מהבית: מה לקחת, לפי מה שיש היום ---------- */
+const LEAVE_RULES = [
+  [['אימון', 'אימונים', 'חדר כושר', 'כושר', 'ספינינג', 'פילאטיס', 'יוגה', 'ריצה', 'קרוספיט', 'כדורגל', 'כדורסל', 'טניס', 'פדל', 'סטודיו', 'gym'], ['🎽 בגדי אימון', '👟 נעלי ספורט', '🧴 מגבת', '💧 בקבוק מים', '🎧 אוזניות']],
+  [['בריכה', 'שחייה', 'חוף', 'לים', 'בים', 'חוף הים'], ['🩱 בגד ים', '🧴 מגבת', '🕶️ משקפי שמש', '☀️ קרם הגנה']],
+  [['רופא', 'רופאה', 'תור', 'מרפאה', 'קופת חולים', 'בית חולים', 'בדיקת דם', 'בדיקה', 'שיניים'], ['🪪 תעודת זהות', '📄 הפניות ומסמכים']],
+  [['טיסה', 'נתב״ג', 'נתב"ג', 'שדה תעופה', 'נמל תעופה', 'חו״ל'], ['🛂 דרכון', '🔌 מטען', '🎧 אוזניות']],
+  [['ראיון', 'ראיון עבודה'], ['📄 קורות חיים', '🪪 תעודת זהות']],
+  [['יום הולדת', 'חתונה', 'בר מצווה', 'בת מצווה', 'ברית', 'מסיבה'], ['🎁 מתנה']],
+  [['טסט', 'רישוי', 'מוסך'], ['🚗 רישיון רכב ורישיון נהיגה']],
+  [['סופר', 'קניות', 'שוק'], ['🛍️ שקיות']],
+  [['בנק', 'דואר', 'משרד הפנים'], ['🪪 תעודת זהות']],
+];
+/** מה לקחת: מהמילים בשמות של מה שיש היום (משימות, אירועים), בלי כפילויות. */
+function leaveItems(titles){
+  const out = [];
+  for(const t of titles || []) for(const [words, items] of LEAVE_RULES) if(firstMatch(String(t), [['x', words]])) for(const i of items) if(!out.includes(i)) out.push(i);
+  return out;
+}
+
 /* ---------- כמויות: פי 2, חצי ---------- */
 const FRAC = {'½': .5, '¼': .25, '¾': .75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': .125};
 /** כמות יפה: 1.5 → "1½", 0.25 → "¼", 125 → "125". */
@@ -1284,9 +1303,13 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 רוטב עגבניות לפיצה|45|מנה:80,כף:15`;
 // ערכים לפי משקל לפני בישול (שניצל, חזה): חזה עוף נא כ-120 ל-100 גרם, ציפוי (ביצה ופירורי לחם) כ-175 למנה,
 // שפריץ שמן כ-40, טיגון סופג כ-20 גרם שמן (180). צ'יפס בסיר אוויר: תפוח אדמה שאיבד מים, ושפריץ שמן.
+// חלבון ל-100 גרם (גרמים), לפי מאגר התזונה הלאומי וטבלאות USDA (17.11.2026)
+const PROT_BUILTIN = {"לחם לבן": 9, "לחם מלא": 10, "פיתה": 9, "לחמניה": 9, "חלה": 9, "לאפה": 8.5, "טוסט גבינה": 12, "אורז לבן מבושל": 2.7, "אורז מלא מבושל": 2.6, "פסטה מבושלת": 5.8, "קוסקוס מבושל": 3.8, "פתיתים מבושלים": 5, "בורגול מבושל": 3.1, "קינואה מבושלת": 4.4, "נודלס מבושלים": 4.5, "מג׳דרה": 6, "תפוח אדמה מבושל": 1.9, "פירה": 2, "צ׳יפס": 3.4, "בטטה אפויה": 2, "שיבולת שועל": 13, "קורנפלקס": 7.5, "גרנולה": 10, "ביצה": 12.6, "ביצה קשה": 12.6, "חביתה": 13, "שקשוקה": 6, "חלב 3%": 3.3, "חלב 1%": 3.4, "יוגורט 3%": 3.5, "יוגורט יווני": 9, "קוטג׳ 5%": 11, "גבינה לבנה 5%": 9, "גבינה צהובה": 25, "גבינה בולגרית": 17, "גבינת שמנת": 6, "שמנת חמוצה": 2.4, "חמאה": 0.9, "מעדן חלב": 3, "חזה עוף צלוי": 31, "שניצל עוף": 18, "שוק עוף צלוי": 26, "פרגית צלויה": 25, "עוף בתנור": 25, "בשר טחון מבושל": 25, "קציצות בשר": 17, "סטייק": 26, "המבורגר": 17, "נקניקייה": 12, "שווארמה": 20, "קבב": 17, "פסטרמה": 20, "חזה הודו פרוס": 18, "טונה במים": 26, "טונה בשמן": 27, "סלמון אפוי": 22, "דג לבן אפוי": 23, "סושי": 6, "חומוס": 8, "טחינה מוכנה": 8, "טחינה גולמית": 17, "פלאפל": 13, "סביח": 7, "סלט ירקות": 1, "סלט ירקות עם שמן": 1, "עגבנייה": 0.9, "מלפפון": 0.7, "גזר": 0.9, "פלפל": 1, "חסה": 1.4, "אבוקדו": 2, "ירקות מבושלים": 2, "עדשים מבושלות": 9, "חומוס גרגרים מבושלים": 8.9, "מרק עוף": 3, "מרק עדשים": 5, "מרק ירקות": 1.5, "תפוח": 0.3, "בננה": 1.1, "תפוז": 0.9, "קלמנטינה": 0.8, "אגס": 0.4, "ענבים": 0.7, "אבטיח": 0.6, "מלון": 0.8, "תות": 0.7, "מנגו": 0.8, "תמר מג׳הול": 1.8, "שקדים": 21, "אגוזי מלך": 15, "בוטנים": 26, "גרעינים": 21, "במבה": 16, "ביסלי": 9, "שוקולד חלב": 7.6, "עוגיות": 6, "עוגה": 5, "גלידה": 3.5, "פופקורן": 13, "חטיף אנרגיה": 8, "פיצה": 11, "בורקס": 7, "מלאווח": 6, "קפה שחור": 0.1, "קפה הפוך": 3, "תה": 0, "סוכר": 0, "דבש": 0.3, "ריבה": 0.4, "שמן זית": 0, "מיונז": 1, "קטשופ": 1.2, "מיץ תפוזים": 0.7, "קולה": 0, "בירה": 0.5, "יין": 0.1, "שניצל עוף אפוי (שפריץ שמן)": 22, "שניצל עוף מטוגן": 19, "חזה עוף (משקל לפני בישול)": 23, "צ׳יפס בסיר אוויר (שפריץ שמן)": 3, "יוגורט חלבון בטעמים": 10, "טונה סטארקיסט בשמן": 26, "לחם פשוט מלא דק": 11, "רוטב בולונז ביתי (בשר טחון)": 12, "כדורי בשר ברוטב אדום": 11, "רוטב עגבניות לפיצה": 1.5};
+// המאכלים האישיים של נדב (נכנסו לפני שהיה חלבון)
+const PROT_PERSONAL = {'my-pancake': 9, 'my-pizza': 8};
 const FOODS = FOOD_DB.split('\n').map((l, i) => {
   const [name, k, units] = l.split('|');
-  return {id: 'f-' + sha256(name).slice(0, 8), name, kcal100: +k, units: units.split(',').map(u => { const [n, g] = u.split(':'); return {name: n, g: +g}; }), rank: i, builtin: true};
+  return {id: 'f-' + sha256(name).slice(0, 8), name, kcal100: +k, prot100: PROT_BUILTIN[name] ?? null, units: units.split(',').map(u => { const [n, g] = u.split(':'); return {name: n, g: +g}; }), rank: i, builtin: true};
 });
 // מאגר מורחב: מאגר התזונה הלאומי (כ-4,400 מאכלים), נטען באפליקציה מ-מאכלים.js. מאכל מהמאגר המובנה עם אותו שם קודם.
 // דירוג: המובנים (הנפוצים, בשמות קצרים) קודם, ואחריהם המורחב, שם קצר קודם.
@@ -1294,10 +1317,10 @@ let FOODS_EXTRA = [];
 function addFoodDb(text){
   const names = new Set(FOODS.map(f => shopNorm(f.name)));
   FOODS_EXTRA = String(text || '').split('\n').filter(Boolean).map(l => {
-    const [name, k, units] = l.split('|'), n = shopNorm(name);
+    const [name, k, units, pr] = l.split('|'), n = shopNorm(name);
     if(!name || names.has(n)) return null;
     names.add(n);
-    return {id: 'z-' + sha256(name).slice(0, 8), name, kcal100: +k || 0, rank: 2000 + name.length, builtin: true, db: true, _n: n,
+    return {id: 'z-' + sha256(name).slice(0, 8), name, kcal100: +k || 0, prot100: pr !== undefined && pr !== '' ? +pr : null, rank: 2000 + name.length, builtin: true, db: true, _n: n,
       units: units ? units.split(',').map(u => { const [un, g] = u.split(':'); return {name: un, g: +g}; }).filter(u => u.g > 0) : []};
   }).filter(Boolean);
   return FOODS_EXTRA.length;
@@ -1366,6 +1389,25 @@ function foodGrams(food, qty, unit){
   return (+qty || 0) * (u ? u.g : 100);
 }
 const foodKcal = (food, qty, unit) => Math.round(foodGrams(food, qty, unit) * (+food.kcal100 || 0) / 100);
+const prot100Of = f => f ? (f.prot100 ?? PROT_PERSONAL[f.id] ?? null) : null;
+/** חלבון בגרמים (ספרה אחת אחרי הנקודה), או null כשלא ידוע. */
+const foodProt = (food, qty, unit) => { const p = prot100Of(food); return p == null ? null : Math.round(foodGrams(food, qty, unit) * p / 10) / 10; };
+/** החלבון ברשומת אכילה: מה שנשמר, ואם אין (רשומה ישנה), לפי המאכל והמשקל. */
+function entryProt(e, foods){
+  if(e.prot != null) return +e.prot;
+  const f = foods && foods.get(e.foodId), p = prot100Of(f) ?? PROT_PERSONAL[e.foodId];
+  return p == null ? 0 : Math.round((+e.grams || 0) * p / 10) / 10;
+}
+// מפת המאכלים (כולל מתכונים אישיים) לחישוב חלבון ברשומות ישנות. נבנית מחדש רק כשהקובץ או המאגר משתנים
+const foodMapCache = new WeakMap();
+function foodMap(file){
+  if(!file) return new Map();
+  const c = foodMapCache.get(file);
+  if(c && c.n === FOODS_EXTRA.length) return c.m;
+  const m = new Map(calFoods(file).map(f => [f.id, f]));
+  foodMapCache.set(file, {n: FOODS_EXTRA.length, m});
+  return m;
+}
 /** הצעות: מה שנאכל הכי הרבה קודם, ואז המאגר. עם טקסט: רק מה שמתאים (גם יחיד/רבים). */
 function foodSuggest(file, query, limit){
   const q = shopNorm(query), count = {};
@@ -1397,25 +1439,30 @@ function calDay(file, date){
   const meals = MEALS.map(([id, name, emoji]) => { const items = entries.filter(e => e.meal === id).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
     return {id, name, emoji, items, kcal: items.reduce((s, e) => s + (+e.kcal || 0), 0)}; });
   const eaten = meals.reduce((s, m) => s + m.kcal, 0), burned = acts.reduce((s, a) => s + (+a.kcal || 0), 0);
+  // חלבון: לכל רשומה, והיעד (1.6 גרם לק״ג, אם לא נקבע אחר)
+  const fm = foodMap(file), weight = weightOn(file, date);
+  for(const m of meals){ m.items = m.items.map(e => Object.assign({}, e, {protein: entryProt(e, fm)})); m.protein = Math.round(m.items.reduce((x, e) => x + e.protein, 0)); }
+  const protein = Math.round(meals.reduce((x, m) => x + m.items.reduce((y, e) => y + e.protein, 0), 0)), protGoal = Math.round(+st.protGoal || 1.6 * weight);
   return {date, goal: +st.goal, eaten, burned, remaining: +st.goal - eaten, pct: st.goal ? Math.min(100, Math.round(eaten / st.goal * 100)) : 0,
-    over: eaten > st.goal, meals, acts, weight: weightOn(file, date)};
+    over: eaten > st.goal, meals, acts, weight, protein, protGoal, protPct: protGoal ? Math.min(100, Math.round(protein / protGoal * 100)) : 0};
 }
 /** היסטוריה: ימים שיש בהם משהו, מהחדש לישן. */
 function calHistory(file, limit){
   const days = new Set([...live(file?.entries).map(e => e.date), ...live(file?.acts).map(a => a.date)]);
-  return [...days].sort().reverse().slice(0, limit || 60).map(d => { const x = calDay(file, d); return {date: d, eaten: x.eaten, burned: x.burned, goal: x.goal}; });
+  return [...days].sort().reverse().slice(0, limit || 60).map(d => { const x = calDay(file, d); return {date: d, eaten: x.eaten, burned: x.burned, goal: x.goal, protein: x.protein, protGoal: x.protGoal}; });
 }
 /** רשומת אכילה ממאכל. */
 function calEntry(food, o, nowIso){
   const grams = foodGrams(food, o.qty, o.unit), kcal = o.kcal != null && o.kcal !== '' ? Math.round(+o.kcal) : foodKcal(food, o.qty, o.unit);
   return {id: o.id || 'e' + sha256(food.id + nowIso + Math.random()).slice(0, 10), date: o.date, meal: o.meal, foodId: food.id, name: food.name,
-    qty: +o.qty, unit: o.unit, grams, kcal, manual: o.kcal != null && o.kcal !== '' && Math.round(+o.kcal) !== foodKcal(food, o.qty, o.unit),
+    qty: +o.qty, unit: o.unit, grams, kcal, prot: foodProt(food, o.qty, o.unit), manual: o.kcal != null && o.kcal !== '' && Math.round(+o.kcal) !== foodKcal(food, o.qty, o.unit),
     addedAt: o.addedAt || nowIso, updatedAt: nowIso, deleted: false};
 }
 /** מתכון אישי → מאכל: סך הקלוריות של המרכיבים, מחולק למנות. */
 function recipeFood(r){
   const total = (r.items || []).reduce((s, i) => s + (+i.kcal || 0), 0), grams = (r.items || []).reduce((s, i) => s + (+i.grams || 0), 0), n = Math.max(1, +r.servings || 1);
-  return {id: r.id, name: r.name, kcal100: grams ? Math.round(total / grams * 100) : 0, units: [{name: 'מנה', g: grams ? Math.round(grams / n) : 100}],
+  const base = new Map(allBuiltin().map(f => [f.id, f])), pr = (r.items || []).reduce((s, i) => { const f = base.get(i.foodId); const p = i.prot ?? (prot100Of(f) == null ? 0 : (+i.grams || 0) * prot100Of(f) / 100); return s + p; }, 0);
+  return {id: r.id, name: r.name, kcal100: grams ? Math.round(total / grams * 100) : 0, prot100: grams ? Math.round(pr / grams * 1000) / 10 : null, units: [{name: 'מנה', g: grams ? Math.round(grams / n) : 100}],
     total, perServing: Math.round(total / n), recipe: true, updatedAt: r.updatedAt, deleted: r.deleted};
 }
 
@@ -2229,6 +2276,7 @@ return {
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
