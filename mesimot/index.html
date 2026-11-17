@@ -177,6 +177,7 @@
            font-size:17px;font-weight:700;z-index:6;display:grid;place-items:center;box-shadow:0 3px 10px color-mix(in srgb,var(--red) 40%,transparent)}
   .dlg-head .x-red{color:#fff;background:var(--red);border-radius:50%;width:40px;height:40px;min-height:40px;padding:0;font-size:17px;flex:none}
   .btn.danger,.btn.primary.danger{background:var(--red);color:#fff}
+  dialog .btn.danger,dialog .btn.danger:not(.primary){background:var(--red);color:#fff}
   /* באפליקציה: שורת השעה והמצלמה מעל הדף. מורידים את ראש החלון מתחתיה */
   .native dialog.full .dlg-head{padding-top:calc(max(env(safe-area-inset-top), 30px) + 6px)}
   .native dialog.full>.dlg:first-child{padding-top:calc(max(env(safe-area-inset-top), 30px) + 16px)}
@@ -5304,25 +5305,34 @@ function restoreBackup(){
 /** יומן הטלפון (גוגל): משימה עם "גם ביומן" נכנסת ליומן ישירות, מתעדכנת ונמחקת איתה. */
 var calBusy = false, calT = null;
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+function calRrule(spec){
+  let rr = ל.rruleOf(spec.rule);
+  if(rr && spec.rule.type === 'weekly' && (spec.rule.days || []).length) rr += ';BYDAY=' + spec.rule.days.map(d => BYDAY[d]).join(',');
+  return rr;
+}
 async function phoneCalendarSync(){
   if(!LOCAL || !store(LOCAL_DONE) || calBusy) return;
   calBusy = true;
   try{
     const map = storeJson('משימות.יומן-טלפון', {}), dd = data(), now = Date.now(), had = JSON.stringify(map);
     const engine = new Set((calFile.events || []).filter(e => !e.deleted).map(e => e.id));   // נוצרו בעבר ביומן מהמנוע
+    const viaUi = store('משימות.יומן-מצב') === 'ui';
     for(const t of D.tasks){
       if(engine.has(t.id) && !map[t.id]) continue;
       const spec = ל.calendarSpec(t, dd, now), old = map[t.id];
       if(spec && (!old || old.sig !== spec.sig)){
-        let rr = ל.rruleOf(spec.rule);
-        if(rr && spec.rule.type === 'weekly' && (spec.rule.days || []).length) rr += ';BYDAY=' + spec.rule.days.map(d => BYDAY[d]).join(',');
+        let rr = calRrule(spec);
+        // דרך אפליקציית היומן: נפתח "אירוע חדש" ממולא, ולוחצים שמירה. אחד בכל פעם, רק לחדשים
+        if(viaUi){ if(old) continue; await NPhone.insertUi({title: spec.title, date: spec.date, time: spec.time || null, rrule: rr || null}); map[t.id] = {ui: true, sig: spec.sig}; break; }
         const calId = +store('משימות.יומן-בחירה') || -1;
         const r = await NPhone.calendarUpsert({eid: old ? old.eid : -1, calId, title: spec.title, date: spec.date, time: spec.time || null, rrule: rr || null, desc: 'מניהול שיגרה'});
         map[t.id] = {eid: r.eid, sig: spec.sig};
         // לאיזה יומן נכנס ומתי, וכפתור לפתוח אותו שם
         if(!old) toast(`📅 ביומן "${r.calendar || 'הטלפון'}"${r.account ? ' (' + r.account + ')' : ''}: ${spec.title}${r.start ? ' · ' + ל.shortDate(ל.localDate(r.start)) + (spec.time ? ' ' + ל.localTime(r.start) : '') : ''}`,
           {undo: () => NPhone.openEvent({eid: r.eid}).catch(e => toast(e.message, {err: true})), btn: 'פתיחה', ms: 7000});
-      }else if(!spec && old){ await NPhone.calendarDelete({eid: old.eid}); delete map[t.id]; }
+        if(!old && (r.missing || r.sync === false || r.visible === false))
+          setTimeout(() => toast('⚠️ היומן הזה לא מסונכרן או לא מוצג, ולכן האירוע לא יופיע ביומן גוגל. הגדרות ← 📅 יומן ← בחירת יומן', {err: true, ms: 9000}), 7200);
+      }else if(!spec && old){ if(old.eid) await NPhone.calendarDelete({eid: old.eid}); delete map[t.id]; }
     }
     if(JSON.stringify(map) !== had) store('משימות.יומן-טלפון', JSON.stringify(map));
   }catch(e){ toast('היומן: ' + (e.message || e), {err: true, ms: 6000}); }
@@ -5332,15 +5342,17 @@ async function phoneCalendarSync(){
 async function pickCalendar(list){
   list = list || await NPhone.calendars().catch(e => (toast(e.message || String(e), {err: true}), null));
   if(!list) return;
-  const cur = +store('משימות.יומן-בחירה') || list.auto;
-  sheet('לאיזה יומן להכניס?', list.calendars.map(c => [`${c.id === cur ? '✓ ' : ''}${c.name}${c.account && c.account !== c.name ? ' · ' + c.account : ''}${c.type === 'com.google' ? '' : ' (בטלפון בלבד)'}${c.sync ? '' : ' · לא מסונכרן'}${c.visible ? '' : ' · מוסתר'}`,
+  const ui = store('משימות.יומן-מצב') === 'ui', cur = ui ? -2 : (+store('משימות.יומן-בחירה') || list.auto);
+  sheet('לאיזה יומן להכניס?', [...list.calendars.sort((a, b) => (b.count || 0) - (a.count || 0)).map(c => [`${c.id === cur ? '✓ ' : ''}${c.name}${c.account && c.account !== c.name ? ' · ' + c.account : ''} · ${c.count || 0} אירועים${c.type === 'com.google' ? '' : ' (בטלפון בלבד)'}${c.sync ? '' : ' · לא מסונכרן'}${c.visible ? '' : ' · מוסתר'}`,
     async () => {
+      store('משימות.יומן-מצב', null);
       if(c.id === cur) return;
       const map = storeJson('משימות.יומן-טלפון', {});
       for(const x of Object.values(map)) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
       store('משימות.יומן-טלפון', '{}'); store('משימות.יומן-בחירה', String(c.id));
       await phoneCalendarSync(); renderNativePrefs(); toast(`✓ מעכשיו ביומן "${c.name}"`);
-    }]), 'יומן גוגל (com.google) מסונכרן לכל המכשירים. "בטלפון בלבד" לא יופיע ביומן גוגל.');
+    }]), [`${ui ? '✓ ' : ''}📲 דרך אפליקציית היומן (נפתח ממולא, לוחצים "שמירה")`, () => { store('משימות.יומן-מצב', 'ui'); renderNativePrefs(); toast('✓ מעכשיו נפתח ביומן, ולוחצים שמירה'); }]],
+    'היומן שאתה משתמש בו הוא בדרך כלל זה עם הכי הרבה אירועים. "לא מסונכרן" או "מוסתר" לא יופיע ביומן גוגל.');
 }
 /** הסיכום של היום (ושל יומיים קדימה) לווידג'ט ולסיכום הבוקר: משימות, תרופות יומיות, ומשימות דחופות מהרשימה. */
 /** מה יש ביום: משימות (גם תחזוקה וימים מיוחדים), משימות פתוחות מהרשימה (בלי תאריך או עד היום), תרופות יומיות, מלאי שנגמר. */
@@ -5377,8 +5389,16 @@ function dailyInfo(){
 }
 var dailyT = null;   // var: נקרא גם מקוד שרץ לפני השורה הזו
 function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
+async function calRehome(){
+  if(!LOCAL || store('משימות.יומן-v2') || store('משימות.יומן-בחירה')){ store('משימות.יומן-v2', '1'); return; }
+  store('משימות.יומן-v2', '1');
+  const map = storeJson('משימות.יומן-טלפון', {});
+  for(const x of Object.values(map)) if(x.eid) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
+  store('משימות.יומן-טלפון', '{}');
+}
 function localInit(){
   if(!NATIVE) return;
+  if(LOCAL) calRehome().then(() => phoneCalendarSync());
   dailySoon();
   setTimeout(() => healthSync(), 4000);
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') healthSync(); });
@@ -5730,9 +5750,9 @@ async function renderNativePrefs(){
   if($('pf-cal')){
     const list = await NPhone.calendars().catch(() => null);
     const cur = list && list.calendars.find(c => c.id === (+store('משימות.יומן-בחירה') || list.auto));
-    $('pf-cal').textContent = cur ? `${cur.name}${cur.account && cur.account !== cur.name ? ' · ' + cur.account : ''}` : '';
+    $('pf-cal').textContent = store('משימות.יומן-מצב') === 'ui' ? 'דרך אפליקציית היומן' : cur ? `${cur.name}${cur.account && cur.account !== cur.name ? ' · ' + cur.account : ''}` : '';
     $('pf-cal-pick').onclick = () => pickCalendar(list);
-    const map = storeJson('משימות.יומן-טלפון', {}), evs = Object.entries(map).map(([id, x]) => ({t: taskById(id), eid: x.eid})).filter(x => x.t);
+    const map = storeJson('משימות.יומן-טלפון', {}), evs = Object.entries(map).map(([id, x]) => ({t: taskById(id), eid: x.eid})).filter(x => x.t && x.eid);
     $('pf-cal-ev').innerHTML = evs.length ? '<span class="lbl">מה נכנס ליומן (לחיצה: פתיחה ביומן)</span>' + evs.map(x => `<button type="button" class="more-row" data-eid="${x.eid}"><span class="i">📅</span><span class="b"><span class="t">${esc(x.t.title)}</span></span><span class="side">פתיחה</span></button>`).join('')
       : '<div class="note">עוד לא נכנס שום אירוע ליומן. מסמנים 📅 כשמוסיפים משימה עם תאריך.</div>';
     $('pf-cal-ev').onclick = e => { const b = e.target.closest('[data-eid]'); if(b) NPhone.openEvent({eid: +b.dataset.eid}).catch(err => toast('האירוע לא נמצא ביומן: ' + (err.message || err), {err: true})); };
