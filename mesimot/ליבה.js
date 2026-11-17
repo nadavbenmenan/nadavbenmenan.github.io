@@ -1012,6 +1012,23 @@ function imageOptions(r, recipes, current){
   }
   return [current, ...order.map(imgUrl)].filter(Boolean);
 }
+/** נושאים בבחירת תמונה: קודם בוחרים נושא (סלטים, עוף...), ורק אז רואים את התמונות שלו. */
+const IMG_TOPICS = [['salad', 'סלטים'], ['side', 'תוספות'], ['rice', 'אורז'], ['potato', 'תפוחי אדמה'], ['veg', 'ירקות'], ['chicken', 'עוף'], ['beef', 'בשר'],
+  ['meatball', 'קציצות'], ['burger', 'המבורגרים'], ['lamb', 'כבש'], ['fish', 'דגים'], ['salmon', 'סלמון'], ['shrimp', 'פירות ים'], ['pasta', 'פסטה'], ['pizza', 'פיצה'],
+  ['soup', 'מרקים'], ['dip', 'ממרחים ורטבים'], ['eggs', 'ביצים'], ['breakfast', 'ארוחת בוקר'], ['bread', 'לחמים'], ['pie', 'פשטידות ומאפים'], ['cake', 'עוגות'],
+  ['cookies', 'עוגיות'], ['dessert', 'קינוחים']];
+/** הנושאים לבחירה: {g, name, emoji, cover, n, fit}. fit = הנושא שמתאים למתכון (לפי השם או התמונה הנוכחית). */
+function imageTopics(r, current){
+  const fit = imageGroupOf(current) || recipeImageGroup(r);
+  return IMG_TOPICS.filter(([g]) => (RECIPE_IMAGES[g] || []).length).map(([g, name]) => ({g, name, emoji: GROUP_EMOJI[g] || '🍽️',
+    cover: imgUrl(RECIPE_IMAGES[g][0]), n: RECIPE_IMAGES[g].length, fit: g === fit}));
+}
+/** התמונות של נושא אחד: קודם אלה שלא בשימוש במתכון אחר. */
+function topicImages(g, r, recipes){
+  const used = new Set(Object.entries(recipeImages(recipes || [])).filter(([id]) => id !== (r && r.id)).map(([, u]) => imgFile(u)));
+  const l = RECIPE_IMAGES[g] || [];
+  return [...l.filter(f => !used.has(f)), ...l.filter(f => used.has(f))].map(imgUrl);
+}
 const GROUP_EMOJI = {pizza: '🍕', salmon: '🍣', fish: '🐟', shrimp: '🦐', chicken: '🍗', meatball: '🧆', beef: '🥩', burger: '🍔', lamb: '🍖',
   pasta: '🍝', rice: '🍚', soup: '🍲', salad: '🥗', dip: '🥣', eggs: '🍳', cake: '🍰', cookies: '🍪', dessert: '🍮', bread: '🍞', pie: '🥧',
   potato: '🥔', veg: '🥕', breakfast: '🥞', side: '🍽️'};
@@ -2208,7 +2225,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
