@@ -556,7 +556,7 @@ function rruleOf(rule){
 }
 
 /* ---------- יומן גוגל ---------- */
-// קישור שפותח ביומן גוגל אירוע חדש, ממולא מראש. נדב לוחץ "שמירה" ביומן. בלי הרשאות ובלי גישה לחשבון.
+// קישור שפותח ביומן גוגל אירוע חדש, ממולא מראש. המשתמש לוחץ "שמירה" ביומן. בלי הרשאות ובלי גישה לחשבון.
 // עם שעה (משימה שנקבעה לה שעה במפורש): אירוע של חצי שעה. בלי שעה: אירוע של יום שלם.
 const calStamp = ms => localDate(ms).replace(/-/g, '') + 'T' + localTime(ms).replace(':', '') + '00';
 function calendarUrl(ev){
@@ -1305,7 +1305,7 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 // שפריץ שמן כ-40, טיגון סופג כ-20 גרם שמן (180). צ'יפס בסיר אוויר: תפוח אדמה שאיבד מים, ושפריץ שמן.
 // חלבון ל-100 גרם (גרמים), לפי מאגר התזונה הלאומי וטבלאות USDA (17.11.2026)
 const PROT_BUILTIN = {"לחם לבן": 9, "לחם מלא": 10, "פיתה": 9, "לחמניה": 9, "חלה": 9, "לאפה": 8.5, "טוסט גבינה": 12, "אורז לבן מבושל": 2.7, "אורז מלא מבושל": 2.6, "פסטה מבושלת": 5.8, "קוסקוס מבושל": 3.8, "פתיתים מבושלים": 5, "בורגול מבושל": 3.1, "קינואה מבושלת": 4.4, "נודלס מבושלים": 4.5, "מג׳דרה": 6, "תפוח אדמה מבושל": 1.9, "פירה": 2, "צ׳יפס": 3.4, "בטטה אפויה": 2, "שיבולת שועל": 13, "קורנפלקס": 7.5, "גרנולה": 10, "ביצה": 12.6, "ביצה קשה": 12.6, "חביתה": 13, "שקשוקה": 6, "חלב 3%": 3.3, "חלב 1%": 3.4, "יוגורט 3%": 3.5, "יוגורט יווני": 9, "קוטג׳ 5%": 11, "גבינה לבנה 5%": 9, "גבינה צהובה": 25, "גבינה בולגרית": 17, "גבינת שמנת": 6, "שמנת חמוצה": 2.4, "חמאה": 0.9, "מעדן חלב": 3, "חזה עוף צלוי": 31, "שניצל עוף": 18, "שוק עוף צלוי": 26, "פרגית צלויה": 25, "עוף בתנור": 25, "בשר טחון מבושל": 25, "קציצות בשר": 17, "סטייק": 26, "המבורגר": 17, "נקניקייה": 12, "שווארמה": 20, "קבב": 17, "פסטרמה": 20, "חזה הודו פרוס": 18, "טונה במים": 26, "טונה בשמן": 27, "סלמון אפוי": 22, "דג לבן אפוי": 23, "סושי": 6, "חומוס": 8, "טחינה מוכנה": 8, "טחינה גולמית": 17, "פלאפל": 13, "סביח": 7, "סלט ירקות": 1, "סלט ירקות עם שמן": 1, "עגבנייה": 0.9, "מלפפון": 0.7, "גזר": 0.9, "פלפל": 1, "חסה": 1.4, "אבוקדו": 2, "ירקות מבושלים": 2, "עדשים מבושלות": 9, "חומוס גרגרים מבושלים": 8.9, "מרק עוף": 3, "מרק עדשים": 5, "מרק ירקות": 1.5, "תפוח": 0.3, "בננה": 1.1, "תפוז": 0.9, "קלמנטינה": 0.8, "אגס": 0.4, "ענבים": 0.7, "אבטיח": 0.6, "מלון": 0.8, "תות": 0.7, "מנגו": 0.8, "תמר מג׳הול": 1.8, "שקדים": 21, "אגוזי מלך": 15, "בוטנים": 26, "גרעינים": 21, "במבה": 16, "ביסלי": 9, "שוקולד חלב": 7.6, "עוגיות": 6, "עוגה": 5, "גלידה": 3.5, "פופקורן": 13, "חטיף אנרגיה": 8, "פיצה": 11, "בורקס": 7, "מלאווח": 6, "קפה שחור": 0.1, "קפה הפוך": 3, "תה": 0, "סוכר": 0, "דבש": 0.3, "ריבה": 0.4, "שמן זית": 0, "מיונז": 1, "קטשופ": 1.2, "מיץ תפוזים": 0.7, "קולה": 0, "בירה": 0.5, "יין": 0.1, "שניצל עוף אפוי (שפריץ שמן)": 22, "שניצל עוף מטוגן": 19, "חזה עוף (משקל לפני בישול)": 23, "צ׳יפס בסיר אוויר (שפריץ שמן)": 3, "יוגורט חלבון בטעמים": 10, "טונה סטארקיסט בשמן": 26, "לחם פשוט מלא דק": 11, "רוטב בולונז ביתי (בשר טחון)": 12, "כדורי בשר ברוטב אדום": 11, "רוטב עגבניות לפיצה": 1.5};
-// המאכלים האישיים של נדב (נכנסו לפני שהיה חלבון)
+// המאכלים האישיים של המשתמש (נכנסו לפני שהיה חלבון)
 const PROT_PERSONAL = {'my-pancake': 9, 'my-pizza': 8};
 const FOODS = FOOD_DB.split('\n').map((l, i) => {
   const [name, k, units] = l.split('|');
@@ -1352,25 +1352,7 @@ function calFoods(file){
   for(const r of live(file?.recipes)) out.push(Object.assign({rank: 900}, recipeFood(r)));   // מתכונים אישיים = מאכלים
   return out;
 }
-/* מנות של נדב (16.11.2026): מאכלים אישיים וארוחות קבועות. נכנסים פעם אחת לקובץ (הדגל: settings/seedK),
-   עם מזהים קבועים, כך ששני מכשירים לא יוצרים כפילות, ומה שנמחק לא חוזר. החישוב:
-   - פנקייק קוטג': 3 גביעי קוטג' 5% (750 ג', 713), 2 כוסות קמח (280 ג', 1,019), 6 כפות מייפל (120 ג', 312), 6 ביצים (429),
-     אבקת אפייה, וניל ושפריץ שמן (60). כ-2,530 קלוריות בכ-1,320 גרם אחרי טיגון = 192 ל-100 גרם.
-   - בצק פיצה Ooni: קילו קמח 00 (3,500), 650 מ"ל מים, 28 ג' מלח, שמרים. כ-1,680 גרם = 210 ל-100 גרם. כדור למגש 13 אינץ' = 280 גרם. */
-const KCAL_SEED = {
-  foods: [
-    {id: 'my-pancake', name: 'פנקייק קוטג׳', kcal100: 192, units: [{name: 'מנה 130 גרם', g: 130}]},
-    {id: 'my-pizza', name: 'בצק פיצה Ooni', kcal100: 210, units: [{name: 'כדור למגש 13 אינץ׳', g: 280}]},
-  ],
-  meals: [
-    ['fav-pancake', 'פנקייק קוטג׳ עם חצי קוטג׳', 'breakfast', [['my-pancake', 1, 'מנה 130 גרם'], ['קוטג׳ 5%', 125, 'גרם']]],
-    ['fav-pizza', 'פיצה 13 אינץ׳ עם חצי קוטג׳', 'dinner', [['my-pizza', 1, 'כדור למגש 13 אינץ׳'], ['רוטב עגבניות לפיצה', 1, 'מנה'], ['קוטג׳ 5%', 125, 'גרם']]],
-    ['fav-omelet', 'חביתה, 4 פרוסות לחם וקוטג׳', 'breakfast', [['חביתה', 1, 'חביתה 3 ביצים'], ['לחם פשוט מלא דק', 4, 'פרוסה דקה'], ['קוטג׳ 5%', 1, 'גביע']]],
-    ['fav-bolognese', 'פסטה בולונז', 'lunch', [['פסטה מבושלת', 300, 'גרם'], ['רוטב בולונז ביתי (בשר טחון)', 150, 'גרם']]],
-    ['fav-shake', 'שייק תות, מנגו ותמרים', 'snack', [['חלב 3%', 0.25, 'כוס'], ['תות', 1, 'חופן'], ['מנגו', 1, 'חופן'], ['תמר מג׳הול', 2, 'יחידה']]],
-    ['fav-meatballs', 'כדורי בשר ברוטב אדום', 'lunch', [['כדורי בשר ברוטב אדום', 1, 'מנה']]],
-  ],
-};
+const KCAL_SEED = {foods: [], meals: []};   // הארוחות הקבועות האישיות נשמרות בנתונים של המשתמש, לא בקוד
 /** מה להוסיף לקובץ הקלוריות בפעם הראשונה, או null. */
 function kcalSeed(file, nowIso){
   if(live(file?.settings).some(x => x.id === 'seedK' && x.v >= 1)) return null;
@@ -1467,7 +1449,7 @@ function recipeFood(r){
 }
 
 /* ---------- יומן גוגל דרך המנוע ---------- */
-// משימה עם calendar: true נכנסת ליומן גוגל של נדב. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
+// משימה עם calendar: true נכנסת ליומן גוגל של המשתמש. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
 // מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
 /** מה צריך להיות ביומן למשימה, או null. date: התאריך הראשון; time: רק אם נבחרה שעה; rule: למשימה קבועה (אירוע חוזר). */
 function calendarSpec(raw, data, now){
@@ -2024,7 +2006,7 @@ function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.i
 /* ---------- חשבונות הדייר ---------- */
 // חשמל: חלק יחסי לפי מונה המשנה, מתוך הסכום הכולל של החשבון (כולל מע"מ, תשלום קבוע והספק).
 // ארנונה: סכום קבוע לתקופה של חודשיים (אפשר יחסי לימים). מים: חצי מהסכום.
-const TENANT_DEFAULT = {arnona: 285, waterShare: 0.5, lastSub: null, lastSubDate: null, bills: []};
+const TENANT_DEFAULT = {arnona: null, waterShare: 0.5, lastSub: null, lastSubDate: null, bills: []};
 function tenantCfg(cfg){ return Object.assign({}, TENANT_DEFAULT, config(cfg).tenant || {}); }
 const num = x => x === '' || x == null ? NaN : +String(x).replace(/[,\s₪]/g, '');
 const agorot = x => Math.round(x * 100) / 100;
@@ -2077,7 +2059,7 @@ function tenantText(b){
   return '';
 }
 
-/* ---------- לשונית "חשבונות": חיוב משולב לדייר, בפורמט של נדב ---------- */
+/* ---------- לשונית "חשבונות": חיוב משולב לדייר, בפורמט של המשתמש ---------- */
 // tenant.charges: [{id, date, elec: {from, to, prev, cur, house, total}, arnona: {period, amount}, water: {period, total, share},
 //   offsets: [מזהי חובות שקוזזו], total, paid, paidAt}]. tenant.ledger: חובות פתוחים [{id, date, text, amount, dir: 'me' (אני חייב לו) | 'him', settled}].
 const fmtN = (x, d) => (+x).toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d});
@@ -2085,7 +2067,7 @@ const shek = x => Math.abs(x - Math.round(x)) < 1e-9 ? fmtN(Math.round(x), 0) : 
 const ddmm = d => d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '';
 const HE_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const spaced = p => String(p || '').replace(/\s*[-–]\s*/g, ' - ');
-/** החשבון: סכומים, וסה"כ מעוגל למטה לשקל שלם (כמו שנדב שולח). קיזוז: חוב שלי לדייר יורד מהסכום. */
+/** החשבון: סכומים, וסה"כ מעוגל למטה לשקל שלם (כמו שהמשתמש שולח). קיזוז: חוב שלי לדייר יורד מהסכום. */
 function tenantCharge(i, ledger){
   const r = {ok: true, parts: []};
   if(i.elec){
@@ -2102,7 +2084,7 @@ function tenantCharge(i, ledger){
   r.total = Math.floor(r.sum + r.offset + 1e-9);
   return r;
 }
-/** ההודעה לדייר, בדיוק בפורמט של ההודעה שנדב שלח בנובמבר 2026 (בדיקות/הודעת-חשבונות-לדוגמה.txt). */
+/** ההודעה לדייר, בדיוק בפורמט של ההודעה שהמשתמש שלח בנובמבר 2026 (בדיקות/הודעת-חשבונות-לדוגמה.txt). */
 function tenantMsg(i, ledger){
   const r = tenantCharge(i, ledger);
   if(!r.ok) return '';
@@ -2166,38 +2148,15 @@ function parseTenantMsg(text, today){
 function migrate(data, today, nowIso){
   const cfg = config(data.config), tasks = data.tasks || [], v = +cfg.seedV || 1;
   if(v >= 5) return null;
-  const seed = initialData(today), byId = id => tasks.find(t => t.id === id), seedRule = id => seed.config.mailRules.find(r => r.id === id);
-  const out = [];
-  let rules = (cfg.mailRules || []).slice();
-  if(v < 4){
-  if(v < 2){
-    const old = byId('arnona');
-    if(old && !old.deleted) out.push(Object.assign({}, old, {deleted: true, updatedAt: nowIso}));
-    for(const id of ['arnona-hk', 'token'])
-      if(!byId(id)) out.push(Object.assign({}, seed.tasks.find(t => t.id === id), {updatedAt: nowIso}));
-    rules = rules.map(r => r.id === 'elec' ? Object.assign({}, seedRule('elec'), {from: r.from || seedRule('elec').from}) : r);
-  }
-  // גרסה 3: כתובת השולח של המים, והוראות החידוש של האסימון (גם במנוע)
-  if(!rules.some(r => r.id === 'water')) rules.push(seedRule('water'));
-  rules = rules.map(r => r.id === 'water' ? Object.assign({}, r, {enabled: true, from: r.from || seedRule('water').from}) : r);
-  const tk = byId('token') || out.find(t => t.id === 'token');
-  if(tk && !tk.deleted && tk.notes !== TOKEN_NOTES){
-    const i = out.indexOf(tk), nt = Object.assign({}, tk, {notes: TOKEN_NOTES, updatedAt: nowIso});
-    if(i >= 0) out[i] = nt; else out.push(nt);
-  }
-  // גרסה 4: מברשת שיניים ומסננת
-  for(const t of seed.tasks.filter(x => x.id === 'toothbrush' || x.id === 'filter'))
-    if(!byId(t.id)) out.push(Object.assign({}, t, {updatedAt: nowIso}));
-  }
-  // גרסה 5: לשונית תחזוקה. מברשת, מסנן ותספורת עוברים אליה (בלי לאבד את מה שכבר סומן), ונוסף סכין גילוח
+  const seed = initialData(today), byId = id => tasks.find(t => t.id === id), out = [];
+  // לשונית תחזוקה: מברשת, מסנן ותספורת עוברים אליה (בלי לאבד את מה שכבר סומן), ונוסף סכין גילוח
   for(const [id, extra] of Object.entries(UPKEEP_MARKS)){
-    const cur = out.find(t => t.id === id) || byId(id);
+    const cur = byId(id);
     if(!cur || cur.deleted || cur.upkeep) continue;
-    const nt = Object.assign({}, cur, extra, {title: cur.title === 'החלפת מסננת' ? 'החלפת מסנן מים' : cur.title, updatedAt: nowIso});
-    const i = out.indexOf(cur); if(i >= 0) out[i] = nt; else out.push(nt);
+    out.push(Object.assign({}, cur, extra, {title: cur.title === 'החלפת מסננת' ? 'החלפת מסנן מים' : cur.title, updatedAt: nowIso}));
   }
   if(!byId('razor')) out.push(Object.assign({}, seed.tasks.find(t => t.id === 'razor'), {updatedAt: nowIso}));
-  return {tasks: out, config: Object.assign({}, cfg, {seedV: 5, mailRules: rules, updatedAt: nowIso})};
+  return {tasks: out, config: Object.assign({}, cfg, {seedV: 5, updatedAt: nowIso})};
 }
 
 /** תזכורות החלפה (16.11.2026): חודש מההחלפה האחרונה, חודשיים למסננת. "החלפתי" מתחיל את הספירה מחדש. */
@@ -2210,55 +2169,29 @@ const REPLACE_TASKS = today => [
    afterDone: {minDays: 60, maxDays: 60, lastDone: today}, nag: {mode: 'daily', from: 'max'}, doneLabel: 'החלפתי'},
 ];
 const UPKEEP_MARKS = {toothbrush: {upkeep: true, emoji: '🪥'}, filter: {upkeep: true, emoji: '💧'}, haircut: {upkeep: true, emoji: '💇'}};
-const TOKEN_NOTES = 'האסימון תקף 90 יום. ליצור חדש באותה דרך: רק המאגר cv, הרשאת Contents לקריאה וכתיבה, 90 יום. להדביק בשני מקומות: 1) באפליקציה: ⋮ ← גיטהאב וסנכרון ← החלפת אסימון (זה גם מסמן את המשימה כבוצעה). 2) במנוע: script.google.com ← הפרויקט ← הגדרות הפרויקט ← Script properties ← GH_TOKEN.';
 
 /* ---------- נתונים התחלתיים (סעיף 5 באפיון) ---------- */
 const DOMAINS = [
   {id: 'money', name: 'כספים', color: '#0E9F8E'},
-  {id: 'rental', name: 'דירה מושכרת', color: '#E07A1F'},
   {id: 'home', name: 'בית', color: '#C2410C'},
   {id: 'health', name: 'בריאות', color: '#2F7BEF'},
   {id: 'personal', name: 'אישי', color: '#8B5CF6'},
   {id: 'work', name: 'עבודה', color: '#64748B'},
 ];
-/** חותמת ריקה: כל עריכה, בכל מכשיר, גוברת על ברירת המחדל. */
+/** נתונים התחלתיים לכל משתמש: רק תזכורות תחזוקה כלליות. חותמת ריקה: כל עריכה גוברת. */
 function initialData(today){
   const T = (o) => Object.assign({priority: 'normal', time: '10:00', pre: [], soft: false, nag: {mode: 'daily'},
     missPolicy: null, discreet: false, notifyTitle: null, doneLabel: null, subtasks: [], notes: '', links: [],
     start: today, archived: false, updatedAt: '', deleted: false}, o);
   return {
     tasks: [
-      T({id: 'psych', title: 'תשלום לפסיכולוג', domain: 'money', priority: 'high', kind: 'schedule',
-        schedule: {rule: {type: 'monthly', day: 'last'}}, missPolicy: 'accumulate', pre: [1],
-        discreet: true, notifyTitle: 'תשלום חודשי'}),
-      T({id: 'arnona-hk', title: 'הוראת קבע לארנונה', domain: 'money', priority: 'high', kind: 'once',
-        once: {date: addDays(today, 14)}, pre: [3, 1], doneLabel: 'נקבעה',
-        subtasks: [{id: 's1', text: 'למלא בקשה להוראת קבע בעיריית גבעתיים'}, {id: 's2', text: 'לוודא שהחיוב הראשון ירד'}],
-        notes: 'במקום לזכור לשלם כל חודשיים. עד שהוראת הקבע פעילה, לשלם את השובר כרגיל.'}),
-      T({id: 'gym', title: 'פעילות גופנית', domain: 'health', kind: 'quota', quota: {count: 3, period: 'week'},
-        time: '17:00', nag: {mode: 'none'}}),
       T({id: 'haircut', title: 'תספורת', domain: 'personal', kind: 'afterDone',
         afterDone: {minDays: 21, maxDays: 30, lastDone: null}, soft: true, nag: {mode: 'daily', from: 'max'},
         doneLabel: 'הסתפרתי', subtasks: [{id: 's1', text: 'לקבוע תור'}], upkeep: true, emoji: '💇'}),
-      T({id: 'rent', title: 'חידוש שכר דירה', domain: 'home', priority: 'high', kind: 'once',
-        once: {date: '2026-11-30'}, pre: [14, 7, 3, 1], notes: 'החוזה שלי כשוכר.'}),
-      T({id: 'token', title: 'חידוש אסימון גיטהאב', domain: 'personal', priority: 'high', kind: 'afterDone',
-        afterDone: {minDays: 82, maxDays: 89, lastDone: today}, soft: true, nag: {mode: 'daily', from: 'max'},
-        doneLabel: 'חידשתי', notes: TOKEN_NOTES}),
       ...REPLACE_TASKS(today).map(T),
     ],
     domains: DOMAINS.map(d => Object.assign({hidden: false, updatedAt: ''}, d)),
-    config: Object.assign({}, DEFAULT_CONFIG, {
-      seedV: 5,
-      mailRules: [
-        {id: 'elec', enabled: true, from: 'noreplys@iec.co.il', subject: '', title: 'חישוב חשמל עם הדייר', domain: 'rental',
-          priority: 'high', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'elec',
-          subtasks: [{id: 's1', text: 'לקרוא את מונה המשנה של הדייר'}, {id: 's2', text: 'לחשב במחשבון'}, {id: 's3', text: 'לשלוח לדייר'}, {id: 's4', text: 'לקבל תשלום'}]},
-        {id: 'water', enabled: true, from: 'mast@outbox.co.il', subject: '', title: 'חלוקת מים עם הדייר', domain: 'rental',
-          priority: 'normal', dueDays: 3, time: '10:00', extractAmount: true, nag: {mode: 'daily'}, calc: 'water',
-          subtasks: [{id: 's1', text: 'לחשב במחשבון'}, {id: 's2', text: 'לשלוח לדייר'}, {id: 's3', text: 'לקבל תשלום'}]},
-      ],
-    }),
+    config: Object.assign({}, DEFAULT_CONFIG, {seedV: 5}),
   };
 }
 
