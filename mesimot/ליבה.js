@@ -933,7 +933,7 @@ function recipeText(rc, img){
   const meta = [rc.prep && `⏱ הכנה: ${rc.prep}`, rc.cook && `🔥 בישול/אפייה: ${rc.cook}`, rc.total && `⌛ סה״כ: ${rc.total}`, rc.servings && `👥 מנות: ${rc.servings}`, rc.level && `📊 ${rc.level}`].filter(Boolean);
   if(meta.length) L.push(meta.join(' · '));
   const ing = rc.ingredients || [];
-  if(ing.length) L.push('', '🛒 *מצרכים:*', ...ing.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${(ingredientProduct(x) && shopInfo(ingredientProduct(x)).emoji) || '▫️'} ${x}`));
+  if(ing.length) L.push('', '🛒 *מצרכים:*', ...ing.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${(ingredientProduct(x) && shopInfo(ingredientProduct(x)).textEmoji) || '▫️'} ${x}`));
   if((rc.steps || []).length){ let n = 0; L.push('', '👩‍🍳 *אופן ההכנה:*', ...rc.steps.map(x => /[:：]\s*$/.test(x) ? `*${x}*` : `${++n}. ${x}`)); }
   if(rc.notes) L.push('', '💡 *הערות:*', rc.notes);
   if(rc.source) L.push('', '🔗 ' + rc.source);
@@ -1182,7 +1182,7 @@ const ACTIVITIES = {
 const CAL_DEFAULTS = {height: 168, weight: 87, goal: 2000};
 function mergeCaloriesFile(a, b, now){
   const out = {v: 1};
-  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings']) out[k] = mergeById(a?.[k], b?.[k], now);
+  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings', 'favs']) out[k] = mergeById(a?.[k], b?.[k], now);
   return out;
 }
 const live = l => (l || []).filter(x => !x.deleted);
@@ -1217,6 +1217,7 @@ const KCAL_SEED = {
 /** מה להוסיף לקובץ הקלוריות בפעם הראשונה, או null. */
 function kcalSeed(file, nowIso){
   if(live(file?.settings).some(x => x.id === 'seedK' && x.v >= 1)) return null;
+  nowIso = '2026-11-16T00:00:00.000Z';   // חותמת ישנה וקבועה: כל עריכה או מחיקה גוברת, ושום מכשיר לא "מחזיר" מה שנמחק
   const foods = KCAL_SEED.foods.map(f => Object.assign({}, f, {updatedAt: nowIso, deleted: false}));
   const all = calFoods({foods});
   const meals = KCAL_SEED.meals.map(([id, name, meal, items]) => ({id, name, meal, updatedAt: nowIso, deleted: false,
@@ -1779,7 +1780,9 @@ function shopInfo(nameOrItem){
   }
   let emoji = entry ? entry.emoji : '', photo = entry ? photoUrl(entry.photo) : '';
   if(!emoji && !photo) ({emoji, photo} = genericFor(name, cat));   // תחום על: תמונה של הסוג
-  return {cat, emoji, photo, catName: catOf(cat).name, catEmoji: catOf(cat).emoji, order: catOf(cat).order};
+  // לטקסט (וואטסאפ, מצרכי מתכון) תמיד יש אמוג'י: של המוצר, של הסוג (פלפל לבן = תבלין), או של המחלקה
+  const textEmoji = emoji || genericFor(name, cat).emoji || catOf(cat).emoji;
+  return {cat, emoji, photo, textEmoji, catName: catOf(cat).name, catEmoji: catOf(cat).emoji, order: catOf(cat).order};
 }
 
 // כל מוצר הוא רשומה אחת לתמיד: active = ברשימה עכשיו. count = כמה פעמים הוסף (לסדר ההצעות).
@@ -1824,7 +1827,7 @@ function shopGroups(items){
   for(const x of shopList(items)){
     const i = shopInfo(x);
     (g[i.cat] = g[i.cat] || {cat: i.cat, name: i.catName, emoji: SHOP_CAT[i.cat].emoji, order: i.order, items: []})
-      .items.push(Object.assign({}, x, {emoji: i.emoji, photo: i.photo, catId: i.cat}));
+      .items.push(Object.assign({}, x, {emoji: i.emoji, textEmoji: i.textEmoji, photo: i.photo, catId: i.cat}));
   }
   return Object.values(g).sort((a, b) => a.order - b.order);
 }
@@ -1833,7 +1836,7 @@ function shopText(items){
   const groups = shopGroups(items), n = groups.reduce((s, g) => s + g.items.length, 0);
   if(!n) return '';
   return `🛒 *רשימת קניות* (${n})\n\n` +
-    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `▫️ ${x.emoji ? x.emoji + ' ' : ''}${x.name}`).join('\n')).join('\n\n');
+    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `${x.textEmoji || '▫️'} ${x.name}`).join('\n')).join('\n\n');
 }
 function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
 
