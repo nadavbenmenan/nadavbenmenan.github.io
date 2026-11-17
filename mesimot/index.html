@@ -1136,6 +1136,9 @@
 'use strict';
 const ל = window.ליבה;
 const NATIVE = !!window.Capacitor?.isNativePlatform?.();   // בתוך אפליקציית האנדרואיד (APK)
+// האפליקציה העצמאית (1.3): הקוד בתוך קובץ ההתקנה, הנתונים בטלפון, וגיבוי לענן של גוגל. בלי גיטהאב.
+const LOCAL = NATIVE && !!window.LOCAL_APP;
+const NPhone = NATIVE ? window.Capacitor.Plugins.Phone : null;
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
 const K = {token: 'משימות.אסימון', topics: 'משימות.ערוצים', sched: 'משימות.מתוזמן', onboard: 'משימות.הוכנס', inbox: 'משימות.נכנס', lastCmd: 'משימות.פקודה',
@@ -1154,6 +1157,28 @@ function store(k, v){
     if(v === undefined) return localStorage.getItem(k);
     if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
   }catch(e){ return null; }
+}
+/* ---------- עצמאי: עותק של כל הנתונים בקובץ בטלפון (נכנס לגיבוי של גוגל) ---------- */
+const LOCAL_DONE = 'משימות.עצמאי';   // מתי הנתונים הועברו מגיטהאב (אחרי זה גיטהאב לא בשימוש)
+let mirrorReady = !LOCAL || !!localStorage.getItem('משימות.משימות'), mirrorT = null;
+function mirrorData(){
+  const o = {};
+  for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k !== 'משימות.אסימון') o[k] = localStorage.getItem(k); }
+  return o;
+}
+const mirrorText = () => JSON.stringify({app: 'ניהול שיגרה', v: 1, at: new Date().toISOString(), data: mirrorData()});
+async function mirrorNow(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); try{ await NPhone.write({name: 'mirror', text: mirrorText()}); }catch(e){} }
+function mirrorSoon(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); mirrorT = setTimeout(mirrorNow, 1500); }
+if(LOCAL){
+  const si = Storage.prototype.setItem, ri = Storage.prototype.removeItem;
+  Storage.prototype.setItem = function(k, v){ si.call(this, k, v); if(this === localStorage) mirrorSoon(); };
+  Storage.prototype.removeItem = function(k){ ri.call(this, k); if(this === localStorage) mirrorSoon(); };
+  // התקנה מחדש (או טלפון חדש): הנתונים חוזרים מהקובץ שגוגל שחזר
+  if(!mirrorReady) NPhone.read({name: 'mirror'}).then(r => {
+    const m = r && r.text ? JSON.parse(r.text) : null;
+    if(m && m.data && m.data['משימות.משימות']){ for(const [k, v] of Object.entries(m.data)) localStorage.setItem(k, v); location.reload(); }
+    else mirrorReady = true;
+  }).catch(() => { mirrorReady = true; });
 }
 const storeJson = (k, def) => { try{ return JSON.parse(store(k) || '') ?? def; }catch(e){ return def; } };
 
@@ -1343,7 +1368,7 @@ function migrate(){
   return true;
 }
 let syncTimer = null;
-function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); }
+function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); afterChangeNative(); }
 
 const taskById = id => D.tasks.find(t => t.id === id);
 const domainOf = t => D.domains.find(d => d.id === t.domain) || {name: 'כללי', color: '#64748B'};
@@ -2697,6 +2722,7 @@ let docEdit = null, docPics = [], docNewId = null;
 const picCache = {};
 async function rawFile(path){
   if(picCache[path]) return picCache[path];
+  if(LOCAL && store(LOCAL_DONE)) return picCache[path] = URL.createObjectURL(await localBlob(path));
   const r = await fetch(api(path) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
   if(!r.ok) throw new Error('github ' + r.status);
   return picCache[path] = URL.createObjectURL(await r.blob());
@@ -2718,7 +2744,7 @@ function renderDocPics(){
 }
 $('doc-file').onchange = async e => {
   const files = [...e.target.files]; e.target.value = '';
-  if(!token) return toast('צריך חיבור לגיטהאב כדי לשמור תמונות', {err: true});
+  if(!token && !LOCAL) return toast('צריך חיבור לגיטהאב כדי לשמור תמונות', {err: true});
   for(const f of files){
     try{
       toast('מעלה תמונה...', {ms: 8000});
@@ -2737,7 +2763,7 @@ let phOpen = null;
 // קובץ (PDF, Word): עולה כמו שהוא, עד 15MB. לחיצה פותחת אותו באפליקציה המתאימה בנייד
 $('doc-att').onchange = async e => {
   const files = [...e.target.files]; e.target.value = '';
-  if(!token) return toast('צריך חיבור לגיטהאב כדי לשמור קבצים', {err: true});
+  if(!token && !LOCAL) return toast('צריך חיבור לגיטהאב כדי לשמור קבצים', {err: true});
   for(const f of files){
     if(f.size > 15 * 1024 * 1024){ toast(`${f.name}: גדול מ-15MB`, {err: true}); continue; }
     try{
@@ -2761,6 +2787,7 @@ async function removeDocItem(i){
 async function openDocFile(p){
   try{
     let u = picCache[p.path];
+    if(!u && LOCAL && store(LOCAL_DONE)) u = picCache[p.path] = URL.createObjectURL(await localBlob(p.path, p.mime));
     if(!u){
       const r = await fetch(api(p.path) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
       if(!r.ok) throw new Error();
@@ -3323,6 +3350,7 @@ const api = p => `https://api.github.com/repos/${OWNER}/${REPO}/contents/` + p.s
 const to64 = s => { const b = new TextEncoder().encode(s); let x = ''; for(const c of b) x += String.fromCharCode(c); return btoa(x); };
 const from64 = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, '')), c => c.charCodeAt(0)));
 async function gh(method, path, body, tok){
+  if(LOCAL && store(LOCAL_DONE) && path.startsWith('משימות/מסמכים/')) return localGh(method, path, body);
   const r = await fetch(api(path) + (method === 'GET' ? `?ref=${BRANCH}&t=${Date.now()}` : ''), {
     method, cache: 'no-store',
     headers: {Authorization: 'Bearer ' + (tok || token), Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'},
@@ -3375,7 +3403,7 @@ async function loadTopics(){
   return t?.ntfy ? t : null;
 }
 async function sync(){
-  if(!token){ renderStatus(); return; }
+  if(!token || (LOCAL && store(LOCAL_DONE))){ renderStatus(); return; }
   if(syncing){ again = true; return; }
   syncing = true; syncErr = ''; renderStatus('מסנכרן...');
   kvSet('token', token).catch(() => {});   // לכפתורים בהתראות (עובד השירות קורא משם)
@@ -3405,6 +3433,7 @@ async function sync(){
   }
 }
 function renderStatus(text){
+  if(LOCAL && store(LOCAL_DONE) && !text){ const b = store('משימות.גיבוי'); $('sync-status').textContent = '✓ נשמר בטלפון' + (b ? ` · גיבוי אחרון ${ל.shortDate(ל.localDate(Date.parse(b)))} ${ל.localTime(Date.parse(b))}` : ''); return; }
   const pending = Object.values(FILES).some(f => store(f.pending));
   $('sync-status').textContent = text || syncErr || (token ? (pending ? 'יש שינויים שעוד לא עלו' : '✓ מסונכרן') : 'נשמר במכשיר הזה בלבד. אפשר לחבר לגיטהאב בהגדרות');
 }
@@ -3687,12 +3716,17 @@ function renderSettings(){
     <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
       <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
-    <div class="group"><h3>גיטהאב וסנכרון</h3>
+    ${LOCAL ? `<div class="group"><h3>💾 גיבוי</h3>
+      <div class="note">${store(LOCAL_DONE) ? 'הכול נשמר בטלפון. כל יום נשמר גיבוי בטלפון ובהורדות/ניהול שיגרה, וגוגל מגבה אותו לדרייב שלך (גיבוי אוטומטי של אנדרואיד).' : 'עוד מעבירים את הנתונים מגיטהאב…'}
+        ${store('משימות.גיבוי') ? `<br>גיבוי אחרון: ${esc(ל.shortDate(ל.localDate(Date.parse(store('משימות.גיבוי')))))} ${esc(ל.localTime(Date.parse(store('משימות.גיבוי'))))}` : ''}</div>
+      <div class="btns"><button class="btn primary" id="s-bk-now" type="button">גיבוי עכשיו</button><button class="btn" id="s-bk-share" type="button">📤 שליחה לדרייב</button></div>
+      <div class="btns"><button class="btn" id="s-bk-restore" type="button">📥 שחזור מקובץ גיבוי</button></div></div>` : ''}
+    <div class="group"${LOCAL ? ' hidden' : ''}><h3>גיטהאב וסנכרון</h3>
       <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
       <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
       <div class="btns"><button class="btn" id="s-connect" type="button">${token ? 'החלפה' : 'חיבור'}</button><button class="btn" id="s-sync" type="button"${token ? '' : ' disabled'}>סנכרון עכשיו</button>${token ? '<button class="btn danger" id="s-disc" type="button">ניתוק</button>' : ''}</div>
     </div>
-    <div class="group"><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>
+    <div class="group"${LOCAL ? ' hidden' : ''}><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>
     <div class="btns"><button class="btn primary" id="s-save" type="button">שמירת ההגדרות</button></div>`;
   $('s-save').onclick = saveSettings;
   renderDomRows(clone(D.domains.filter(x => !x.deleted)));
@@ -3706,6 +3740,9 @@ function renderSettings(){
   $('s-test') && ($('s-test').onclick = testNotification);
   $('s-push') && ($('s-push').onclick = enablePush);
   $('s-export').onclick = exportAll;
+  if($('s-bk-now')) $('s-bk-now').onclick = () => backupNow('ui').then(renderSettings);
+  if($('s-bk-share')) $('s-bk-share').onclick = shareBackup;
+  if($('s-bk-restore')) $('s-bk-restore').onclick = restoreBackup;
 }
 function openSettings(){ show('prefs'); }
 /** תחומים בהגדרות: לכל תחום שורה מסודרת: צבע, שם, הצגה/הסתרה, מחיקה. תחום שיש בו משימות אי אפשר למחוק (מסבירים למה). */
@@ -4027,7 +4064,8 @@ async function סנכרן_קובץ(ק, הודעה){
 }
 
 async function סנכרן(הודעה){
-  if(!token){ צייר_מצב(); return; }
+  // באפליקציה העצמאית: בלי גיטהאב, אבל התזכורות והווידג'ט מתעדכנים
+  if(!token){ if(LOCAL){ צייר_הכל(); try{ תזמן_בדחיפה(); }catch(e){} dailySoon(); } צייר_מצב(); return; }
   if(מסנכרן){ שוב = true; return; }
   מסנכרן = true; צייר_מצב('מסנכרן...');
   try{
@@ -4050,7 +4088,7 @@ async function סנכרן(הודעה){
 
 function צייר_מצב(טקסט){
   const ממתין = !!(אחסון(קבצים.רישומים.ממתין) || אחסון(קבצים.תצורה.ממתין) || אחסון(קבצים.מלאי.ממתין));
-  $('מצב-סנכרון').textContent = טקסט && טקסט !== 'מסנכרן...' ? טקסט : (token ? (ממתין ? '⏳ יש שינויים שעוד לא עלו' : '') : 'נשמר במכשיר הזה בלבד');
+  $('מצב-סנכרון').textContent = טקסט && טקסט !== 'מסנכרן...' ? טקסט : (token ? (ממתין ? '⏳ יש שינויים שעוד לא עלו' : '') : LOCAL ? '' : 'נשמר במכשיר הזה בלבד');
 }
 
 /* ---------- התראה כשמותר עוד מנה ---------- */
@@ -4891,6 +4929,9 @@ function בדוק_מלאי(){
 const פתוח = () => !$('כרטיסים').closest('.screen').hidden;
 window.medsRender = () => צייר_הכל();
 window.medsSync = () => סנכרן();
+// לווידג'ט ולסיכום הבוקר: תרופות יומיות, והאם נלקחו היום
+window.medsDaily = () => גלויות().filter(t => t.סוג === 'יומית').map(t => ({name: t.שם, taken: !!של_תרופה(t.id).find(r => r.תאריך === תאריך_של(new Date()))}));
+window.medsSync = () => סנכרן();
 setInterval(() => { if(פתוח() && !document.querySelector('dialog[open]')) צייר_הכל(); }, 20000);
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && פתוח()) סנכרן(); });
 סנכרן();
@@ -4944,6 +4985,8 @@ async function nativeEvents(){
       return t && +at > t.at ? Object.assign({}, t, {at: +at, stopped: false, updatedAt: nowIso()}) : null; }).filter(Boolean);
     if(ext.length){ saveTimers(ext); ext.forEach(t => announced.delete(t.id)); }
     if(ev.opened){ announced.add(ev.opened); tmrOpen = ev.opened; openTimer(ev.opened); }
+    if(ev.hash){ location.hash = ev.hash; handleHash(); }
+    if(ev.shared) setTimeout(() => handleShared(ev.shared), 300);
   }catch(e){}
   meetingSuggestions();
 }
@@ -4960,13 +5003,14 @@ async function suggestMeeting(m){
   const p = ל.parseQuick(m.text, Date.now());
   if(!p.date && !p.time) return;
   const d = p.date || today(), whenTxt = `${d === today() ? 'היום' : d === ל.addDays(today(), 1) ? 'מחר' : dayName(d) + ' ' + ל.shortDate(d)}${p.time ? ' ב-' + p.time : ''}`;
-  const v = await ask('📅 להוסיף ליומן?', [{label: 'שם האירוע', value: `פגישה${m.title ? ' עם ' + m.title : ''}`, req: true}], {ok: 'הוספה', no: 'לא עכשיו',
+  const meet = /פגיש|נפגש|ניפגש|נתראה|ישיבה|זימון|תור |זום|zoom|meet|teams|ראיון|אירוע/i.test(m.text);
+  const v = await ask(meet ? '📅 להוסיף ליומן?' : '🔔 להוסיף משימה?', [{label: meet ? 'שם האירוע' : 'המשימה', value: meet ? `פגישה${m.title ? ' עם ' + m.title : ''}` : ל.parseQuick(m.text, Date.now()).title.slice(0, 80), req: true}], {ok: 'הוספה', no: 'לא עכשיו',
     html: `<div class="card" style="margin:0 0 6px;font-size:14px"><b>${esc(m.app || 'הודעה')}${m.title ? ' · ' + esc(m.title) : ''}</b><div style="margin-top:4px;white-space:pre-wrap">${esc(m.text.slice(0, 220))}</div></div>
       <div class="q-when-line" style="font-size:16px;font-weight:600">🗓️ ${esc(whenTxt)}</div>`});
   if(!v) return;
   openQuick();
   $('q-title').value = m.text; $('q-title').dispatchEvent(new Event('input'));   // התאריך והשעה מההודעה
-  $('q-title').value = v[0]; quick.touched = true; quick.cal = true; renderQuick();
+  $('q-title').value = v[0]; quick.touched = true; quick.cal = meet; renderQuick();
 }
 async function nativeInit(){
   if(!NATIVE) return;
@@ -4983,6 +5027,175 @@ async function nativeInit(){
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') nativeEvents(); });
 }
 
+
+/* ---------- האפליקציה העצמאית: העברה מגיטהאב, גיבוי, יומן הטלפון ---------- */
+/** פעם אחת: מושכים מגיטהאב את הכול (משימות, תרופות, תמונות המסמכים), שומרים בטלפון ובגיבוי, ומנתקים את גיטהאב. */
+let goingLocal = false;
+async function goLocal(){
+  if(!LOCAL || store(LOCAL_DONE) || goingLocal) return;
+  if(!token){ store(LOCAL_DONE, nowIso()); renderStatus(); return; }
+  goingLocal = true;
+  toast('מעביר את כל הנתונים לטלפון…', {ms: 120000});
+  try{
+    await sync(); if(syncErr) throw new Error(syncErr);
+    await window.medsSync?.();
+    await pullDocs();
+    store(LOCAL_DONE, nowIso());
+    mirrorReady = true; await mirrorNow();
+    await backupNow(true);
+    store(K.token, null); token = ''; kvSet('token', '').catch(() => {});
+    toast('✓ כל הנתונים בטלפון ובגיבוי. מעכשיו האפליקציה עצמאית', {ms: 7000});
+    phoneCalendarSync();
+  }catch(e){ store(LOCAL_DONE, null); toast('ההעברה לא הושלמה (' + (e.message || 'אין רשת') + '). ננסה שוב בפתיחה הבאה', {err: true, ms: 8000}); }
+  finally{ goingLocal = false; renderAll(); }
+}
+async function pullDocs(){
+  const paths = [...new Set(D.tasks.filter(t => !t.deleted).flatMap(t => (t.docImages || []).map(x => x.path)).filter(Boolean))];
+  for(const p of paths){
+    const r = await fetch(api(p) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
+    if(r.status === 404) continue;
+    if(!r.ok) throw new Error('תמונת מסמך: ' + r.status);
+    await NPhone.writeFile({path: p, b64: await blobTo64(await r.blob())});
+  }
+}
+const MIME = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain'};
+async function localBlob(path, mime){
+  const r = await NPhone.readFile({path}); if(!r.b64) throw new Error('הקובץ לא נמצא בטלפון');
+  const bin = atob(r.b64), u8 = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], {type: mime || MIME[(path.split('.').pop() || '').toLowerCase()] || 'application/octet-stream'});
+}
+async function localGh(method, path, body){
+  if(method === 'PUT'){ await NPhone.writeFile({path, b64: body.content}); return {content: {sha: 'local'}}; }
+  if(method === 'DELETE'){ await NPhone.deleteFile({path}); return {}; }
+  const r = await NPhone.readFile({path}); return r.b64 ? {sha: 'local', content: r.b64} : null;
+}
+/** גיבוי: בטלפון (נכנס לגיבוי האוטומטי של גוגל), ועותק בהורדות/ניהול שיגרה. פעם ביום לבד, ובכל זמן מההגדרות. */
+async function backupNow(manual){
+  if(!LOCAL) return;
+  try{
+    const r = await NPhone.backup({text: mirrorText(), file: `גיבוי-${today()}.json`});
+    store('משימות.גיבוי', nowIso()); renderStatus();
+    if(manual === 'ui') toast('✓ גובה ' + (r.where || ''));
+  }catch(e){ if(manual) toast('הגיבוי נכשל: ' + (e.message || e), {err: true}); }
+}
+function backupDaily(){ const b = store('משימות.גיבוי'); if(LOCAL && store(LOCAL_DONE) && (!b || ל.localDate(Date.parse(b)) !== today())) backupNow(); }
+async function shareBackup(){ await backupNow(); try{ await NPhone.shareBackup({file: `גיבוי-ניהול-שיגרה-${today()}.json`}); }catch(e){ toast(e.message || String(e), {err: true}); } }
+function restoreBackup(){
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
+  inp.onchange = async () => {
+    try{
+      const m = JSON.parse(await inp.files[0].text());
+      if(!m || m.app !== 'ניהול שיגרה' || !m.data) return toast('זה לא קובץ גיבוי של האפליקציה', {err: true});
+      if(!await sure(`לשחזר את הגיבוי מ-${ל.shortDate(ל.localDate(Date.parse(m.at)))}?`, 'שחזור', {note: 'מה שבטלפון עכשיו יוחלף במה שבגיבוי', danger: true})) return;
+      const keep = store('משימות.גיבוי');
+      localStorage.clear(); for(const [k, v] of Object.entries(m.data)) localStorage.setItem(k, v);
+      if(keep) store('משימות.גיבוי', keep);
+      await mirrorNow(); location.reload();
+    }catch(e){ toast('הקובץ לא נקרא', {err: true}); }
+  };
+  inp.click();
+}
+/** יומן הטלפון (גוגל): משימה עם "גם ביומן" נכנסת ליומן ישירות, מתעדכנת ונמחקת איתה. */
+let calBusy = false, calT = null;
+const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+async function phoneCalendarSync(){
+  if(!LOCAL || !store(LOCAL_DONE) || calBusy) return;
+  calBusy = true;
+  try{
+    const map = storeJson('משימות.יומן-טלפון', {}), dd = data(), now = Date.now(), had = JSON.stringify(map);
+    const engine = new Set((calFile.events || []).filter(e => !e.deleted).map(e => e.id));   // נוצרו בעבר ביומן מהמנוע
+    for(const t of D.tasks){
+      if(engine.has(t.id) && !map[t.id]) continue;
+      const spec = ל.calendarSpec(t, dd, now), old = map[t.id];
+      if(spec && (!old || old.sig !== spec.sig)){
+        let rr = ל.rruleOf(spec.rule);
+        if(rr && spec.rule.type === 'weekly' && (spec.rule.days || []).length) rr += ';BYDAY=' + spec.rule.days.map(d => BYDAY[d]).join(',');
+        const r = await NPhone.calendarUpsert({eid: old ? old.eid : -1, title: spec.title, date: spec.date, time: spec.time || null, rrule: rr || null, desc: 'מניהול שיגרה'});
+        map[t.id] = {eid: r.eid, sig: spec.sig};
+        if(!old) toast(`📅 נוסף ליומן: ${spec.title}`);
+      }else if(!spec && old){ await NPhone.calendarDelete({eid: old.eid}); delete map[t.id]; }
+    }
+    if(JSON.stringify(map) !== had) store('משימות.יומן-טלפון', JSON.stringify(map));
+  }catch(e){ toast('היומן: ' + (e.message || e), {err: true, ms: 6000}); }
+  finally{ calBusy = false; }
+}
+/** הסיכום של היום (ושל יומיים קדימה) לווידג'ט ולסיכום הבוקר: משימות, תרופות יומיות, ומשימות דחופות מהרשימה. */
+function dailyInfo(){
+  const days = {}, meds = (() => { try{ return window.medsDaily?.() || []; }catch(e){ return []; } })();
+  for(let i = 0; i < 3; i++){
+    const d = ל.addDays(today(), i), v = ל.buildView(data(), i ? ל.at(d, '06:00') : Date.now()), lines = [];
+    for(const x of v.overdue) lines.push('⚠️ ' + ל.displayTitle(x.task));
+    for(const x of v.todays) lines.push('• ' + ל.displayTitle(x.task));
+    for(const m of meds) if(i || !m.taken) lines.push('💊 ' + m.name);
+    for(const x of todoItems().filter(x => !x.done && !x.removed && ((x.due && x.due <= d) || (!i && x.urg === 2)))) lines.push('📝 ' + x.title);
+    days[d] = {title: `היום · ${dayName(d)} ${ל.shortDate(d)}`, morning: `☀️ בוקר טוב · ${lines.length ? (lines.length === 1 ? 'דבר אחד' : lines.length + ' דברים') + ' להיום' : 'יום פנוי'}`, lines};
+  }
+  return days;
+}
+let dailyT = null;
+function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo()}).catch(() => {}); }catch(e){} }, 1500); }
+function localInit(){
+  if(!NATIVE) return;
+  dailySoon();
+  if(!LOCAL) return;
+  backupDaily(); phoneCalendarSync();
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'hidden'){ mirrorNow(); return; }
+    backupDaily(); dailySoon(); goLocal();
+  });
+}
+/** אחרי כל שינוי: ווידג'ט, ויומן הטלפון (בהשהיה קצרה). */
+function afterChangeNative(){ if(!NATIVE) return; dailySoon(); if(LOCAL){ clearTimeout(calT); calT = setTimeout(phoneCalendarSync, 2500); } }
+
+/* ---------- שיתוף לאפליקציה (מדפדפן, וואטסאפ, מייל) ---------- */
+function handleShared(s){
+  const text = [s.subject, s.text].filter(Boolean).join('\n').trim(); if(!text) return;
+  const url = (text.match(/https?:\/\/\S+/) || [])[0], short = text.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+  const asTask = cal => { openQuick(); $('q-title').value = text.replace(/\s+/g, ' ').slice(0, 300); $('q-title').dispatchEvent(new Event('input'));
+    $('q-title').value = (short || url || '').slice(0, 120); quick.touched = true; if(cal){ quick.cal = true; } renderQuick(); };
+  sheet('מה לעשות עם זה?', [
+    ['🔔 משימה עם תזכורת', () => asTask(false)],
+    ['📅 אירוע ביומן', () => asTask(true)],
+    ['📝 לרשימת המשימות', () => { show('todo'); $('td-new').value = (short || url).slice(0, 200); addTodo(); toast('✓ נוסף לרשימה'); }],
+    ['🛒 לקניות', () => { const items = text.split(/\n|,/).map(x => x.replace(/^[\s•\-*\d.)]+/, '').trim()).filter(x => x && x.length < 40 && !/https?:/.test(x));
+      for(const n of items) saveShop(ל.shopAdd(D.file.shop.items, n, nowIso())); show('shop'); toast(`✓ ${items.length} לקניות`); }],
+    ['🧾 מתכון', () => importRecipe(url, text)],
+  ], text.slice(0, 160));
+}
+/** מתכון מקישור: מושכים את הדף (דרך הטלפון, בלי חסימות), וקוראים את המתכון שבתוכו (schema.org/Recipe). בלי קישור: הדבקת טקסט. */
+async function importRecipe(url, text){
+  if(!url){ openRecipeEditor(null, true); $('re-paste').value = text; $('re-parse').click(); return; }
+  toast('קורא את המתכון…', {ms: 15000});
+  try{
+    const H = window.Capacitor?.Plugins?.CapacitorHttp;
+    const html = H ? (await H.get({url, responseType: 'text'})).data : await (await fetch(url)).text();
+    const r = recipeFromHtml(String(html), url);
+    if(!r) throw new Error();
+    openRecipeEditor(null, true);
+    $('re-paste').value = [r.title, r.desc, 'מצרכים:', ...r.ingredients, 'אופן ההכנה:', ...r.steps].filter(Boolean).join('\n');
+    $('re-parse').click();
+    if(r.image) rcEdit.image = r.image;
+    rcEdit.source = url;
+    toast('✓ המתכון נקרא. בודקים ושומרים');
+  }catch(e){ toast('לא הצלחתי לקרוא מתכון מהקישור. אפשר להעתיק את הטקסט ולשתף אותו', {err: true, ms: 6000}); }
+}
+function recipeFromHtml(html, url){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const all = [];
+  for(const sc of doc.querySelectorAll('script[type="application/ld+json"]')){ try{ const j = JSON.parse(sc.textContent); all.push(...[j].flat(), ...[j].flat().flatMap(x => x?.['@graph'] || [])); }catch(e){} }
+  const r = all.find(x => x && [].concat(x['@type']).includes('Recipe'));
+  if(!r) return null;
+  const txt = h => new DOMParser().parseFromString(String(h || ''), 'text/html').body.textContent.trim();
+  const steps = [];
+  const walk = s => { if(!s) return; if(typeof s === 'string') return steps.push(txt(s));
+    if(Array.isArray(s)) return s.forEach(walk);
+    if(s['@type'] === 'HowToSection'){ if(s.name) steps.push(txt(s.name) + ':'); return walk(s.itemListElement); }
+    if(s.text || s.name) steps.push(txt(s.text || s.name)); };
+  walk(r.recipeInstructions);
+  const img = [].concat(r.image || [])[0];
+  return {title: txt(r.name), desc: txt(r.description).slice(0, 200), ingredients: [].concat(r.recipeIngredient || []).map(txt).filter(Boolean),
+    steps: steps.filter(Boolean), image: typeof img === 'string' ? img : img?.url || ''};
+}
 
 /* ---------- לשונית "חשבונות": חיוב לדייר, היסטוריה וחובות ---------- */
 // החישוב וההודעה בליבה (tenantCharge, tenantMsg). הכול בתצורה (tenant), במאגר הפרטי בלבד.
@@ -5285,7 +5498,8 @@ function handleHash(){
 addEventListener('hashchange', () => { if(location.hash !== '#t') handleHash(); });
 
 /* ---------- אתחול ---------- */
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if('serviceWorker' in navigator && !LOCAL) navigator.serviceWorker.register('sw.js').catch(() => {});
+if(LOCAL && !store(K.onboard) && !store(K.token)) store(K.onboard, '1');   // התקנה חדשה של האפליקציה העצמאית: בלי חיבור לגיטהאב
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 renderAll();
@@ -5302,9 +5516,10 @@ if(migrate()) renderAll();
 if(!store(K.onboard)) onboard(1);
 else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
 nativeInit();
+localInit();
 applyNav();
 if(!location.hash && D.config.startScreen && D.config.startScreen !== 'today' && $('scr-' + D.config.startScreen)) show(D.config.startScreen);
-sync();
+if(LOCAL) goLocal(); else sync();
 </script>
 </body>
 </html>
