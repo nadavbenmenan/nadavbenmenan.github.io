@@ -581,7 +581,10 @@ function calendarFor(task, occ){
 /* ---------- מתכונים ---------- */
 // משימות/מתכונים.json: {v, recipes: [{id, title, desc, image, cat, ingredients: [טקסט], steps: [טקסט], notes,
 //   prep, total, level, updatedAt, deleted}]}. מיזוג לפי id, כמו כל השאר.
-const RECIPE_CATS = ['מנה עיקרית', 'דגים', 'בשר ועוף', 'תוספות', 'סלטים וממרחים', 'מרקים', 'מאפים ובצקים', 'קינוחים ועוגות', 'אחר'];
+// הקטגוריות לפי אתרי מתכונים (17.11.2026): לפי סוג הארוחה או המנה, ובמנה עיקרית לפי החלבון
+const RECIPE_CATS = ['ארוחת בוקר', 'עוף', 'בשר', 'דגים', 'פסטה', 'תוספות', 'סלטים', 'ממרחים ורטבים', 'מרקים', 'מאפים ולחמים', 'עוגות ועוגיות', 'קינוחים', 'אחר'];
+// קטגוריות מהגרסה הקודמת: אם אין ניחוש טוב יותר
+const OLD_CATS = {'מנה עיקרית': 'אחר', 'בשר ועוף': 'בשר', 'סלטים וממרחים': 'סלטים', 'מאפים ובצקים': 'מאפים ולחמים', 'קינוחים ועוגות': 'קינוחים'};
 function mergeRecipesFile(a, b, now){ return {v: 1, recipes: mergeById(a?.recipes, b?.recipes, now)}; }
 const UNITS = 'כוסות|כוס|כפות|כף|כפיות|כפית|גרם|גר׳|ג׳|ג|קילוגרם|קילו|ק״ג|קג|ליטר|ליטרים|מ״ל|מל|יחידות|יחידה|חבילות|חבילה|' +
   'שקיות|שקית|פחיות|פחית|קופסאות|קופסה|קופסת|צנצנת|קורט|מעט|חופן|ענפים|ענף|ענפי|צרור|צרורות|שיני|שן|פרוסות|פרוסה|' +
@@ -772,16 +775,38 @@ function parseRecipeText(text){
 }
 /* ---------- סיווג ותמונות למתכונים ---------- */
 // קטגוריה לפי מילים בשם (ואם אין, במצרכים). הסדר חשוב: ספציפי קודם ("מרק עוף" = מרק, "סלט טונה" = סלט, "עוגת גבינה" = קינוח).
-const CAT_RULES = [
-  ['מרקים', ['מרק']],
-  ['סלטים וממרחים', ['סלט', 'מטבוחה', 'חומוס', 'ממרח', 'טחינה', 'באבא', 'מטבל', 'סלסה', 'צזיקי', 'גוואקמולי', 'פסטו', 'מיונז', 'רוטב']],
-  ['קינוחים ועוגות', ['עוגה', 'עוגת', 'עוגות', 'עוגיות', 'עוגייה', 'קינוח', 'מוס', 'פודינג', 'גלידה', 'בראוניז', 'מאפינס', 'קרם', 'טירמיסו', 'שוקולד', 'חטיף', 'כדורי שוקולד', 'רוגלך']],
-  ['מאפים ובצקים', ['לחם', 'חלה', 'חלות', 'פיצה', 'בצק', 'מאפה', 'מאפים', 'בורקס', 'פוקאצ׳ה', 'לחמניות', 'פיתות', 'פיתה', 'פשטידה', 'קיש', 'פאי', 'מלוואח', 'ג׳חנון', 'באגט', 'פוקצ׳ה', 'כעכים', 'בייגל']],
-  ['דגים', ['דג', 'דגים', 'סלמון', 'טונה', 'אמנון', 'לברק', 'דניס', 'שרימפס', 'בקלה', 'מושט', 'פילה דג', 'סושי']],
-  ['בשר ועוף', ['עוף', 'בשר', 'שניצל', 'קציצות', 'כדורי בשר', 'קבב', 'המבורגר', 'פרגיות', 'חזה', 'כבש', 'טלה', 'אנטריקוט', 'סטייק', 'צלי', 'גולש', 'פסטרמה', 'כנפיים', 'שווארמה', 'הודו', 'כבד', 'נקניק']],
-  ['תוספות', ['אורז', 'תפוחי אדמה', 'צ׳יפס', 'פירה', 'פתיתים', 'קוסקוס', 'מג׳דרה', 'בורגול', 'קינואה', 'ירקות צלויים', 'ירקות מוקפצים', 'אטריות']],
-  ['מנה עיקרית', ['שקשוקה', 'פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'ריזוטו', 'פטוצ׳יני', 'תבשיל', 'חביתה', 'פריטטה', 'מוסקה', 'ממולאים', 'קארי']],
+const PROTEIN_RULES = [
+  ['דגים', ['דג', 'דגים', 'סלמון', 'טונה', 'אמנון', 'לברק', 'דניס', 'שרימפס', 'בקלה', 'מושט', 'פילה דג', 'סושי', 'פירות ים', 'קלמרי', 'מוסר', 'פורל', 'הרינג']],
+  ['עוף', ['עוף', 'עופות', 'שניצל', 'שניצלים', 'פרגיות', 'פרגית', 'חזה', 'כנפיים', 'כנפי', 'הודו', 'שוקיים', 'כרעיים', 'נאגטס', 'שווארמה']],
+  ['בשר', ['בשר', 'בקר', 'סטייק', 'אנטריקוט', 'צלי', 'גולש', 'פסטרמה', 'אסאדו', 'כבש', 'טלה', 'המבורגר', 'קבב', 'כבד', 'נקניק', 'נקניקיות', 'צ׳ולנט', 'חמין', 'סינטה', 'צלעות', 'קופתה', 'בולונז']],
 ];
+// סוג המנה. המילה הראשונה בשם שמתאימה קובעת ("מרק עוף" = מרק, "סלט טונה" = סלט, "עוגת גבינה" = עוגה).
+// "*" = מנה בלי סוג ברור (קציצות, תבשיל): החלבון קובע ("קציצות דגים" = דגים)
+const CAT_RULES = [
+  ['ארוחת בוקר', ['שקשוקה', 'חביתה', 'חביתות', 'פנקייק', 'פנקייקים', 'בלינצ׳ס', 'קרפ', 'קרפים', 'טוסט', 'גרנולה', 'דייסה', 'ביצים', 'ביצה', 'שייק', 'וופל', 'וופלים', 'פריטטה', 'יוגורט', 'סמוטי']],
+  ['מרקים', ['מרק', 'מרקים']],
+  ['ממרחים ורטבים', ['סלט מטבוחה', 'סלט חצילים', 'מטבוחה', 'חומוס', 'ממרח', 'טחינה', 'באבא', 'מטבל', 'סלסה', 'צזיקי', 'גוואקמולי', 'פסטו', 'מיונז', 'רוטב', 'איולי', 'ריבה', 'סחוג', 'עמבה']],
+  ['סלטים', ['סלט', 'סלטים', 'קולסלאו', 'טאבולה', 'פטוש']],
+  ['עוגות ועוגיות', ['עוגה', 'עוגת', 'עוגות', 'עוגיות', 'עוגייה', 'עוגיית', 'מאפינס', 'בראוניז', 'רוגלך', 'קאפקייקס', 'טארט', 'שטרודל']],
+  ['קינוחים', ['קינוח', 'קינוחים', 'מוס', 'פודינג', 'גלידה', 'טירמיסו', 'קרם', 'פנקוטה', 'מלבי', 'סורבה', 'כדורי שוקולד', 'שוקולד', 'טראפלס', 'חטיף', 'חטיפי']],
+  ['מאפים ולחמים', ['לחם', 'חלה', 'חלות', 'פיצה', 'בצק', 'מאפה', 'מאפים', 'בורקס', 'פוקאצ׳ה', 'פוקצ׳ה', 'לחמניות', 'פיתות', 'פיתה', 'פשטידה', 'קיש', 'פאי', 'מלוואח', 'ג׳חנון', 'באגט', 'כעכים', 'בייגל', 'טורטיה', 'לאפה', 'סמבוסק']],
+  ['פסטה', ['פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'פטוצ׳יני', 'מקרוני', 'פנה', 'רביולי', 'נודלס', 'פפרדלה', 'טורטליני']],
+  ['תוספות', ['אורז', 'תפוחי אדמה', 'תפו״א', 'צ׳יפס', 'פירה', 'פתיתים', 'קוסקוס', 'מג׳דרה', 'בורגול', 'קינואה', 'ירקות', 'ריזוטו', 'פולנטה', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי', 'שעועית', 'עדשים', 'לביבות', 'בטטה', 'אטריות']],
+  ...PROTEIN_RULES,
+  ['*', ['קציצות', 'קציצה', 'כדורי', 'כדורים', 'שיפודים', 'ממולאים', 'ממולא', 'תבשיל', 'קדרה', 'מוקפץ', 'קארי', 'צלוי', 'בתנור']],
+];
+/** קטגוריה לפי המצרכים, כשהשם לא מספיק: החלבון העיקרי, ואם אין, אפייה מתוקה או בצק שמרים. */
+function catFromIngredients(r){
+  const ing = (r.ingredients || []).filter(x => !/[:：]\s*$/.test(x)).map(x => ' ' + shopNorm(String(x)) + ' ');
+  if(!ing.length) return '';
+  const has = w => ing.some(l => l.includes(' ' + w));
+  const score = PROTEIN_RULES.map(([k, l]) => [k, ing.filter(x => l.some(w => x.includes(' ' + w + ' ') || x.includes(' ' + w))).length]).sort((a, b) => b[1] - a[1]);
+  if(score[0][1]) return score[0][0];
+  if(has('קמח') && has('סוכר') && (has('אבקת אפייה') || has('ביצ') || has('חמאה') || has('שוקולד'))) return 'עוגות ועוגיות';
+  if(has('קמח') && has('שמרים')) return 'מאפים ולחמים';
+  if(['פסטה', 'ספגטי', 'פנה', 'לזניה'].some(has)) return 'פסטה';
+  return '';
+}
 const hasWord = (text, w) => { const t = ' ' + shopNorm(text).replace(/[^\u0590-\u05FFa-z0-9׳ ]/g, ' ') + ' ';
   return w.includes(' ') ? t.includes(' ' + w + ' ') || t.includes(' ' + w) : t.split(' ').some(x => x === w || (x.length > 2 && sameWord(x, w)) || x.replace(/^[והבלמש]/, '') === w); };
 /** קטגוריה משוערת למתכון לפי השם, או '' אם לא ברור. */
@@ -803,8 +828,97 @@ function firstMatch(title, rules){
   });
   return best ? best.key : '';
 }
-function guessRecipeCat(r){ return firstMatch(r.title || '', CAT_RULES); }
-const recipeCat = r => r.cat || guessRecipeCat(r) || 'אחר';
+/** קטגוריה משוערת: סוג המנה מהשם, אחר כך החלבון (בשם או במצרכים). '' = לא ברור. */
+function guessRecipeCat(r){
+  const t = firstMatch(r.title || '', CAT_RULES);
+  if(t && t !== '*') return t;
+  return firstMatch(r.title || '', PROTEIN_RULES) || catFromIngredients(r) || '';
+}
+const recipeCat = r => (RECIPE_CATS.includes(r.cat) && r.cat !== 'אחר' ? r.cat : '') || guessRecipeCat(r) || OLD_CATS[r.cat] || 'אחר';
+
+/* ---------- כמויות: פי 2, חצי ---------- */
+const FRAC = {'½': .5, '¼': .25, '¾': .75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': .125};
+/** כמות יפה: 1.5 → "1½", 0.25 → "¼", 125 → "125". */
+function fmtQty(x){
+  if(!(x > 0)) return '0';
+  if(x >= 20) return String(Math.round(x));
+  const w = Math.floor(x + 1e-9), f = x - w;
+  const opts = [[0, ''], [.25, '¼'], [1 / 3, '⅓'], [.5, '½'], [2 / 3, '⅔'], [.75, '¾'], [1, '']];
+  let best = opts[0]; for(const o of opts) if(Math.abs(f - o[0]) < Math.abs(f - best[0])) best = o;
+  if(Math.abs(f - best[0]) > .07) return String(+x.toFixed(1));
+  const ww = w + (best[0] === 1 ? 1 : 0);
+  return ww ? ww + best[1] : best[1];
+}
+const QN = '(?:\\d+(?:[.,]\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d*[½¼¾⅓⅔⅛])';
+const Q_RE = new RegExp(`(${QN})(\\s*[-–]\\s*(${QN}))?`, 'g');
+const qVal = s => { s = s.replace(',', '.'); let m;
+  if((m = /^(\d+)\s+(\d+)\/(\d+)$/.exec(s))) return +m[1] + m[2] / m[3];
+  if((m = /^(\d+)\/(\d+)$/.exec(s))) return m[1] / m[2];
+  if((m = /^(\d*)([½¼¾⅓⅔⅛])$/.exec(s))) return (+m[1] || 0) + FRAC[m[2]];
+  return +s; };
+const SCALE_UNIT = /^\s*(?:כוסות|כוס|כפות|כף|כפיות|כפית|גרם|גר׳|ג׳|ג|קילוגרם|קילו|ק״ג|קג|ליטר|ליטרים|מ״ל|מ"ל|מל|ק"ג|יחידות|יחידה|חבילות|חבילה|שקיות|שקית|פחיות|פחית|קופסאות|קופסה|קופסת|שיני|שן|פרוסות|פרוסה|ביצים|ביצה|g|ml|kg)(?![א-ת])/;
+/** מצרך בכמות אחרת: "2 כוסות קמח" ×½ → "1 כוסות קמח"; "חצי כוס" ×2 → "1 כוס"; "(650 מ״ל)" גם. */
+function scaleLine(line, f){
+  const s = String(line ?? '');
+  if(!f || f === 1 || /[:：]\s*$/.test(s)) return s;
+  const lead = /^(\s*)(חצי|רבע|שליש)(?=\s)/.exec(s);
+  if(lead) return lead[1] + fmtQty({'חצי': .5, 'רבע': .25, 'שליש': 1 / 3}[lead[2]] * f) + s.slice(lead[0].length);
+  // "קילו קמח", "כוס סוכר" (בלי מספר) = 1
+  const unitOnly = /^(\s*)(?=(?:קילו|ק״ג|ק"ג|כוס|כף|כפית|ליטר|חבילה|שקית|פחית|קופסה|קופסת|צנצנת|גביע|פרוסה|יחידה)(?![א-ת]))/.exec(s);
+  if(unitOnly && !/^\s*\d/.test(s)) return unitOnly[1] + fmtQty(f) + ' ' + s.slice(unitOnly[0].length);
+  const start = s.search(/\S/);
+  return s.replace(Q_RE, (m, a, rng, b, off) => {
+    if(off !== start && !SCALE_UNIT.test(s.slice(off + m.length))) return m;
+    if(/[א-תa-z0-9]/i.test(s[off - 1] || '')) return m;
+    return fmtQty(qVal(a) * f) + (rng ? '-' + fmtQty(qVal(b) * f) : '');
+  });
+}
+/** "4 מנות" ×2 → "8 מנות". */
+const scaleServings = (v, f) => f === 1 || !v ? v : String(v).replace(/\d+(?:[.,]\d+)?/g, n => fmtQty(+n.replace(',', '.') * f));
+/** מצב בישול: לכל שלב, המצרכים שמוזכרים בו, עם הכמות. "להוסיף את הסוכר" → "1 כוס סוכר". */
+function stepIngredients(step, ingredients, f){
+  const text = ' ' + shopNorm(String(step || '')).replace(/[^\u0590-\u05FFa-z0-9׳ ]/g, ' ') + ' ';
+  // "והביצים" → ביצים: עד שתי אותיות בהתחלה (ו, ה, ב, ל, מ, ש)
+  const words = text.split(/\s+/).filter(Boolean).map(w => { const v = [w]; let x = w;
+    for(let i = 0; i < 2 && x.length > 3 && /^[והבלמש]/.test(x); i++){ x = x.slice(1); v.push(x); } return v; });
+  const out = [];
+  for(const line of ingredients || []){
+    if(/[:：]\s*$/.test(line)) continue;
+    const prod = ingredientProduct(line); if(!prod) continue;
+    const key = shopNorm(prod).split(' ')[0];
+    if(key.length < 2) continue;
+    if(words.some(ws => ws.some(w => w === key || (w.length > 2 && sameWord(w, key)) || (key.length > 3 && w.startsWith(key))))) out.push(scaleLine(line, f || 1));
+  }
+  return out;
+}
+
+/* ---------- שעות שינה (מהטלפון: מתי המסך כבה ומתי נפתח) ---------- */
+/**
+ * events: [{t, k: 'on' | 'off' | 'unlock'}] מהטלפון. שימוש = מפתיחת הטלפון (או הדלקת מסך, אם אין נעילה) ועד שהמסך כבה.
+ * שינה = ההפסקה הארוכה ביותר בכל לילה (מתחילה בין 19:00 ל-6:00, לפחות 3 שעות). הצצה קצרה באמצע הלילה (עד 5 דקות,
+ * עם שעה לפחות לפני ואחרי) לא קוטעת את השינה ונספרת כהתעוררות. מחזיר [{date, sleep, wake, mins, wakeups}], החדש קודם.
+ */
+function sleepNights(events, nowMs){
+  const ev = (events || []).filter(e => e && +e.t).slice().sort((a, b) => a.t - b.t);
+  const startK = ev.some(e => e.k === 'unlock') ? 'unlock' : 'on';
+  let S = [], cur = null;
+  for(const e of ev){
+    if(e.k === startK){ if(!cur) cur = {a: e.t}; }
+    else if(e.k === 'off' && cur){ cur.b = Math.max(e.t, cur.a); S.push(cur); cur = null; }
+  }
+  if(cur) S.push({a: cur.a, b: nowMs || cur.a});
+  const brief = new Set();
+  for(let i = 1; i < S.length - 1; i++)
+    if(S[i].b - S[i].a <= 5 * 6e4 && S[i].a - S[i - 1].b >= 36e5 && S[i + 1].a - S[i].b >= 36e5) brief.add(i);
+  const keep = S.filter((x, i) => !brief.has(i)), nights = {};
+  for(let i = 0; i + 1 < keep.length; i++){
+    const from = keep[i].b, to = keep[i + 1].a, h = +localTime(from).slice(0, 2);
+    if(to - from < 3 * 36e5 || !(h >= 19 || h < 6)) continue;
+    const date = localDate(from - 12 * 36e5), wakeups = S.filter((x, j) => brief.has(j) && x.a > from && x.b < to).length;
+    if(!nights[date] || to - from > nights[date].wake - nights[date].sleep) nights[date] = {date, sleep: from, wake: to, mins: Math.round((to - from) / 6e4), wakeups};
+  }
+  return Object.values(nights).sort((a, b) => b.date.localeCompare(a.date));
+}
 // תמונות (TheMealDB: 141 שנבחרו ביד, ועוד כ-580 לפי סוג המנה). קבוצה לפי מילה בשם; בתוך קבוצה: כל מתכון מקבל תמונה אחרת.
 const IMG_BASE = 'https://www.themealdb.com/images/media/meals/';
 // נבחרו ביד לפי מה שבתמונה (16.11.2026): בכל קבוצה הראשונות הן המתאימות ביותר
@@ -850,8 +964,16 @@ const IMG_RULES = [['soup', ['מרק']], ['dip', ['סלט מטבוחה', 'סלט
   ['pasta', ['פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'פטוצ׳יני', 'מקרוני']], ['rice', ['אורז', 'ריזוטו', 'מג׳דרה', 'פאייה']], ['lamb', ['כבש', 'טלה']],
   ['chicken', ['עוף', 'שניצל', 'פרגיות', 'חזה', 'כנפיים', 'הודו']], ['beef', ['בשר', 'סטייק', 'אנטריקוט', 'צלי', 'גולש', 'פסטרמה', 'אסאדו']],
   ['potato', ['תפוחי אדמה', 'צ׳יפס', 'פירה']], ['breakfast', ['פנקייק', 'בלינצ׳ס', 'קרפ']], ['veg', ['ירקות', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי']]];
-const CAT_IMG = {'מנה עיקרית': 'chicken', 'דגים': 'fish', 'בשר ועוף': 'beef', 'תוספות': 'side', 'סלטים וממרחים': 'salad', 'מרקים': 'soup',
-  'מאפים ובצקים': 'bread', 'קינוחים ועוגות': 'dessert', 'אחר': 'side'};
+const CAT_IMG = {'ארוחת בוקר': 'eggs', 'עוף': 'chicken', 'בשר': 'beef', 'דגים': 'fish', 'פסטה': 'pasta', 'תוספות': 'side', 'סלטים': 'salad',
+  'ממרחים ורטבים': 'dip', 'מרקים': 'soup', 'מאפים ולחמים': 'bread', 'עוגות ועוגיות': 'cake', 'קינוחים': 'dessert', 'אחר': 'side'};
+// כשמחפשים עוד תמונות: קבוצות קרובות קודם (לעוף: קציצות, אורז, בשר), ורק אחר כך כל השאר
+const IMG_NEAR = {chicken: ['meatball', 'rice', 'potato', 'beef', 'lamb'], beef: ['meatball', 'burger', 'lamb', 'chicken'], meatball: ['beef', 'lamb', 'burger', 'chicken'],
+  burger: ['beef', 'meatball'], lamb: ['beef', 'meatball'], fish: ['salmon', 'shrimp'], salmon: ['fish', 'shrimp'], shrimp: ['fish', 'salmon', 'pasta'],
+  pasta: ['rice', 'pizza'], rice: ['side', 'veg', 'chicken'], soup: ['veg'], salad: ['veg', 'dip'], dip: ['salad', 'veg'], eggs: ['breakfast', 'veg'],
+  breakfast: ['eggs', 'cake', 'dessert'], cake: ['dessert', 'cookies', 'pie'], cookies: ['cake', 'dessert'], dessert: ['cake', 'cookies'], bread: ['pie', 'pizza'],
+  pie: ['bread', 'cake'], pizza: ['bread', 'pie'], potato: ['side', 'veg'], veg: ['salad', 'side', 'soup'], side: ['rice', 'potato', 'veg']};
+const ING_IMG = [['salmon', ['סלמון']], ['shrimp', ['שרימפס']], ['fish', ['דג', 'דגים', 'אמנון', 'טונה', 'לברק', 'דניס']], ['chicken', ['עוף', 'חזה', 'פרגיות', 'כנפיים', 'הודו']],
+  ['beef', ['בשר', 'בקר', 'אנטריקוט', 'סטייק']], ['lamb', ['כבש', 'טלה']]];
 function recipeImageGroup(r){ return firstMatch(r.title || '', IMG_RULES) || CAT_IMG[recipeCat(r)] || 'side'; }
 const imgUrl = f => IMG_BASE + f + '/medium';
 const imgFile = u => { const m = /\/meals\/([^/]+?)(?:\/(?:medium|small|preview|large))?$/.exec(u || ''); return m ? m[1] : null; };
@@ -861,9 +983,14 @@ const imageGroupOf = u => { const f = imgFile(u); if(!f) return null; for(const 
 function imageOptions(r, recipes, current){
   const g = imageGroupOf(current) || recipeImageGroup(r);
   const used = new Set(Object.entries(recipeImages(recipes || [])).filter(([id]) => id !== r.id).map(([, u]) => imgFile(u)));
-  const mine = RECIPE_IMAGES[g] || [], near = Object.entries(RECIPE_IMAGES).filter(([k]) => k !== g).flatMap(([, l]) => l);
-  const cur = imgFile(current);
-  const order = [...mine.filter(f => f !== cur && !used.has(f)), ...mine.filter(f => f !== cur && used.has(f)), ...near.filter(f => f !== cur)];
+  // לפי הסיכוי: הקבוצה של המנה, אחר כך החלבון מהמצרכים, קבוצות קרובות, ובסוף כל השאר
+  const fromIng = [...new Set((r.ingredients || []).map(x => firstMatch(String(x), ING_IMG)).filter(Boolean))];
+  const groups = [...new Set([g, ...fromIng, ...(IMG_NEAR[g] || []), ...Object.keys(RECIPE_IMAGES)])];
+  const cur = imgFile(current), seen = new Set([cur]), order = [];
+  for(const k of groups){
+    const l = RECIPE_IMAGES[k] || [];
+    for(const f of [...l.filter(f => !used.has(f)), ...l.filter(f => used.has(f))]) if(!seen.has(f)){ seen.add(f); order.push(f); }
+  }
   return [current, ...order.map(imgUrl)].filter(Boolean);
 }
 const GROUP_EMOJI = {pizza: '🍕', salmon: '🍣', fish: '🐟', shrimp: '🦐', chicken: '🍗', meatball: '🧆', beef: '🥩', burger: '🍔', lamb: '🍖',
@@ -1189,7 +1316,7 @@ const ACTIVITIES = {
 const CAL_DEFAULTS = {height: 168, weight: 87, goal: 2000};
 function mergeCaloriesFile(a, b, now){
   const out = {v: 1};
-  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings', 'favs']) out[k] = mergeById(a?.[k], b?.[k], now);
+  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings', 'favs', 'sleep']) out[k] = mergeById(a?.[k], b?.[k], now);
   return out;
 }
 const live = l => (l || []).filter(x => !x.deleted);
@@ -2101,7 +2228,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
