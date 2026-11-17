@@ -646,6 +646,7 @@
   </div>
   <div id="h-fit" hidden>
     <div class="kc-dash" id="fit-sum"></div>
+    <div id="fit-hc"></div>
     <div class="sec"><h2 class="kc-h">🏃 אימונים <span id="kc-act-sum"></span><button class="btn" type="button" id="kc-act-add">+ אימון</button></h2><div id="kc-acts" class="kc-list"></div></div>
     <div class="sec"><h2>היסטוריית אימונים</h2><div id="fit-hist"></div></div>
   </div>
@@ -1772,6 +1773,7 @@ $('rc-list').onclick = e => { if(longPressed){ longPressed = false; return; } co
 let longPressed = false, lpTimer = null;
 function onLongPress(root, sel, getId, menu){
   root.addEventListener('pointerdown', e => {
+    longPressed = false;   // לחיצה חדשה: מה שנשאר מלחיצה ארוכה קודמת לא בולע אותה
     const el = e.target.closest(sel); if(!el) return;
     clearTimeout(lpTimer);
     lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? recipeMenu(r) : openImagePicker(r)); }, 550);
@@ -1841,7 +1843,7 @@ function renderRecipe(){
   $('r-title').textContent = r.title;
   const ing = (r.ingredients || []).map(x => ל.scaleLine(x, rcScale)), steps = r.steps || [];
   $('r-body').innerHTML = `
-    <div class="rc-hero" data-img="${esc(r.id)}"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}<button type="button" class="img-btn" id="r-img">🖼️ החלפת תמונה</button></div>
+    <div class="rc-hero" data-img="${esc(r.id)}"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}</div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
     ${ing.length ? `<div class="rc-scale"><span class="lbl">כמות</span><div class="opts" id="r-scale">${[[.5, 'חצי'], [1, 'רגיל'], [2, 'פי 2']].map(([f, n]) => `<button type="button" data-f="${f}" class="${rcScale === f ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
     ${ing.length ? `<div class="rc-sec"><h3>מצרכים${rcScale !== 1 ? ` <span class="note" style="margin:0">(${rcScale === 2 ? 'פי 2' : 'חצי'})</span>` : ''} <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
@@ -1867,8 +1869,7 @@ function renderRecipe(){
   });
   $('r-body').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
   if($('r-shop')) $('r-shop').onclick = () => recipeToShop(r);
-  $('r-img').onclick = e => { e.stopPropagation(); openImagePicker(r); };
-  $('r-body').querySelector('.rc-hero').onclick = () => { if(longPressed){ longPressed = false; return; } openImagePicker(r); };   // נגיעה בתמונה: גלריה
+  $('r-body').querySelector('.rc-hero').onclick = () => { longPressed = false; };   // לחיצה ארוכה על התמונה: גלריה (onLongPress)
   if($('r-scale')) $('r-scale').onclick = e => { const b = e.target.closest('[data-f]'); if(b){ rcScale = +b.dataset.f; renderRecipe(); } };
   $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(Object.assign({}, r, {ingredients: ing}), picUrl(r))); if(!window.open(url, '_blank')) location.href = url; };
   if($('r-cook')) $('r-cook').onclick = () => openCooking(r);
@@ -2183,7 +2184,7 @@ function renderKcal(){
   $('kc-acts').innerHTML = acts.length ? acts.map(a => { const d = ל.ACTIVITIES[a.type] || ל.ACTIVITIES.other;
     return `<button type="button" class="kc-row" data-a="${esc(a.id)}"><span>${d.emoji}</span><span class="n">${esc(a.name || d.name)}<small>${esc(actText(a))}${a.manual ? ' · תוקן ביד' : ''}</small></span><span class="k burn">${kNum(a.kcal)}</span></button>`; }).join('')
     : `<div class="empty">${kcDate === today() ? 'עוד לא נוסף אימון היום' : 'אין אימונים ביום הזה'}</div>`;
-  if(hTab === 'fit') renderFit();
+  if(hTab === 'fit') renderFitAll();
 }
 /** כושר: סיכום של 7 ו-30 ימים, והיסטוריית האימונים לפי ימים. */
 function renderFit(){
@@ -2199,6 +2200,7 @@ function renderFit(){
       return `<button type="button" class="kc-row" data-a="${esc(a.id)}"><span>${t.emoji}</span><span class="n">${esc(a.name || t.name)}<small>${esc(actText(a))}</small></span><span class="k burn">${kNum(a.kcal)}</span></button>`; }).join('')}</div></div>`).join('')
     : '<div class="empty">עוד אין אימונים. "+ אימון" מוסיף</div>';
 }
+function renderFitAll(){ renderFit(); renderHealthBox(); }
 $('fit-hist').onclick = e => { const b = e.target.closest('[data-a]'); if(b) openKAct(live(KF().acts).find(x => x.id === b.dataset.a)); };
 
 /* ---------- שעות שינה: מהטלפון (מתי המסך כבה בלילה ומתי נפתח בבוקר) ---------- */
@@ -2223,27 +2225,108 @@ async function sleepSync(){
   }catch(e){ sleepState = 'err'; }
 }
 async function renderSleep(){
-  await sleepSync();
+  await healthSync();
+  if(hcState === 'ok') sleepState = 'health'; else await sleepSync();
   const nights = live(KF().sleep).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30), last7 = nights.filter(n => n.date >= ל.addDays(today(), -7));
   // ממוצע של שעה בלילה: מודדים מהצהריים, כדי ש-23:30 ו-00:30 ימוצעו ל-00:00
   const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
     return `${String((Math.floor(a / 60) + 12) % 24).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`; };
   const note = {web: 'שעות השינה נמדדות באפליקציית האנדרואיד: השעה האחרונה בלילה שהטלפון היה בשימוש, והשעה הראשונה בבוקר.',
-    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.'}[sleepState];
+    old: 'צריך לעדכן את האפליקציה לגרסה 1.3 כדי למדוד שעות שינה.', err: 'לא הצלחתי לקרוא את נתוני השימוש מהטלפון.', health: '✓ השינה מגיעה מ-Samsung Health (מהשעון או מהטלפון).'}[sleepState];
   $('h-sleep').innerHTML = `
-    ${sleepState === 'perm' ? `<div class="card" style="margin-top:12px"><b>צריך אישור אחד</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי הטלפון היה בשימוש, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". הנתונים נשארים בטלפון ובמאגר שלך בלבד.</div>
+    ${hcState === 'perm' ? `<div class="card" style="margin-top:12px"><b>🔗 Samsung Health</b><div class="note" style="margin:6px 0 10px">הכי מדויק: השינה מ-Samsung Health.</div>
+      <button class="btn primary" type="button" id="sl-hc" style="width:100%">חיבור ל-Samsung Health</button></div>` : ''}
+    ${sleepState === 'perm' && hcState !== 'perm' ? `<div class="card" style="margin-top:12px"><b>צריך אישור אחד</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי הטלפון היה בשימוש, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". הנתונים נשארים בטלפון ובמאגר שלך בלבד.</div>
       <button class="btn primary" type="button" id="sl-perm" style="width:100%">פתיחת ההגדרה</button></div>` : note ? `<div class="card note" style="margin-top:12px">${esc(note)}</div>` : ''}
     ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
       <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span></div>` : ''}
     <div class="sec"><h2 class="bl-h">לילות <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></h2>
     ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
       return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
-        <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : ''}</div>
+        <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : n.src === 'health' ? ' · Samsung Health' : ''}</div>
         <div class="sl-bar"><i style="right:${Math.max(0, Math.min(100, x0 * 100)).toFixed(1)}%;width:${Math.min(100, n.mins / (14 * 60) * 100).toFixed(1)}%"></i></div></button>`; }).join('')
       : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>`;
+  if($('sl-hc')) $('sl-hc').onclick = healthConnect;
   if($('sl-perm')) $('sl-perm').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
   $('sl-add').onclick = () => editSleep(null);
 }
+/* ---------- Samsung Health (דרך Health Connect של גוגל): שינה, אימונים, צעדים, משקל ---------- */
+const NHealth = NATIVE ? window.Capacitor?.Plugins?.Health : null;
+const HC_READ = ['steps', 'sleep', 'workouts', 'weight'];
+let hcAt = 0, hcState = '';   // off: לא זמין · perm: צריך אישור · ok: מחובר
+async function healthStatus(){
+  if(!NHealth) return hcState = 'off';
+  try{ const a = await NHealth.isAvailable(); if(!a.available) return hcState = 'off'; }catch(e){ return hcState = 'off'; }
+  try{ const st = await NHealth.checkAuthorization({read: HC_READ}); hcState = (st.readAuthorized || []).length ? 'ok' : 'perm'; }catch(e){ hcState = 'perm'; }
+  return hcState;
+}
+async function healthConnect(){
+  try{ await NHealth.requestAuthorization({read: HC_READ}); }catch(e){ return toast('Health Connect: ' + (e.message || e), {err: true}); }
+  hcAt = 0; await healthSync(true); renderKcal();
+  toast(hcState === 'ok' ? '✓ מחובר ל-Samsung Health' : 'לא אושר. אפשר לנסות שוב', {err: hcState !== 'ok'});
+}
+const HC_TYPES = {cycling: 'bike', biking: 'bike', walking: 'walk', hiking: 'walk', running: 'run', strengthTraining: 'strength', functionalStrengthTraining: 'strength', traditionalStrengthTraining: 'strength', weightlifting: 'strength'};
+const HC_NAMES = {yoga: 'יוגה', pilates: 'פילאטיס', soccer: 'כדורגל', basketball: 'כדורסל', tennis: 'טניס', elliptical: 'אליפטיקל', rowing: 'חתירה', dance: 'ריקוד', boxing: 'אגרוף', crossTraining: 'קרוספיט', stairClimbing: 'מדרגות', jumpRope: 'קפיצה בחבל', martialArts: 'אומנויות לחימה', hiit: 'HIIT'};
+/** מושך מ-Samsung Health את 14 הימים האחרונים. שינה: גוברת על ההערכה מהמסך. אימונים ומשקל: נכנסים פעם אחת. */
+async function healthSync(force){
+  if(!NHealth || (!force && Date.now() - hcAt < 10 * 6e4)) return;
+  if(await healthStatus() !== 'ok') return;
+  hcAt = Date.now();
+  const from = new Date(Date.now() - 14 * 864e5).toISOString(), to = new Date().toISOString(), now = nowIso();
+  try{   // שינה: מקבצים לפי לילה (מה שמתחיל בין 18:00 ל-10:00)
+    const r = await NHealth.readSamples({dataType: 'sleep', startDate: from, endDate: to, limit: 500}), nights = {};
+    for(const x of r.samples || []){
+      const a = Date.parse(x.startDate), b = Date.parse(x.endDate), h = +ל.localTime(a).slice(0, 2);
+      if(!(b > a) || (h >= 10 && h < 18)) continue;
+      const date = ל.localDate(a - 12 * 36e5), n = nights[date] || (nights[date] = {date, sleep: a, wake: b, mins: 0});
+      n.sleep = Math.min(n.sleep, a); n.wake = Math.max(n.wake, b);
+      if(x.sleepState !== 'awake' && x.sleepState !== 'inBed') n.mins += Math.round(+x.value || (b - a) / 6e4);
+    }
+    const have = new Map((KF().sleep || []).map(x => [x.date, x]));
+    const recs = Object.values(nights).filter(n => n.mins > 60).map(n => Object.assign(n, {mins: Math.min(n.mins, Math.round((n.wake - n.sleep) / 6e4))}))
+      .filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && (o.src !== 'health' || o.sleep !== n.sleep || o.wake !== n.wake || o.mins !== n.mins)); })
+      .map(n => Object.assign({id: 'sl' + n.date, wakeups: 0, src: 'health', updatedAt: now, deleted: false}, n));
+    if(recs.length) saveK('sleep', recs);
+  }catch(e){}
+  try{   // אימונים
+    const r = await NHealth.queryWorkouts({startDate: from, endDate: to, limit: 100}), ids = new Set((KF().acts || []).map(a => a.id)), recs = [];
+    for(const w of r.workouts || []){
+      const id = 'hc-' + (w.platformId || w.startDate); if(ids.has(id)) continue;
+      const wt = String(w.workoutType || ''), type = HC_TYPES[wt] || (wt.startsWith('swim') ? 'swim' : 'other'), date = ל.localDate(Date.parse(w.startDate));
+      const minutes = Math.max(1, Math.round((+w.duration || 0) / 60)), def = ל.ACTIVITIES[type];
+      const a = {id, date, type, minutes, level: 1, src: 'samsung', updatedAt: now, deleted: false};
+      if(def.by === 'km') a.km = w.totalDistance ? Math.round(w.totalDistance / 100) / 10 : Math.round(minutes / 60 * def.levels[1][1] * 10) / 10;
+      if(type === 'other') a.name = HC_NAMES[wt] || wt;
+      a.kcal = w.totalEnergyBurned ? Math.round(w.totalEnergyBurned) : ל.activityKcal(a, ל.weightOn(KF(), date)); a.manual = !!w.totalEnergyBurned;
+      recs.push(a);
+    }
+    if(recs.length){ saveK('acts', recs); toast(`🏃 ${recs.length === 1 ? 'אימון אחד נוסף' : recs.length + ' אימונים נוספו'} מ-Samsung Health`); }
+  }catch(e){}
+  try{   // משקל: המדידה האחרונה, אם אין מדידה באותו יום
+    const r = await NHealth.readSamples({dataType: 'weight', startDate: from, endDate: to, limit: 50});
+    const last = (r.samples || []).sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+    if(last){ const date = ל.localDate(Date.parse(last.startDate)); if(!live(KF().weights).some(w => w.date === date)) saveK('weights', {id: 'w' + date, date, kg: Math.round(+last.value * 10) / 10, src: 'samsung', updatedAt: now, deleted: false}); }
+  }catch(e){}
+  try{   // צעדים: לכל יום בשבוע האחרון (רק להצגה)
+    const r = await NHealth.queryAggregated({dataType: 'steps', startDate: new Date(ל.at(ל.addDays(today(), -6), '00:00')).toISOString(), endDate: to, bucket: 'day', aggregation: 'sum'});
+    const st = {}; for(const x of r.samples || []) st[ל.localDate(Date.parse(x.startDate) + 36e5)] = Math.round(+x.value || 0);
+    store('משימות.צעדים', JSON.stringify(st));
+  }catch(e){}
+}
+/** בכושר: חיבור ל-Samsung Health, או צעדים של השבוע. */
+async function renderHealthBox(){
+  const box = $('fit-hc'); if(!box) return;
+  if(!NHealth){ box.innerHTML = ''; return; }
+  await healthSync();
+  if(hcState === 'off'){ box.innerHTML = '<div class="card note" style="margin-top:12px">כדי לקבל נתונים מ-Samsung Health צריך את Health Connect של גוגל (מובנה באנדרואיד 14 ומעלה).</div>'; return; }
+  if(hcState !== 'ok'){ box.innerHTML = `<div class="card" style="margin-top:12px"><b>🔗 Samsung Health</b><div class="note" style="margin:6px 0 10px">אימונים, צעדים, שינה ומשקל יגיעו לבד מ-Samsung Health.</div>
+    <button class="btn primary" type="button" id="hc-connect" style="width:100%">חיבור</button></div>`; $('hc-connect').onclick = healthConnect; return; }
+  const st = storeJson('משימות.צעדים', {}), days = Array.from({length: 7}, (_, i) => ל.addDays(today(), i - 6)), max = Math.max(1, ...days.map(d => st[d] || 0));
+  box.innerHTML = `<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>👣 צעדים היום</b><b style="font-size:24px;color:var(--accent)">${kNum(st[today()] || 0)}</b></div>
+    <div class="bars" style="margin-top:8px">${days.map(d => `<i style="height:${Math.max(4, Math.round((st[d] || 0) / max * 60))}px" title="${esc(kDayLabel(d))}: ${kNum(st[d] || 0)}"></i>`).join('')}</div>
+    <div class="note" style="margin:6px 0 0">✓ מחובר ל-Samsung Health · אימונים, שינה ומשקל מתעדכנים לבד</div></div>`;
+}
+
 /** תיקון ידני של לילה: מתי נרדמת ומתי קמת. */
 async function editSleep(n){
   const d0 = n ? n.date : ל.addDays(today(), -1);
@@ -2262,6 +2345,7 @@ $('h-sleep').addEventListener('click', e => { const b = e.target.closest('[data-
     ['🗑 מחיקה', () => { saveK('sleep', Object.assign({}, n, {deleted: true, manual: true, updatedAt: nowIso()})); renderSleep(); }]]); });
 const qtyText = e => e.unit === 'גרם' ? `${kNum(e.qty)} גרם` : `${+e.qty === 0.5 ? 'חצי' : String(+e.qty).replace(/\.5$/, '½').replace(/^0½$/, '½')} ${e.unit}`;
 function actText(a){
+  if(a.src === 'samsung') return `${a.km ? a.km + ' ק״מ · ' : ''}${a.minutes} דקות · Samsung Health`;
   const d = ל.ACTIVITIES[a.type] || ל.ACTIVITIES.other, lv = d.levels[+a.level || 0];
   return (d.by === 'km' ? `${a.km} ק״מ · ` : `${a.minutes} דקות · `) + lv[0].replace(/\s*\(.*\)/, '') + (d.by === 'km' ? ` · ${ל.activityMinutes(a)} דקות` : '');
 }
@@ -5167,6 +5251,8 @@ function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dail
 function localInit(){
   if(!NATIVE) return;
   dailySoon();
+  setTimeout(() => healthSync(), 4000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') healthSync(); });
   if(!LOCAL) return;
   backupDaily(); phoneCalendarSync();
   document.addEventListener('visibilitychange', () => {
