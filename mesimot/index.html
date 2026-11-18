@@ -133,6 +133,26 @@
   nav button{flex:0 0 70px;white-space:nowrap;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
              gap:2px;padding:6px 0;font-size:12px;color:var(--muted);min-height:56px;border-radius:14px}
   nav button.on{color:var(--accent);font-weight:600}
+  nav button{position:relative}
+  .nb{position:absolute;top:4px;inset-inline-end:16px;min-width:18px;height:18px;border-radius:9px;background:var(--red,#e5484d);color:#fff;font:600 11px/18px Rubik,sans-serif;font-style:normal;padding:0 4px}
+  .nt-card{background:var(--card);border-radius:20px;padding:16px;margin-top:14px}
+  .nt-card h2{margin:0 0 10px;font-size:18px}
+  .nt-hero{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#000));color:#fff}
+  .nt-hero .note{color:#ffffffcc}
+  .nt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .nt-grid>div{background:#ffffff22;border-radius:14px;padding:10px 12px}
+  .nt-grid b{display:block;font-size:20px}.nt-grid span{font-size:13px;opacity:.9}
+  .nt-day{margin-top:10px}.nt-day b{display:block;font-size:14px;color:var(--muted);margin-bottom:2px}
+  .nt-day div{font-size:15px;padding:2px 0}
+  .nt-log-day{font-size:13px;color:var(--muted);margin:14px 4px 6px;font-weight:600}
+  .wt-big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.wt-big b{font-size:40px}
+  .wt-chg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .wt-chg>div{background:var(--soft);border-radius:14px;padding:8px;text-align:center}.wt-chg b{display:block;font-size:17px}.wt-chg span{font-size:12px;color:var(--muted)}
+  .wt-svg{width:100%;height:150px;margin-top:12px;display:block}
+  .bl-bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:8px}
+  .bl-bars>div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;height:100%;font-size:11px;text-align:center;color:var(--muted);min-width:0}
+  .bl-bars i{display:block;border-radius:4px 4px 0 0}.bl-bars i+i{border-radius:0}
+  .bl-leg{display:flex;gap:12px;font-size:13px;margin-top:8px;flex-wrap:wrap}.bl-leg span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-inline-end:4px}
 
   /* מסך משימה */
   .page{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:8}
@@ -680,7 +700,7 @@
 
 <main class="screen" id="scr-kcal" hidden>
   <div class="kc-top"><h1 class="hello">בריאות</h1><button class="icon-btn" id="kc-set" type="button" aria-label="הגדרות קלוריות"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
-  <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="sleep">😴 שעות שינה</button></div>
+  <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="sleep">😴 שעות שינה</button><button type="button" data-h="weight">⚖️ משקל</button></div>
   <div class="kc-date" id="kc-date"><button type="button" id="kc-prev" aria-label="יום קודם">‹</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-next" aria-label="יום הבא">›</button></div>
   <div id="h-kcal">
     <div class="kc-dash" id="kc-dash"></div>
@@ -695,6 +715,7 @@
     <div class="sec"><h2>היסטוריית אימונים</h2><div id="fit-hist"></div></div>
   </div>
   <div id="h-sleep" hidden></div>
+  <div id="h-weight" hidden></div>
 </main>
 <main class="screen" id="scr-more" hidden>
   <h1 class="hello">עוד</h1>
@@ -870,12 +891,20 @@
   <div class="row" id="td-add-row" style="margin-top:12px"><input type="text" id="td-new" placeholder="משימה חדשה" aria-label="משימה חדשה"><button class="btn primary" type="button" id="td-add" style="flex:none">הוספה</button></div>
   <div id="td-list" class="td-list"></div>
 </main>
+<main class="screen" id="scr-notif" hidden>
+  <h1 class="hello">התראות</h1>
+  <div id="nt-week"></div>
+  <div id="nt-ahead"></div>
+  <div class="sec"><h2>⏰ בקרוב</h2><div id="nt-soon" class="more-list"></div></div>
+  <div class="sec"><h2>📬 נשלחו</h2><div id="nt-log"></div></div>
+</main>
 <main class="screen" id="scr-bills" hidden>
   <h1 class="hello">חשבונות</h1>
   <div id="bl-bal" class="bl-bal"></div>
   <div class="sec"><h2 class="bl-h">חובות פתוחים <button class="txt-btn" type="button" id="bl-led-add">＋ חוב</button></h2><div id="bl-led" class="more-list"></div></div>
   <div class="btns" id="bl-tenant"><button class="btn primary" type="button" id="bl-new">＋ חשבון לדייר</button><button class="btn" type="button" id="bl-imp">📥 הודעה שכבר נשלחה</button></div>
   <div class="sec" id="bl-hist-sec"><h2>חשבונות שנשלחו לדייר</h2><div id="bl-hist" class="more-list"></div></div>
+  <div class="sec" id="bl-chart-sec" hidden><h2>📈 חשבונות לפי חודש</h2><div id="bl-chart" class="card"></div></div>
   <button class="txt-btn" type="button" id="bl-tenant-on" style="margin-top:16px">🏠 חלוקת חשבונות עם דייר (חשמל, מים, ארנונה)</button>
 </main>
 <main class="screen" id="scr-prefs" hidden>
@@ -927,6 +956,7 @@
 <button id="fab" aria-label="משימה חדשה"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav id="nav">
   <button data-scr="today" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>היום</button>
+  <button data-scr="notif"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><i class="nb" id="nb-notif" hidden></i>התראות</button>
   <button data-scr="todo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>משימות</button>
   <button data-scr="shop"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>קניות</button>
   <button data-scr="recipes"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.2 1.2-3.3 3.6-3.3 6.5V13H17"/></svg>מתכונים</button>
@@ -1683,8 +1713,8 @@ function show(s){
   if(s === 'kcal' && screen !== 'kcal'){ hTab = 'kcal'; kcDate = today(); kcMeal = mealNow(); }
   if(s === 'prefs' && screen !== 'prefs') pfPage = null;
   screen = s;
-  for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills'].includes(s);
+  for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills', 'notif'].includes(s);
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   if(s === 'prefs') renderSettings();
@@ -1695,6 +1725,7 @@ function show(s){
 }
 function renderAll(){
   if(typeof applyNav === 'function') applyNav();
+  try{ notifBadge(); }catch(e){}
   if(screen === 'today') renderToday();
   else if(screen === 'calendar'){ renderCalendar(); renderBirthdays(); }
   else if(screen === 'shop') renderShop();
@@ -1705,6 +1736,7 @@ function renderAll(){
   else if(screen === 'prefs') renderPrefs();
   else if(screen === 'todo') renderTodo();
   else if(screen === 'bills') renderBills();
+  else if(screen === 'notif') renderNotif();
   else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'docs') renderDocs();
   else renderHistory();
@@ -2248,9 +2280,10 @@ var hTab = 'kcal';
 $('h-tabs').onclick = e => { const b = e.target.closest('[data-h]'); if(b){ hTab = b.dataset.h; renderKcal(); scrollTo(0, 0); } };
 function renderKcal(){
   document.querySelectorAll('#h-tabs button').forEach(b => b.classList.toggle('on', b.dataset.h === hTab));
-  for(const k of ['kcal', 'fit', 'sleep']) $('h-' + k).hidden = k !== hTab;
-  $('kc-date').hidden = hTab === 'sleep'; $('kc-set').hidden = hTab !== 'kcal';
+  for(const k of ['kcal', 'fit', 'sleep', 'weight']) $('h-' + k).hidden = k !== hTab;
+  $('kc-date').hidden = hTab === 'sleep' || hTab === 'weight'; $('kc-set').hidden = hTab !== 'kcal';
   if(hTab === 'sleep') return renderSleep();
+  if(hTab === 'weight') return renderWeight();
   loadFoodDb();
   if(!kcDate) kcDate = today();
   const x = ל.calDay(KF(), kcDate);
@@ -2505,6 +2538,58 @@ async function editProtGoal(){
   saveK('settings', Object.assign({}, st, {id: 'settings', protGoal: Math.round(+v), updatedAt: nowIso()}));
 }
 const sleepGoal = () => +ל.calSettings(KF()).sleepGoal || 450;
+/* ---------- משקל: גרף, שינוי לאורך זמן, יעד, ותזכורת אם עבר שבוע בלי שקילה ---------- */
+const weights = () => live(KF().weights).sort((a, b) => a.date.localeCompare(b.date) || (a.updatedAt || '').localeCompare(b.updatedAt || ''));
+const kg1 = n => (Math.round(n * 10) / 10).toLocaleString('he-IL', {maximumFractionDigits: 1});
+function renderWeight(){
+  const ws = weights(), last = ws[ws.length - 1], goal = +ל.calSettings(KF()).weightGoal || 0;
+  const before = d => ws.filter(w => w.date <= ל.addDays(today(), -d)).pop();
+  const chg = d => { const w = before(d); if(!w || !last || w === last) return '–'; const x = last.kg - w.kg; return (x > 0 ? '+' : x < 0 ? '−' : '') + kg1(Math.abs(x)); };
+  const ago = last ? ל.diffDays(today(), last.date) : null;
+  // גרף: 90 הימים האחרונים
+  const pts = ws.filter(w => w.date >= ל.addDays(today(), -90));
+  let svg = '';
+  if(pts.length >= 2){
+    const vals = pts.map(w => +w.kg).concat(goal ? [goal] : []), lo = Math.min(...vals) - .5, hi = Math.max(...vals) + .5, d0 = pts[0].date, span = Math.max(1, ל.diffDays(today(), d0));
+    const X = d => (ל.diffDays(d, d0) / span * 290 + 5).toFixed(1), Y = v => (140 - (v - lo) / (hi - lo) * 130).toFixed(1);
+    svg = `<svg class="wt-svg" viewBox="0 0 300 150" preserveAspectRatio="none" aria-label="גרף משקל">
+      ${goal ? `<line x1="0" x2="300" y1="${Y(goal)}" y2="${Y(goal)}" stroke="var(--green,#30a46c)" stroke-dasharray="5 4" stroke-width="1.5"/>` : ''}
+      <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(w => X(w.date) + ',' + Y(+w.kg)).join(' ')}"/>
+      ${pts.map(w => `<circle cx="${X(w.date)}" cy="${Y(+w.kg)}" r="3" fill="var(--accent)"/>`).join('')}</svg>
+      <div class="note" style="display:flex;justify-content:space-between;margin:2px 0 0"><span>${esc(ל.shortDate(d0))}</span>${goal ? '<span>- - יעד</span>' : ''}<span>היום</span></div>`;
+  }
+  $('h-weight').innerHTML = `
+    ${ago == null || ago >= 7 ? `<div class="card" style="margin-top:12px"><b>⏰ ${ago == null ? 'עוד אין שקילה' : `עברו ${ago} ימים מהשקילה האחרונה`}</b><div class="note" style="margin:4px 0 0">אם עובר שבוע בלי שקילה, מגיעה תזכורת בבוקר.</div></div>` : ''}
+    <div class="card" style="margin-top:12px">
+      <div class="wt-big"><b>${last ? kg1(+last.kg) : '–'}</b><span>ק״ג${last ? ` · ${esc(kDayLabel(last.date))}` : ''}</span>
+        ${goal && last ? `<span class="note" style="margin:0">🎯 יעד ${kg1(goal)} · ${Math.abs(last.kg - goal) < .05 ? 'הגעת! 🎉' : `עוד ${kg1(Math.abs(last.kg - goal))} ק״ג`}</span>` : ''}</div>
+      <div class="wt-chg"><div><b>${chg(7)}</b><span>שבוע</span></div><div><b>${chg(30)}</b><span>חודש</span></div><div><b>${chg(90)}</b><span>3 חודשים</span></div></div>
+      ${svg || '<div class="note" style="margin-top:10px">אחרי שתי שקילות יופיע כאן גרף.</div>'}
+    </div>
+    <div class="btns"><button class="btn primary" type="button" id="wt-add">⚖️ ＋ שקילה</button><button class="btn" type="button" id="wt-goal">🎯 ${goal ? 'יעד: ' + kg1(goal) : 'יעד משקל'}</button></div>
+    <div class="sec"><h2>שקילות</h2>${ws.length ? `<div class="more-list">${ws.slice().reverse().slice(0, 40).map((w, i, a) => { const prev = a[i + 1], d = prev ? w.kg - prev.kg : 0;
+      return `<button type="button" class="more-row" data-w="${esc(w.id)}"><span class="i">⚖️</span><span class="b"><span class="t">${kg1(+w.kg)} ק״ג</span><span class="s">${esc(kDayLabel(w.date))}${w.src === 'samsung' ? ' · Samsung Health' : ''}</span></span><span class="side">${prev && Math.abs(d) >= .05 ? (d > 0 ? '▲ ' : '▼ ') + kg1(Math.abs(d)) : ''}</span></button>`; }).join('')}</div>` : '<div class="empty">עוד אין שקילות</div>'}</div>`;
+  $('wt-add').onclick = () => addWeight();
+  $('wt-goal').onclick = () => editWeightGoal().then(renderKcal);
+}
+async function addWeight(date, cur){
+  date = date || today();
+  const [v] = await ask(date === today() ? 'שקילה היום' : 'שקילה ' + kDayLabel(date), [{label: 'משקל בק״ג', value: cur ?? ל.weightOn(KF(), date), num: true, req: true}]) || [];
+  if(v == null) return;
+  if(!(+v > 30 && +v < 300)) return toast('משקל לא תקין', {err: true});
+  saveK('weights', {id: 'w' + date, date, kg: +(+v).toFixed(1), updatedAt: nowIso(), deleted: false});
+  toast(`✓ נרשם: ${kg1(+v)} ק״ג`); if(screen === 'kcal') renderKcal();
+}
+async function editWeightGoal(){
+  const st = ל.calSettings(KF());
+  const [v] = await ask('יעד משקל', [{label: 'ק״ג (ריק = בלי יעד)', value: st.weightGoal || '', num: true}]) || [];
+  if(v == null) return;
+  if(v !== '' && !(+v > 30 && +v < 300)) return toast('משקל לא תקין', {err: true});
+  saveK('settings', Object.assign({}, st, {id: 'settings', weightGoal: v === '' ? null : +(+v).toFixed(1), updatedAt: nowIso()}));
+}
+$('h-weight').addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(!b) return; const w = live(KF().weights).find(x => x.id === b.dataset.w); if(!w) return;
+  sheet(`${kg1(+w.kg)} ק״ג · ${kDayLabel(w.date)}`, [['✏️ תיקון', () => addWeight(w.date, w.kg)],
+    ['🗑 מחיקה', async () => { if(await sure('למחוק את השקילה?')){ saveK('weights', Object.assign({}, w, {deleted: true, updatedAt: nowIso()})); renderKcal(); } }]]); });
 async function editSleepGoal(){
   const st = ל.calSettings(KF()), g = sleepGoal();
   const [v] = await ask('יעד שינה בלילה', [{label: 'שעות (למשל 7.5)', value: Math.round(g / 6) / 10, num: true, req: true}]) || [];
@@ -2695,6 +2780,7 @@ function exportMenu(){
     ['💊 היסטוריית תרופות (אקסל)', exportMeds],
     ['✅ משימות שבוצעו (אקסל)', exportTasks],
     ['📖 ספר מתכונים (PDF)', exportRecipes],
+    ['🩺 דוח לרופא (PDF): תרופות, שינה ומשקל בחודש האחרון', exportDoctor],
   ], 'הקובץ נשמר בהורדות/ניהול שיגרה, ואפשר לשלוח אותו (דרייב, מייל, וואטסאפ).');
 }
 const u8To64 = u => { let x = ''; for(let i = 0; i < u.length; i += 0x8000) x += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(x); };
@@ -2779,10 +2865,40 @@ function recipesHtml(){
 }
 async function exportRecipes(){
   if(!recipeList().length) return toast('אין עדיין מתכונים');
-  const html = recipesHtml(); window.__lastExport = {name: 'ספר מתכונים', html};
+  return printDoc(recipesHtml(), 'ספר מתכונים');
+}
+async function exportDoctor(){ return printDoc(doctorHtml(), 'דוח לרופא'); }
+/** דוח לרופא: 30 הימים האחרונים. תרופות (כמה פעמים, ובתרופה יומית כמה ימים נלקחה), שינה, משקל. */
+function doctorHtml(){
+  const end = today(), from = ל.addDays(end, -29), inR = d => d >= from && d <= end, f = KF() || {};
+  const meds = safeList(() => window.medsExport?.()).filter(r => inR(r.date)), list = safeList(() => window.medsList?.());
+  const names = [...new Set([...list.map(m => m.name), ...meds.map(r => r.name)])].filter(n => meds.some(r => r.name === n) || list.find(m => m.name === n)?.daily);
+  const medRows = names.map(n => { const rs = meds.filter(r => r.name === n), days = new Set(rs.map(r => r.date)).size, m = list.find(x => x.name === n);
+    return `<tr><td>${esc(n)}</td><td>${m?.daily ? 'יומית' : 'לפי הצורך'}</td><td>${rs.length}</td><td>${days}${m?.daily ? ` / 30 (${Math.round(days / 30 * 100)}%)` : ''}</td><td>${rs[0] ? esc(ל.shortDate(rs[0].date)) : '–'}</td></tr>`; }).join('');
+  const sl = live(f.sleep).filter(n => inR(n.date)).sort((a, b) => a.date.localeCompare(b.date));
+  const avg = l => l.length ? l.reduce((x, y) => x + y, 0) / l.length : 0;
+  const ws = live(f.weights).filter(w => w.date >= ל.addDays(end, -89)).sort((a, b) => a.date.localeCompare(b.date));
+  const naps = live(f.naps).filter(n => inR(n.date));
+  return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>דוח לרופא</title><style>
+    body{font-family:Rubik,Arial,sans-serif;color:#1d1d35;margin:0;padding:24px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    h1{color:#5B5BF7;font-size:26px;margin:0}.sub{color:#777;margin:2px 0 16px}h2{font-size:18px;color:#5B5BF7;margin:22px 0 8px;border-bottom:2px solid #5B5BF7;padding-bottom:4px}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:right}th{background:#eef}
+    .k{display:flex;gap:12px;flex-wrap:wrap}.k div{background:#f3f3fb;border-radius:10px;padding:8px 12px}.k b{display:block;font-size:18px}
+    tr{page-break-inside:avoid}
+  </style></head><body><h1>🩺 דוח לרופא</h1><p class="sub">${esc(ל.shortDate(from))} – ${esc(ל.shortDate(end))}${D.config.userName ? ' · ' + esc(D.config.userName) : ''}</p>
+  <h2>💊 תרופות</h2>${medRows ? `<table><tr><th>תרופה</th><th>סוג</th><th>פעמים</th><th>ימים שנלקחה</th><th>לאחרונה</th></tr>${medRows}</table>` : '<p>לא נרשמו תרופות בתקופה.</p>'}
+  <h2>😴 שינה</h2>${sl.length ? `<div class="k"><div><b>${durText(avg(sl.map(n => n.mins)))}</b>שעות בממוצע</div><div><b>${durText(Math.min(...sl.map(n => n.mins)))}</b>הלילה הקצר</div><div><b>${durText(Math.max(...sl.map(n => n.mins)))}</b>הלילה הארוך</div><div><b>${sl.length}</b>לילות נמדדו</div>${naps.length ? `<div><b>${naps.length}</b>שנצים</div>` : ''}</div>
+    <table style="margin-top:10px"><tr><th>לילה</th><th>נרדם</th><th>קם</th><th>שעות</th></tr>${sl.map(n => `<tr><td>${esc(ל.shortDate(n.date))}</td><td>${hm(n.sleep)}</td><td>${hm(n.wake)}</td><td>${durText(n.mins)}</td></tr>`).join('')}</table>` : '<p>אין נתוני שינה בתקופה.</p>'}
+  <h2>⚖️ משקל (3 חודשים)</h2>${ws.length ? `<div class="k"><div><b>${kg1(+ws[ws.length - 1].kg)}</b>ק״ג עכשיו</div>${ws.length > 1 ? `<div><b>${(ws[ws.length - 1].kg - ws[0].kg > 0 ? '+' : '') + kg1(ws[ws.length - 1].kg - ws[0].kg)}</b>שינוי מ-${esc(ל.shortDate(ws[0].date))}</div>` : ''}</div>
+    <table style="margin-top:10px"><tr><th>תאריך</th><th>ק״ג</th></tr>${ws.slice().reverse().map(w => `<tr><td>${esc(ל.shortDate(w.date))}</td><td>${kg1(+w.kg)}</td></tr>`).join('')}</table>` : '<p>אין שקילות בתקופה.</p>'}
+  </body></html>`;
+}
+/** הדפסה / שמירה כ-PDF: באפליקציה מסך ההדפסה של אנדרואיד, בדפדפן חלון ההדפסה. */
+async function printDoc(html, name){
+  window.__lastExport = {name, html};
   if(NPhone?.printHtml){
     toast('נפתח מסך ההדפסה. בוחרים "שמירה כ-PDF"', {ms: 6000});
-    try{ await NPhone.printHtml({html, name: `ספר מתכונים ${today()}`}); }catch(e){ toast('לא הצלחתי לפתוח את ההדפסה: ' + (e.message || e), {err: true}); }
+    try{ await NPhone.printHtml({html, name: `${name} ${today()}`}); }catch(e){ toast('לא הצלחתי לפתוח את ההדפסה: ' + (e.message || e), {err: true}); }
     return;
   }
   const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px'; document.body.appendChild(fr);
@@ -5361,6 +5477,9 @@ window.medsExport = () => פעילות().map(r => { const t = תרופה(r.מז�
   return {date: r.תאריך || '', time: r.שעה || '', name: t?.שם || r.תרופה || '', qty: +r.כמות || 1, unit: יחידה_של(r), cat: r.סיווג || ''}; })
   .sort((x, y) => (y.date + y.time).localeCompare(x.date + x.time));
 window.medsLow = () => גלויות().filter(t => מלאי_של(t)?.נמוך).map(t => t.שם);
+// מלאי לכל תרופה (להתראה "נגמרת בעוד שבוע") ורשימת התרופות (לדוח לרופא)
+window.medsStock = () => גלויות().map(t => { const m = מלאי_של(t); return m ? {id: t.id, name: t.שם, left: m.נותר, unit: m.יחידה, days: m.ימים_נותרו, since: m.מאז} : null; }).filter(Boolean);
+window.medsList = () => גלויות().map(t => ({id: t.id, name: t.שם, daily: t.סוג === 'יומית'}));
 window.medsDaily = () => גלויות().filter(t => t.סוג === 'יומית').map(t => ({name: t.שם, taken: !!של_תרופה(t.id).find(r => r.תאריך === תאריך_של(new Date()))}));
 window.medsSync = () => סנכרן();
 setInterval(() => { if(פתוח() && !document.querySelector('dialog[open]')) צייר_הכל(); }, 20000);
@@ -5389,11 +5508,13 @@ async function nativeScheduleNow(){
     .catch(e => toast('השעון המעורר לא נקבע: ' + (e.message || e), {err: true, ms: 8000}));
   store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
-  const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), title: n.title, body: n.message || '', at: n.at,
+  const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), k: 'n:' + n.id, kind: 'task', title: n.title, body: n.message || '', at: n.at,
       channelId: 'reminders', extra: {u: n.click || ''}}))
     .concat(morningNotifs(now))
-    .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), title: t.title, body: t.body || '',
-      at: t.at, channelId: 'meds', extra: {u: '#meds'}})));
+    .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), k: 'm:' + t.id, kind: 'med', title: t.title, body: t.body || '',
+      at: t.at, channelId: 'meds', extra: {u: '#meds'}})))
+    .concat(safeList(() => extraNotifs(now)).map(n => ({id: intId(n.k), k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, channelId: n.kind === 'medstock' ? 'meds' : 'reminders', extra: {u: n.u || '#notif'}})));
+  notifPlan(list);
   const sig = JSON.stringify(list);
   if(sig === store('משימות.מקומי')) return;
   try{
@@ -5408,7 +5529,7 @@ async function nativeScheduleNow(){
 function morningNotifs(now){
   if(!LOCAL) return [];
   let days; try{ days = dailyInfo(); }catch(e){ return []; }
-  return Object.entries(days).slice(0, 2).map(([d, x]) => ({id: intId('morning:' + d), title: x.morning, body: x.lines.slice(0, 8).join('\n') || 'אין משימות להיום 🎉',
+  return Object.entries(days).slice(0, 2).map(([d, x]) => ({id: intId('morning:' + d), k: 'morning:' + d, kind: 'morning', title: x.morning, body: x.lines.slice(0, 8).join('\n') || 'אין משימות להיום 🎉',
     at: ל.at(d, D.config.summaryTime || '07:30'), channelId: 'reminders', extra: {u: '#morning'}})).filter(n => n.at > now + 15e3);
 }
 /** מה קרה כשהאפליקציה הייתה סגורה: טיימרים שנעצרו מההתראה, או פתיחה מהתראת טיימר. */
@@ -5711,6 +5832,125 @@ function dailyInfo(){
   }
   return days;
 }
+
+/* ---------- מסך "התראות": סיכום שבועי, השבוע הקרוב, מה מתוזמן, ומה נשלח ---------- */
+// מה שנקבע בטלפון נשמר ברשימה (מתוכננות). כשהזמן שלו עובר הוא עובר ליומן (נשלחו), 60 יום אחורה.
+const NLOG = 'משימות.התראות-נשלחו', NPLAN = 'משימות.התראות-מתוכננות', NSEEN = 'משימות.התראות-נראה';
+const NICON = {task: '✅', med: '💊', morning: '☀️', weight: '⚖️', medstock: '💊', bill: '💳', week: '📊', calweek: '📅'};
+const safeList = f => { try{ return f() || []; }catch(e){ return []; } };
+function notifLog(){
+  const now = Date.now(), plan = storeJson(NPLAN, []), log = storeJson(NLOG, []);
+  const have = new Set(log.map(x => x.k + '@' + x.at)), add = plan.filter(x => x.at <= now && !have.has(x.k + '@' + x.at));
+  if(!add.length) return log;
+  const out = log.concat(add).sort((a, b) => b.at - a.at).filter(x => x.at > now - 60 * 864e5).slice(0, 400);
+  store(NLOG, JSON.stringify(out)); store(NPLAN, JSON.stringify(plan.filter(x => x.at > now)));
+  return out;
+}
+function notifPlan(list){
+  notifLog();   // מה שכבר עבר נכנס ליומן לפני שמחליפים את הרשימה
+  store(NPLAN, JSON.stringify(list.map(n => ({k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, u: n.extra?.u || ''}))));
+}
+function notifBadge(){
+  const b = $('nb-notif'); if(!b) return;
+  const seen = +store(NSEEN) || 0, n = notifLog().filter(x => x.at > seen).length;
+  b.hidden = !n || screen === 'notif'; b.textContent = n ? (n > 9 ? '9+' : n) : '';
+}
+/** הפעם הבאה של שעה ביום, מתאריך מסוים והלאה (לא בעבר). */
+function nextAt(date, time, now, step){
+  let d = date, at = ל.at(d, time);
+  while(at <= now + 15e3){ d = ל.addDays(d, step || 1); at = ל.at(d, time); }
+  return at;
+}
+function nextDow(dow, time, now){ let d = today(); while(ל.weekday(d) !== dow) d = ל.addDays(d, 1); return nextAt(d, time, now, 7); }
+/** סיכום של 7 ימים שמסתיימים ב-end: משימות, תרופות, שינה, משקל, קלוריות, אימונים. */
+function weekStats(end){
+  end = end || today(); const from = ל.addDays(end, -6), inR = d => d >= from && d <= end, f = KF() || {}, out = [];
+  const done = D.occ.filter(r => r.status === 'done' && !r.deleted && r.doneAt && inR(ל.localDate(ל.toMs(r.doneAt)))).length
+    + todoItems().filter(x => x.done && x.doneAt && inR(ל.localDate(ל.toMs(x.doneAt)))).length;
+  out.push({i: '✅', v: done, t: 'משימות בוצעו'});
+  const meds = safeList(() => window.medsExport?.()).filter(r => inR(r.date)), daily = safeList(() => window.medsList?.()).filter(m => m.daily);
+  if(daily.length){ const days = ל.diffDays(end, from) + 1, got = daily.reduce((n, m) => n + new Set(meds.filter(r => r.name === m.name).map(r => r.date)).size, 0);
+    out.push({i: '💊', v: Math.round(got / (days * daily.length) * 100) + '%', t: 'תרופות יומיות נלקחו'}); }
+  else if(meds.length) out.push({i: '💊', v: meds.length, t: 'פעמים תרופות'});
+  const sl = live(f.sleep).filter(n => inR(n.date));
+  if(sl.length) out.push({i: '😴', v: durText(sl.reduce((x, n) => x + n.mins, 0) / sl.length), t: 'שינה בממוצע'});
+  const ws = live(f.weights).filter(w => w.date <= end).sort((a, b) => a.date.localeCompare(b.date)), wl = ws[ws.length - 1], w0 = ws.filter(w => w.date < from).pop();
+  if(wl && w0 && wl.date >= from){ const x = wl.kg - w0.kg; out.push({i: '⚖️', v: (x > 0 ? '+' : x < 0 ? '−' : '') + kg1(Math.abs(x)), t: 'ק״ג השבוע'}); }
+  else if(wl) out.push({i: '⚖️', v: kg1(+wl.kg), t: 'ק״ג (שקילה אחרונה)'});
+  const kd = ל.calHistory(f, 30).filter(d => inR(d.date) && d.eaten > 0);
+  if(kd.length) out.push({i: '🔥', v: kNum(kd.reduce((x, d) => x + d.eaten, 0) / kd.length), t: 'קלוריות ביום בממוצע'});
+  const acts = live(f.acts).filter(a => inR(a.date)).length;
+  if(acts) out.push({i: '🏃', v: acts, t: acts === 1 ? 'אימון' : 'אימונים'});
+  return out;
+}
+/** השבוע הקרוב: משימות לכל יום וימים מיוחדים. */
+function weekAhead(start){
+  start = start || today(); const out = [];
+  for(let i = 0; i < 7; i++){
+    const d = ל.addDays(start, i), v = ל.buildView(data(), d === today() ? Date.now() : ל.at(d, '06:00'));
+    const items = v.todays.map(x => (x.task.special === 'birthday' ? '🎂 ' : x.task.upkeep ? (x.task.emoji || '🔧') + ' ' : '• ') + ל.displayTitle(x.task));
+    for(const b of safeList(() => ל.birthdaysView(D.tasks, d))) if(b.inDays === 0 && !v.todays.some(x => x.task.id === b.task.id)) items.push(`${b.emoji} ${b.task.person || ''} ${b.label}`.trim());
+    for(const x of todoItems().filter(x => !x.done && !x.removed && x.due === d)) items.push('📝 ' + x.title);
+    out.push({d, items});
+  }
+  return out;
+}
+/** התראות נוספות שנקבעות בטלפון: שקילה, תרופה שנגמרת, תשלומים, סיכום שבועי. */
+function extraNotifs(now){
+  if(!LOCAL) return [];
+  const out = [], t0 = today(), c = D.config, sent = new Set(storeJson(NLOG, []).map(x => x.k));
+  if(c.weighRemind !== false){
+    const ws = weights(), last = ws.length ? ws[ws.length - 1].date : ל.addDays(t0, -7), at = nextAt(ל.addDays(last, 7), '08:00', now);
+    out.push({k: 'weight:' + ל.localDate(at), kind: 'weight', title: '⚖️ הזמן להישקל', body: ws.length ? `השקילה האחרונה הייתה ${kDayLabel(last)}. לוחצים ורושמים` : 'לוחצים ורושמים את המשקל', at, u: '#weight'});
+  }
+  if(c.medWeek !== false){
+    const memo = storeJson('משימות.תרופות-שבוע', {}), keep = {};
+    for(const m of safeList(() => window.medsStock?.())){
+      if(m.days == null || m.left <= 0) continue;
+      const k = 'medweek:' + m.id + ':' + m.since; if(sent.has(k)) continue;
+      let at;
+      if(m.days > 7) at = ל.at(ל.addDays(t0, m.days - 7), '09:00');
+      else at = keep[k] = memo[k] && memo[k] > now - 864e5 ? memo[k] : nextAt(t0, (ל.localTime(now + 2 * 6e4) > c.activeFrom && ל.localTime(now + 2 * 6e4) < c.activeTo) ? ל.localTime(now + 2 * 6e4) : c.activeFrom, now);
+      out.push({k, kind: 'medstock', title: `💊 ${m.name}: ${m.days > 7 ? 'נגמרת בעוד שבוע' : m.days <= 0 ? 'נגמרת היום' : `נגמרת בעוד ${m.days === 1 ? 'יום' : m.days + ' ימים'}`}`,
+        body: 'כדאי לקנות עוד. אחרי הקנייה: תרופות ← 📦 ← "קניתי אריזה"', at, u: '#meds'});
+    }
+    store('משימות.תרופות-שבוע', JSON.stringify(keep));
+  }
+  if(c.billRemind !== false){
+    const tc = TC();
+    for(const l of (tc.ledger || []).filter(l => !l.deleted && !l.settled && l.due))
+      for(const [d, w] of [[ל.addDays(l.due, -1), 'מחר'], [l.due, 'היום']]){ const at = ל.at(d, '10:00');
+        if(at > now + 15e3) out.push({k: 'bill:' + l.id + ':' + d, kind: 'bill', title: l.dir === 'me' ? `💳 ${w}: לשלם · ${l.text}` : `💳 ${w}: ${l.person || 'מישהו'} אמור להחזיר · ${l.text}`, body: 'הפרטים במסך החשבונות', at, u: '#bills'}); }
+    for(const ch of (tc.charges || []).filter(x => !x.deleted && !x.paid && x.date)){
+      const at = nextAt(ל.addDays(ch.date, 7), '10:00', now, 7);
+      out.push({k: 'charge:' + ch.id + ':' + ל.localDate(at), kind: 'bill', title: '⏳ חשבון לדייר עוד לא שולם', body: `${chargeTitle(ch)} · נשלח ${ל.shortDate(ch.date)}`, at, u: '#bills'});
+    }
+  }
+  if(c.weekSum !== false){
+    const sat = nextDow(6, '20:00', now), st = weekStats(ל.localDate(sat));
+    out.push({k: 'week:' + ל.localDate(sat), kind: 'week', title: '📊 סיכום השבוע', body: st.map(x => `${x.i} ${x.v} ${x.t}`).join('\n'), at: sat, u: '#notif'});
+    const sun = nextDow(0, c.summaryTime || '07:30', now) + 5 * 6e4, wk = weekAhead(ל.localDate(sun)), n = wk.reduce((x, d) => x + d.items.length, 0);
+    out.push({k: 'calweek:' + ל.localDate(sun), kind: 'calweek', title: `📅 השבוע שלך · ${n ? (n === 1 ? 'דבר אחד' : n + ' דברים') : 'שבוע פנוי'}`,
+      body: wk.filter(d => d.items.length).map(d => `${dayName(d.d)}: ${d.items.slice(0, 3).join(', ')}${d.items.length > 3 ? ' ועוד' : ''}`).join('\n') || 'אין משימות מתוכננות', at: sun, u: '#notif'});
+  }
+  return out;
+}
+function renderNotif(){
+  const now = Date.now(), log = notifLog(), st = weekStats(), wk = weekAhead();
+  store(NSEEN, String(now)); notifBadge();
+  $('nt-week').innerHTML = `<div class="nt-card nt-hero"><h2>📊 השבוע שלך</h2><div class="note" style="margin:-6px 0 10px">7 הימים האחרונים</div>
+    <div class="nt-grid">${st.map(x => `<div><b>${x.i} ${esc(String(x.v))}</b><span>${esc(x.t)}</span></div>`).join('')}</div></div>`;
+  $('nt-ahead').innerHTML = `<div class="nt-card"><h2>📅 השבוע הקרוב</h2>${wk.filter(d => d.items.length).map(d => `<div class="nt-day"><b>${esc(kDayLabel(d.d) === 'היום' ? 'היום' : dayName(d.d) + ' ' + ל.shortDate(d.d))}</b>${d.items.slice(0, 6).map(x => `<div>${esc(x)}</div>`).join('')}${d.items.length > 6 ? `<div class="note" style="margin:0">ועוד ${d.items.length - 6}</div>` : ''}</div>`).join('') || '<div class="note">שבוע פנוי 🎉</div>'}</div>`;
+  const soon = NATIVE ? storeJson(NPLAN, []).filter(x => x.at > now).sort((a, b) => a.at - b.at)
+    : safeList(() => ל.planNotifications(data(), now)).map(n => ({kind: 'task', title: n.title, at: n.at, u: n.click || ''}));
+  const row = x => `<button type="button" class="more-row" data-u="${esc(x.u || '')}"><span class="i">${NICON[x.kind] || '🔔'}</span><span class="b"><span class="t">${esc(x.title)}</span>${x.body ? `<span class="s">${esc(String(x.body).split('\n')[0])}</span>` : ''}</span><span class="side">${esc(ל.localTime(x.at))}</span></button>`;
+  const when = at => { const d = ל.localDate(at); return kDayLabel(d) === 'היום' || kDayLabel(d) === 'אתמול' || kDayLabel(d) === 'מחר' ? kDayLabel(d) : dayName(d) + ' ' + ל.shortDate(d); };
+  const group = l => { let h = '', last = ''; for(const x of l){ const w = when(x.at); if(w !== last){ h += `<div class="nt-log-day">${esc(w)}</div>`; last = w; } h += row(x); } return h; };
+  $('nt-soon').innerHTML = soon.length ? group(soon.slice(0, 15)) : '<div class="empty">אין התראות מתוזמנות</div>';
+  $('nt-log').innerHTML = log.length ? group(log.slice(0, 100)) : `<div class="empty">${NATIVE ? 'עוד לא נשלחו התראות' : 'כאן נרשם כל מה שנשלח מאפליקציית האנדרואיד'}</div>`;
+}
+$('scr-notif').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if(!b) return; const u = b.dataset.u;
+  if(u === '#notif' || !u) return; if(u.startsWith('#')){ location.hash = u; handleHash(); } });
 var dailyT = null;   // var: נקרא גם מקוד שרץ לפני השורה הזו
 function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
 async function calCleanStuck(){
@@ -5815,12 +6055,22 @@ function renderBills(){
     <div class="bl-row tot"><span>${net >= 0 ? 'בסך הכול חייבים לי' : 'בסך הכול אני חייב'}</span><b>${shekel(Math.abs(net))}</b></div>`;
   const led = (tc.ledger || []).filter(l => !l.deleted && !l.settled);
   $('bl-led').innerHTML = led.length ? led.map(l => `<button type="button" class="more-row" data-l="${esc(l.id)}"><span class="i">${l.dir === 'me' ? '➖' : '➕'}</span>
-      <span class="b"><span class="t" style="display:block">${esc(l.text)}</span><span class="s" style="display:block">${l.person ? esc(l.person) + ' · ' : ''}${l.dir === 'me' ? 'אני חייב' : 'חייבים לי'} · ${esc(ל.shortDate(l.date))}</span></span>
+      <span class="b"><span class="t" style="display:block">${esc(l.text)}</span><span class="s" style="display:block">${l.person ? esc(l.person) + ' · ' : ''}${l.dir === 'me' ? 'אני חייב' : 'חייבים לי'} · ${esc(ל.shortDate(l.date))}${l.due ? ` · ⏰ עד ${esc(ל.shortDate(l.due))}` : ''}</span></span>
       <span class="side">${shekel(l.amount)}</span></button>`).join('') : '<div class="empty">אין חובות פתוחים</div>';
   const ch = (tc.charges || []).filter(c => !c.deleted).sort((x, y) => y.date.localeCompare(x.date));
   $('bl-hist').innerHTML = ch.length ? ch.map(c => `<button type="button" class="more-row" data-c="${esc(c.id)}"><span class="i">${c.paid ? '✅' : '⏳'}</span>
       <span class="b"><span class="t" style="display:block">${esc(chargeTitle(c))}</span><span class="s" style="display:block">${esc(ל.shortDate(c.date))} · ${c.paid ? 'שולם' : 'עוד לא שולם'}</span></span>
       <span class="side">${shekel(c.total)}</span></button>`).join('') : '<div class="empty">עוד אין חשבונות</div>';
+  // גרף: כמה יצא בכל חודש, חשמל / מים / ארנונה
+  const months = {};
+  for(const c of ch){ const r = ל.tenantCharge(c, tc.ledger); if(!r.ok) continue; const m = c.date.slice(0, 7), x = months[m] = months[m] || {elec: 0, water: 0, arnona: 0};
+    x.elec += r.elec?.amount || 0; x.water += r.water || 0; x.arnona += r.arnona || 0; }
+  const keys = Object.keys(months).sort().slice(-12), max = Math.max(1, ...keys.map(k => months[k].elec + months[k].water + months[k].arnona));
+  const COL = {elec: '#F5A524', water: '#3E9BF5', arnona: '#8E7CF0'};
+  $('bl-chart-sec').hidden = !tenant || !keys.length;
+  $('bl-chart').innerHTML = keys.length ? `<div class="bl-bars">${keys.map(k => { const x = months[k], tot = x.elec + x.water + x.arnona;
+      return `<div title="${esc(shekel(tot))}"><span>${Math.round(tot)}</span>${['arnona', 'water', 'elec'].map(p => x[p] ? `<i style="height:${(x[p] / max * 110).toFixed(1)}px;background:${COL[p]}"></i>` : '').join('')}<span>${esc(ל.HE_MONTHS ? ל.HE_MONTHS[+k.slice(5) - 1].slice(0, 3) : k.slice(5))}</span></div>`; }).join('')}</div>
+    <div class="bl-leg"><span style="--c:${COL.elec}">חשמל</span><span style="--c:${COL.water}">מים</span><span style="--c:${COL.arnona}">ארנונה</span></div>` : '';
 }
 const chargeTitle = c => [c.elec && 'חשמל', c.arnona && 'ארנונה', c.water && 'מים'].filter(Boolean).join(', ') + (c.elec ? ` עד ${ל.shortDate(c.elec.to)}` : '');
 const waLink = text => 'https://wa.me/?text=' + encodeURIComponent(text);
@@ -5851,12 +6101,14 @@ $('bl-tenant-on').onclick = () => { saveConfig({tenantOn: true}); renderBills();
 /** חלון חוב: על מה, כמה, ומי חייב למי. הכול בחלון אחד. */
 function ledgerDialog(l){
   l = l || {dir: 'me'};
-  let dir = l.dir;
+  let dir = l.dir, due = l.due || '';
   return ask(l.id ? 'עריכת חוב' : 'חוב חדש', [{label: 'על מה', value: l.text || '', ph: 'למשל: ועד בית', req: true}, {label: 'סכום בשקלים', value: l.amount ?? '', ph: '0', num: true, req: true},
     {label: 'מי (לא חובה)', value: l.person || '', ph: 'למשל: דני'}], {
     ok: 'שמירה', html: `<div class="opts led-dir">${[['me', '➖ אני חייב'], ['him', '➕ חייבים לי']].map(([k, n]) => `<button type="button" data-dir="${k}" class="${dir === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
-    init: d => { d.querySelector('.led-dir').onclick = e => { const b = e.target.closest('[data-dir]'); if(!b) return; dir = b.dataset.dir; d.querySelectorAll('[data-dir]').forEach(x => x.classList.toggle('on', x === b)); }; },
-  }).then(v => v && +v[1] > 0 ? {text: v[0], amount: +v[1], person: v[2] || '', dir} : null);
+    init: d => { d.querySelector('.led-dir').onclick = e => { const b = e.target.closest('[data-dir]'); if(!b) return; dir = b.dataset.dir; d.querySelectorAll('[data-dir]').forEach(x => x.classList.toggle('on', x === b)); };
+      d.querySelector('[data-ok]').closest('.btns').insertAdjacentHTML('beforebegin', `<div class="field"><label for="led-due">עד מתי לשלם (לא חובה: תזכורת יום לפני)</label><input type="date" id="led-due" value="${esc(l.due || '')}"></div>`);
+      d.querySelector('#led-due').onchange = e => { due = e.target.value; }; },
+  }).then(v => v && +v[1] > 0 ? {text: v[0], amount: +v[1], person: v[2] || '', dir, due: due || null} : null);
 }
 async function addLedger(dir){
   const v = await ledgerDialog({dir}); if(!v) return;
@@ -6025,16 +6277,18 @@ $('td-e-del').onclick = () => {
 /* ---------- לשונית "הגדרות": סדר הלשוניות, תצוגה, ובאפליקציה בדיקת התראות ---------- */
 // הסדר והמוסתרים נשמרים בתצורה (navOrder, navHidden, startScreen), ולכן זהים בכל המכשירים
 const NAV_FIXED = ['today', 'prefs'];   // תמיד מוצגות
+/** לשונית חדשה שלא הייתה בסדר השמור (התראות): מיד אחרי "היום". */
+function navOrderOf(o){ o = o || []; if(!o.length || o.includes('notif')) return o; const i = o.indexOf('today'); return [...o.slice(0, i + 1), 'notif', ...o.slice(i + 1)]; }
 function navButtons(){ return [...document.querySelectorAll('#nav button[data-scr]')]; }
 function applyNav(){
   const key = JSON.stringify([D.config.navOrder || [], D.config.navHidden || []]);
   if(key === applyNav.k) return;   // רק כשהסדר השתנה (כדי לא להזיז את הגלילה של הסרגל)
   applyNav.k = key;
-  const nav = $('nav'), btns = navButtons(), order = D.config.navOrder || [], hidden = new Set(D.config.navHidden || []);
+  const nav = $('nav'), btns = navButtons(), order = navOrderOf(D.config.navOrder), hidden = new Set(D.config.navHidden || []);
   const idx = id => { const i = order.indexOf(id); return id === 'prefs' ? 999 : i < 0 ? 500 + btns.findIndex(b => b.dataset.scr === id) : i; };
   btns.sort((a, b) => idx(a.dataset.scr) - idx(b.dataset.scr)).forEach(b => { b.hidden = hidden.has(b.dataset.scr) && !NAV_FIXED.includes(b.dataset.scr); nav.appendChild(b); });
 }
-const navName = b => b.textContent.trim();
+const navName = b => [...b.childNodes].filter(x => x.nodeType === 3).map(x => x.textContent).join('').trim();
 function renderPrefs(){
   const btns = navButtons().filter(b => b.dataset.scr !== 'prefs'), hidden = new Set(D.config.navHidden || []);
   $('pf-nav').innerHTML = btns.map((b, i) => `<div class="pf-row${hidden.has(b.dataset.scr) ? ' off' : ''}"><span class="n">${esc(navName(b))}</span>
@@ -6048,7 +6302,7 @@ function renderPrefs(){
   $('pf-behav').innerHTML = PF_TOGGLES.map(([k, t, sub, def]) => `<label><span>${t}<small>${sub}</small></span><input type="checkbox" data-tg="${k}"${(D.config[k] ?? def) ? ' checked' : ''}></label>`).join('');
   const kst = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
   $('pf-goals').innerHTML = [['kcal', '🔥', 'יעד קלוריות', `${kNum(kst.goal)} ביום`], ['prot', '💪', 'יעד חלבון', `${kNum(Math.round(+kst.protGoal || 1.6 * w))} גרם ביום`],
-    ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`]].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
+    ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`], ['weight', '⚖️', 'יעד משקל', kst.weightGoal ? `${kg1(+kst.weightGoal)} ק״ג` : 'בלי יעד']].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
   $('pf-about').innerHTML = `<div class="sec"><h2>ניהול שיגרה</h2><div class="rows">
       <div><span class="k">גרסה</span><span class="v">1.3${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
       <div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>
@@ -6065,7 +6319,11 @@ var pfPage = null;
 const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר כשמחזיקים משימה, מתכון או לשונית', true],
   ['askExit', 'לשאול לפני יציאה', 'כפתור "הקודם" במסך רגיל שואל "לצאת מהאפליקציה?"', true],
   ['timerSound', 'צליל בטיימר', 'כשטיימר מסתיים והאפליקציה פתוחה', true],
-  ['cookAwake', 'מסך דלוק במצב בישול', 'המסך לא נכבה בזמן שמבשלים לפי מתכון', true]];
+  ['cookAwake', 'מסך דלוק במצב בישול', 'המסך לא נכבה בזמן שמבשלים לפי מתכון', true],
+  ['weighRemind', 'תזכורת שקילה', 'אם עבר שבוע בלי משקל: תזכורת ב-08:00', true],
+  ['weekSum', 'סיכום שבועי', 'מוצאי שבת 20:00: איך היה השבוע. ראשון בבוקר: מה מחכה השבוע', true],
+  ['medWeek', 'תרופה נגמרת בעוד שבוע', 'התראה שבוע לפני שהמלאי של תרופה נגמר', true],
+  ['billRemind', 'תזכורות תשלום', 'יום לפני מועד של חוב, וחשבון לדייר שלא שולם שבוע', true]];
 function pfPages(){
   const c = D.config, kst = ל.calSettings(KF()), doms = D.domains.filter(x => !x.deleted).length;
   return [['look', '🎨', 'תצוגה ולשוניות', `${{system: 'לפי הטלפון', light: 'בהיר', dark: 'כהה'}[c.theme || 'system']} · טקסט ${{s: 'קטן', m: 'רגיל', l: 'גדול', xl: 'גדול מאוד'}[c.fontSize || 'm']} · סדר הלשוניות`],
@@ -6092,7 +6350,7 @@ $('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ save
 $('s-accent').onchange = () => { saveConfig({accent: $('s-accent').value}); applyTheme(); toast('✓ נשמר'); };
 $('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); } };
 $('pf-goals').onclick = async e => { const b = e.target.closest('[data-goal]'); if(!b) return;
-  await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal}[b.dataset.goal])(); renderPrefs(); };
+  await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal, weight: editWeightGoal}[b.dataset.goal])(); renderPrefs(); };
 // רטט קצר (לחיצות) כבוי בהגדרות; רטט של שעון מעורר/טיימר נשאר
 if(navigator.vibrate){ const vib = navigator.vibrate.bind(navigator); navigator.vibrate = p => (typeof p === 'number' && p > 0 && p <= 30 && D.config.haptics === false) ? false : vib(p); }
 $('pf-nav').onclick = e => {
@@ -6174,6 +6432,10 @@ function handleHash(){
     history.replaceState(null, '', location.pathname); show('today');
   }else if(h === '#meds'){
     history.replaceState(null, '', location.pathname); show('meds');
+  }else if(h === '#weight'){
+    history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'weight'; renderKcal(); addWeight();
+  }else if(h === '#bills' || h === '#notif'){
+    history.replaceState(null, '', location.pathname); show(h.slice(1));
   }else if(h === '#new'){
     history.replaceState(null, '', location.pathname);
     openQuick();
