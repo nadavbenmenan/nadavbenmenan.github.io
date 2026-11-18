@@ -938,6 +938,24 @@ function sleepNights(events, nowMs){
   }
   return Object.values(nights).sort((a, b) => b.date.localeCompare(a.date));
 }
+/** שנצ: הזמנים ביום (date) שהטלפון לא היה בשימוש, בין 20 דקות ל-4 שעות, שמתחילים בין 08:00 ל-21:00. */
+function idleGaps(events, date, nowMs, minMins){
+  const ev = (events || []).filter(e => e && +e.t).slice().sort((a, b) => a.t - b.t), min = (minMins || 20) * 6e4;
+  const startK = ev.some(e => e.k === 'unlock') ? 'unlock' : 'on';
+  const S = []; let cur = null;
+  for(const e of ev){
+    if(e.k === startK){ if(!cur) cur = {a: e.t}; }
+    else if(e.k === 'off' && cur){ cur.b = Math.max(e.t, cur.a); S.push(cur); cur = null; }
+  }
+  if(cur) S.push({a: cur.a, b: nowMs || cur.a});
+  const out = [];
+  for(let i = 0; i + 1 < S.length; i++){
+    const from = S[i].b, to = S[i + 1].a, h = +localTime(from).slice(0, 2);
+    if(localDate(from) !== date || h < 8 || h >= 21 || to - from < min || to - from > 4 * 36e5) continue;
+    out.push({start: from, end: to, mins: Math.round((to - from) / 6e4)});
+  }
+  return out;
+}
 // תמונות (TheMealDB: 141 שנבחרו ביד, ועוד כ-580 לפי סוג המנה). קבוצה לפי מילה בשם; בתוך קבוצה: כל מתכון מקבל תמונה אחרת.
 const IMG_BASE = 'https://www.themealdb.com/images/media/meals/';
 // נבחרו ביד לפי מה שבתמונה (16.11.2026): בכל קבוצה הראשונות הן המתאימות ביותר
@@ -1011,6 +1029,50 @@ function imageOptions(r, recipes, current){
     for(const f of [...l.filter(f => !used.has(f)), ...l.filter(f => used.has(f))]) if(!seen.has(f)){ seen.add(f); order.push(f); }
   }
   return [current, ...order.map(imgUrl)].filter(Boolean);
+}
+/* ---------- ייצוא לאקסל: קובץ xlsx אמיתי, בלי ספרייה (zip בלי דחיסה) ---------- */
+const CRC_T = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for(let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+/** zip (stored): [{name, data: Uint8Array}] → Uint8Array */
+function zipStore(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  for(const f of files){
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    const head = [...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0)];
+    parts.push(Uint8Array.from(head), name, data);
+    central.push(Uint8Array.from([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length),
+      ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), name);
+    off += head.length + name.length + data.length;
+  }
+  const cdSize = central.reduce((s, x) => s + x.length, 0);
+  const end = Uint8Array.from([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(off), ...u16(0)]);
+  const all = [...parts, ...central, end], out = new Uint8Array(all.reduce((s, x) => s + x.length, 0));
+  let p = 0; for(const x of all){ out.set(x, p); p += x.length; }
+  return out;
+}
+const xmlEsc = v => String(v).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+const colName = i => { let s = ''; i++; while(i){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+/** קובץ אקסל: sheets = [{name, rows: [[כותרות], [ערכים]...]}]. מימין לשמאל, שורת כותרת מודגשת וקפואה. */
+function makeXlsx(sheets){
+  const enc = new TextEncoder(), f = (name, x) => ({name, data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + x)});
+  const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', RNS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const files = [
+    f('[Content_Types].xml', `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`),
+    f('_rels/.rels', `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${RNS}/officeDocument" Target="xl/workbook.xml"/></Relationships>`),
+    f('xl/workbook.xml', `<workbook xmlns="${NS}" xmlns:r="${RNS}"><sheets>${sheets.map((s, i) => `<sheet name="${xmlEsc(String(s.name).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`),
+    f('xl/_rels/workbook.xml.rels', `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${RNS}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="${RNS}/styles" Target="styles.xml"/></Relationships>`),
+    f('xl/styles.xml', `<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5B5BF7"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`)
+  ];
+  sheets.forEach((s, i) => {
+    const rows = s.rows || [], n = Math.max(1, ...rows.map(r => r.length));
+    const widths = Array.from({length: n}, (_, c) => Math.min(60, Math.max(8, ...rows.map(r => String(r[c] ?? '').split('\n').reduce((m, l) => Math.max(m, l.length), 0) + 2))));
+    const cell = (v, r, c) => { const ref = colName(c) + (r + 1), st = r === 0 ? ' s="1"' : String(v).includes('\n') ? ' s="2"' : '';
+      if(v === null || v === undefined || v === '') return '';
+      return typeof v === 'number' && isFinite(v) ? `<c r="${ref}"${st}><v>${v}</v></c>` : `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`; };
+    files.push(f(`xl/worksheets/sheet${i + 1}.xml`, `<worksheet xmlns="${NS}"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w, c) => `<col min="${c + 1}" max="${c + 1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, c) => cell(v, ri, c)).join('')}</row>`).join('')}</sheetData></worksheet>`));
+  });
+  return zipStore(files);
 }
 /** נושאים בבחירת תמונה: קודם בוחרים נושא (סלטים, עוף...), ורק אז רואים את התמונות שלו. */
 const IMG_TOPICS = [['salad', 'סלטים'], ['side', 'תוספות'], ['rice', 'אורז'], ['potato', 'תפוחי אדמה'], ['veg', 'ירקות'], ['chicken', 'עוף'], ['beef', 'בשר'],
@@ -1356,7 +1418,7 @@ const ACTIVITIES = {
 const CAL_DEFAULTS = {height: 168, weight: 87, goal: 2000};
 function mergeCaloriesFile(a, b, now){
   const out = {v: 1};
-  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings', 'favs', 'sleep']) out[k] = mergeById(a?.[k], b?.[k], now);
+  for(const k of ['foods', 'entries', 'acts', 'recipes', 'meals', 'weights', 'settings', 'favs', 'sleep', 'naps']) out[k] = mergeById(a?.[k], b?.[k], now);
   return out;
 }
 const live = l => (l || []).filter(x => !x.deleted);
@@ -2225,7 +2287,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
