@@ -582,9 +582,11 @@ function calendarFor(task, occ){
 // משימות/מתכונים.json: {v, recipes: [{id, title, desc, image, cat, ingredients: [טקסט], steps: [טקסט], notes,
 //   prep, total, level, updatedAt, deleted}]}. מיזוג לפי id, כמו כל השאר.
 // הקטגוריות לפי אתרי מתכונים (17.11.2026): לפי סוג הארוחה או המנה, ובמנה עיקרית לפי החלבון
-const RECIPE_CATS = ['ארוחת בוקר', 'עוף', 'בשר', 'דגים', 'פסטה', 'תוספות', 'סלטים', 'ממרחים ורטבים', 'מרקים', 'מאפים ולחמים', 'עוגות ועוגיות', 'קינוחים', 'אחר'];
-// קטגוריות מהגרסה הקודמת: אם אין ניחוש טוב יותר
-const OLD_CATS = {'מנה עיקרית': 'אחר', 'בשר ועוף': 'בשר', 'סלטים וממרחים': 'סלטים', 'מאפים ובצקים': 'מאפים ולחמים', 'קינוחים ועוגות': 'קינוחים'};
+// ארבע קטגוריות בלבד (18.11.2026). הסיווג הפנימי (FINE) מפורט יותר, ומשמש גם לבחירת תמונה
+const RECIPE_CATS = ['בשר עוף ודגים', 'תוספות', 'סלטים', 'קינוחים'];
+const FINE_TO_CAT = {'עוף': 'בשר עוף ודגים', 'בשר': 'בשר עוף ודגים', 'דגים': 'בשר עוף ודגים', 'בשר ועוף': 'בשר עוף ודגים', 'מנה עיקרית': 'בשר עוף ודגים',
+  'ארוחת בוקר': 'תוספות', 'פסטה': 'תוספות', 'תוספות': 'תוספות', 'מרקים': 'תוספות', 'מאפים ולחמים': 'תוספות', 'מאפים ובצקים': 'תוספות', 'אחר': 'תוספות',
+  'סלטים': 'סלטים', 'ממרחים ורטבים': 'סלטים', 'סלטים וממרחים': 'סלטים', 'עוגות ועוגיות': 'קינוחים', 'קינוחים': 'קינוחים', 'קינוחים ועוגות': 'קינוחים'};
 function mergeRecipesFile(a, b, now){ return {v: 1, recipes: mergeById(a?.recipes, b?.recipes, now)}; }
 const UNITS = 'כוסות|כוס|כפות|כף|כפיות|כפית|גרם|גר׳|ג׳|ג|קילוגרם|קילו|ק״ג|קג|ליטר|ליטרים|מ״ל|מל|יחידות|יחידה|חבילות|חבילה|' +
   'שקיות|שקית|פחיות|פחית|קופסאות|קופסה|קופסת|צנצנת|קורט|מעט|חופן|ענפים|ענף|ענפי|צרור|צרורות|שיני|שן|פרוסות|פרוסה|' +
@@ -785,11 +787,12 @@ const PROTEIN_RULES = [
 const CAT_RULES = [
   ['ארוחת בוקר', ['שקשוקה', 'חביתה', 'חביתות', 'פנקייק', 'פנקייקים', 'בלינצ׳ס', 'קרפ', 'קרפים', 'טוסט', 'גרנולה', 'דייסה', 'ביצים', 'ביצה', 'שייק', 'וופל', 'וופלים', 'פריטטה', 'יוגורט', 'סמוטי']],
   ['מרקים', ['מרק', 'מרקים']],
+  ['בשר', ['טורטיה', 'טורטייה', 'טורטיות', 'בוריטו', 'טאקו', 'פאחיטס', 'קסדיה', 'קסדייה']],
   ['ממרחים ורטבים', ['סלט מטבוחה', 'סלט חצילים', 'מטבוחה', 'חומוס', 'ממרח', 'טחינה', 'באבא', 'מטבל', 'סלסה', 'צזיקי', 'גוואקמולי', 'פסטו', 'מיונז', 'רוטב', 'איולי', 'ריבה', 'סחוג', 'עמבה']],
   ['סלטים', ['סלט', 'סלטים', 'קולסלאו', 'טאבולה', 'פטוש']],
   ['עוגות ועוגיות', ['עוגה', 'עוגת', 'עוגות', 'עוגיות', 'עוגייה', 'עוגיית', 'מאפינס', 'בראוניז', 'רוגלך', 'קאפקייקס', 'טארט', 'שטרודל']],
   ['קינוחים', ['קינוח', 'קינוחים', 'מוס', 'פודינג', 'גלידה', 'טירמיסו', 'קרם', 'פנקוטה', 'מלבי', 'סורבה', 'כדורי שוקולד', 'שוקולד', 'טראפלס', 'חטיף', 'חטיפי']],
-  ['מאפים ולחמים', ['לחם', 'חלה', 'חלות', 'פיצה', 'בצק', 'מאפה', 'מאפים', 'בורקס', 'פוקאצ׳ה', 'פוקצ׳ה', 'לחמניות', 'פיתות', 'פיתה', 'פשטידה', 'קיש', 'פאי', 'מלוואח', 'ג׳חנון', 'באגט', 'כעכים', 'בייגל', 'טורטיה', 'לאפה', 'סמבוסק']],
+  ['מאפים ולחמים', ['לחם', 'חלה', 'חלות', 'פיצה', 'בצק', 'מאפה', 'מאפים', 'בורקס', 'פוקאצ׳ה', 'פוקצ׳ה', 'לחמניות', 'פיתות', 'פיתה', 'פשטידה', 'קיש', 'פאי', 'מלוואח', 'ג׳חנון', 'באגט', 'כעכים', 'בייגל', 'לאפה', 'סמבוסק']],
   ['פסטה', ['פסטה', 'ספגטי', 'לזניה', 'ניוקי', 'פטוצ׳יני', 'מקרוני', 'פנה', 'רביולי', 'נודלס', 'פפרדלה', 'טורטליני']],
   ['תוספות', ['אורז', 'תפוחי אדמה', 'תפו״א', 'צ׳יפס', 'פירה', 'פתיתים', 'קוסקוס', 'מג׳דרה', 'בורגול', 'קינואה', 'ירקות', 'ריזוטו', 'פולנטה', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי', 'שעועית', 'עדשים', 'לביבות', 'בטטה', 'אטריות']],
   ...PROTEIN_RULES,
@@ -828,13 +831,16 @@ function firstMatch(title, rules){
   });
   return best ? best.key : '';
 }
-/** קטגוריה משוערת: סוג המנה מהשם, אחר כך החלבון (בשם או במצרכים). '' = לא ברור. */
-function guessRecipeCat(r){
+/** סוג המנה המפורט (עוף, פסטה, מרקים...): מהשם, אחר כך החלבון (בשם או במצרכים). '' = לא ברור. */
+function recipeKind(r, noIng){
   const t = firstMatch(r.title || '', CAT_RULES);
   if(t && t !== '*') return t;
-  return firstMatch(r.title || '', PROTEIN_RULES) || catFromIngredients(r) || '';
+  return firstMatch(r.title || '', PROTEIN_RULES) || (noIng ? '' : catFromIngredients(r)) || '';
 }
-const recipeCat = r => (RECIPE_CATS.includes(r.cat) && r.cat !== 'אחר' ? r.cat : '') || guessRecipeCat(r) || OLD_CATS[r.cat] || 'אחר';
+/** אחת מארבע הקטגוריות לפי השם והמצרכים, או '' אם לא ברור. פנקייק ופיצה = תוספות, טורטיה = בשר עוף ודגים. */
+const guessRecipeCat = r => FINE_TO_CAT[recipeKind(r)] || '';
+/** הקטגוריה של מתכון: מה שנבחר בארבע החדשות; אחרת לפי השם; אחרת הקטגוריה הישנה; אחרת לפי המצרכים; אחרת תוספות. */
+const recipeCat = r => (RECIPE_CATS.includes(r.cat) ? r.cat : '') || FINE_TO_CAT[recipeKind(r, true)] || FINE_TO_CAT[r.cat] || guessRecipeCat(r) || 'תוספות';
 
 /* ---------- יציאה מהבית: מה לקחת, לפי מה שיש היום ---------- */
 const LEAVE_RULES = [
@@ -1002,7 +1008,7 @@ const IMG_RULES = [['soup', ['מרק']], ['dip', ['סלט מטבוחה', 'סלט
   ['chicken', ['עוף', 'שניצל', 'פרגיות', 'חזה', 'כנפיים', 'הודו']], ['beef', ['בשר', 'סטייק', 'אנטריקוט', 'צלי', 'גולש', 'פסטרמה', 'אסאדו']],
   ['potato', ['תפוחי אדמה', 'צ׳יפס', 'פירה']], ['breakfast', ['פנקייק', 'בלינצ׳ס', 'קרפ']], ['veg', ['ירקות', 'חצילים', 'קישואים', 'כרובית', 'ברוקולי']]];
 const CAT_IMG = {'ארוחת בוקר': 'eggs', 'עוף': 'chicken', 'בשר': 'beef', 'דגים': 'fish', 'פסטה': 'pasta', 'תוספות': 'side', 'סלטים': 'salad',
-  'ממרחים ורטבים': 'dip', 'מרקים': 'soup', 'מאפים ולחמים': 'bread', 'עוגות ועוגיות': 'cake', 'קינוחים': 'dessert', 'אחר': 'side'};
+  'ממרחים ורטבים': 'dip', 'מרקים': 'soup', 'מאפים ולחמים': 'bread', 'עוגות ועוגיות': 'cake', 'קינוחים': 'dessert', 'אחר': 'side', 'בשר עוף ודגים': 'chicken'};
 // כשמחפשים עוד תמונות: קבוצות קרובות קודם (לעוף: קציצות, אורז, בשר), ורק אחר כך כל השאר
 const IMG_NEAR = {chicken: ['meatball', 'rice', 'potato', 'beef', 'lamb'], beef: ['meatball', 'burger', 'lamb', 'chicken'], meatball: ['beef', 'lamb', 'burger', 'chicken'],
   burger: ['beef', 'meatball'], lamb: ['beef', 'meatball'], fish: ['salmon', 'shrimp'], salmon: ['fish', 'shrimp'], shrimp: ['fish', 'salmon', 'pasta'],
@@ -1011,7 +1017,7 @@ const IMG_NEAR = {chicken: ['meatball', 'rice', 'potato', 'beef', 'lamb'], beef:
   pie: ['bread', 'cake'], pizza: ['bread', 'pie'], potato: ['side', 'veg'], veg: ['salad', 'side', 'soup'], side: ['rice', 'potato', 'veg']};
 const ING_IMG = [['salmon', ['סלמון']], ['shrimp', ['שרימפס']], ['fish', ['דג', 'דגים', 'אמנון', 'טונה', 'לברק', 'דניס']], ['chicken', ['עוף', 'חזה', 'פרגיות', 'כנפיים', 'הודו']],
   ['beef', ['בשר', 'בקר', 'אנטריקוט', 'סטייק']], ['lamb', ['כבש', 'טלה']]];
-function recipeImageGroup(r){ return firstMatch(r.title || '', IMG_RULES) || CAT_IMG[recipeCat(r)] || 'side'; }
+function recipeImageGroup(r){ return firstMatch(r.title || '', IMG_RULES) || CAT_IMG[recipeKind(r)] || CAT_IMG[r.cat] || CAT_IMG[recipeCat(r)] || 'side'; }
 const imgUrl = f => IMG_BASE + f + '/medium';
 const imgFile = u => { const m = /\/meals\/([^/]+?)(?:\/(?:medium|small|preview|large))?$/.exec(u || ''); return m ? m[1] : null; };
 /** הקבוצה של תמונה (לפי הקובץ), או null לתמונה מבחוץ. */
@@ -2287,7 +2293,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
