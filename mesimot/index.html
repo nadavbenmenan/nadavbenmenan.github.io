@@ -3364,7 +3364,7 @@ document.addEventListener('pointerdown', e => {
   const card = e.target.closest('.item, .mini, .pill, .soon button[data-task]');
   if(!card || e.button > 0) return;
   press = {card, x: e.clientX, y: e.clientY, dx: 0, long: false, id: e.pointerId,
-    timer: setTimeout(() => { press.long = true; suppressClick = true; navigator.vibrate?.(15); openEditor(card.dataset.task); }, 550)};
+    timer: setTimeout(() => { press.long = true; suppressClick = true; navigator.vibrate?.(15); card.matches('.soon button') ? openEditor(card.dataset.task) : taskHold(card); }, 550)};
 });
 document.addEventListener('pointermove', e => {
   if(!press || e.pointerId !== press.id) return;
@@ -3375,6 +3375,18 @@ document.addEventListener('pointermove', e => {
     press.card.style.transform = `translateX(${Math.max(dx, -110)}px)`;
   }
 });
+/** לחיצה ארוכה על משימה: דחייה למחר / לתאריך אחר / עוד שעה, בוצע, או עריכה. */
+function taskHold(card){
+  const f = resolve(card.dataset.occ, card.dataset.task);
+  if(!f) return;
+  if(!f.occ) return openEditor(f.task.id);
+  sheet(ל.displayTitle(f.task), [
+    ['⏰ דחייה למחר', () => doSnooze(f.task, f.occ, 'tomorrow')],
+    ['📅 דחייה לתאריך אחר', () => pickDate(ל.addDays(today(), 1), 'לדחות עד').then(d => d && doSnooze(f.task, f.occ, {date: d < today() ? today() : d, time: f.task.time}))],
+    ['🕐 עוד שעה', () => doSnooze(f.task, f.occ, '1h')],
+    ['✏️ עריכה', () => openEditor(f.task.id)],
+  ]);
+}
 function endPress(){
   if(!press) return;
   clearTimeout(press.timer);
@@ -6234,6 +6246,8 @@ onHold($('td-list'), '[data-id]', el => {
     ['🗑 מחיקה לצמיתות', () => { saveTodo(Object.assign({}, x, {deleted: true})); toast('נמחקה', {undo: () => saveTodo(Object.assign({}, x, {deleted: false}))}); }],
   ]);
   sheet(x.title, [
+    ['⏰ דחייה למחר', () => { saveTodo(Object.assign({}, x, {due: ל.addDays(today(), 1)})); toast('נדחה למחר', {undo: () => saveTodo(x)}); }],
+    ['📅 דחייה לתאריך אחר', () => pickDate(ל.addDays(today(), 1), 'לדחות עד').then(d => { if(d){ saveTodo(Object.assign({}, x, {due: d})); toast('נדחה ל־' + ל.shortDate(d), {undo: () => saveTodo(x)}); } })],
     ['✓ בוצע', () => saveTodo(Object.assign({}, x, {done: true, doneAt: nowIso()}))],
     ['✏️ עריכה', () => openTodo(x.id)],
     ...URG.map(([n], i) => i !== (x.urg || 0) ? [`${['⚪', '🟠', '🔴'][i]} ${n}`, () => saveTodo(Object.assign({}, x, {urg: i}))] : null).filter(Boolean),
