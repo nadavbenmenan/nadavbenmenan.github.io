@@ -438,6 +438,14 @@
   .bl-pre{white-space:pre-wrap;background:var(--bg);border-radius:14px;padding:12px;font:14px/1.6 inherit;margin-top:10px}
   .bl-sum{font-weight:700;font-size:18px;margin-top:10px}
   .pf-list{display:flex;flex-direction:column;gap:6px}
+  .pf-tg{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .pf-tg label{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:12px;min-height:52px}
+  .pf-tg label span{flex:1}.pf-tg label small{display:block;color:var(--muted);font-size:13px}
+  .pf-tg input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+  #scr-prefs .group[data-off]{display:none}
+  html[data-fs="s"] main.screen,html[data-fs="s"] dialog .dlg{zoom:.92}
+  html[data-fs="l"] main.screen,html[data-fs="l"] dialog .dlg{zoom:1.1}
+  html[data-fs="xl"] main.screen,html[data-fs="xl"] dialog .dlg{zoom:1.22}
   .subtabs{display:flex;gap:6px;background:var(--soft);border-radius:16px;padding:4px;margin:12px 0 4px}
   .subtabs button{flex:1;border:0;background:transparent;border-radius:12px;min-height:42px;font-weight:600;font-size:15px;color:var(--muted)}
   .subtabs button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
@@ -494,6 +502,7 @@
   .more-grid .t{font-weight:700;font-size:16px}
   .more-grid .s{font-size:13px;color:var(--muted)}
   .back-more{padding:6px 0;font-size:15px}
+  .pf-back{padding:6px 0;font-size:16px;font-weight:600;color:var(--accent)}
   .more-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .more-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;border:0;text-align:right;color:inherit;width:100%}
   .more-row .i{font-size:26px;flex:none}
@@ -870,14 +879,23 @@
   <button class="txt-btn" type="button" id="bl-tenant-on" style="margin-top:16px">🏠 חלוקת חשבונות עם דייר (חשמל, מים, ארנונה)</button>
 </main>
 <main class="screen" id="scr-prefs" hidden>
-  <h1 class="hello">הגדרות</h1>
-  <div id="pf-native"></div>
-  <div class="sec"><h2>סדר הלשוניות</h2><div id="pf-nav" class="pf-list"></div></div>
-  <div class="sec"><h2>תצוגה</h2>
-    <div class="field"><span class="lbl">ערכת צבע</span><div class="opts" id="pf-theme"></div></div>
-    <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
-    <div class="field"><label for="pf-name">השם שלך (לברכה במסך הראשי)</label><input type="text" id="pf-name"></div>
+  <button class="txt-btn pf-back" type="button" id="pf-back" hidden>‹ הגדרות</button>
+  <h1 class="hello" id="pf-h">הגדרות</h1>
+  <div id="pf-menu" class="more-list"></div>
+  <div class="pf-pg" data-pg="look" hidden>
+    <div class="sec"><h2>תצוגה</h2>
+      <div class="field"><span class="lbl">ערכת צבע</span><div class="opts" id="pf-theme"></div></div>
+      <div class="field"><span class="lbl">גודל טקסט</span><div class="opts" id="pf-fs"></div></div>
+      <div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" style="width:100%;min-height:48px;border:0;background:transparent"></div>
+      <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
+      <div class="field"><label for="pf-name">השם שלך (לברכה במסך הראשי)</label><input type="text" id="pf-name"></div>
+    </div>
+    <div class="sec"><h2>סדר הלשוניות</h2><div class="note">▲▼ מזיזים, 🙈 מסתירים מהסרגל למטה.</div><div id="pf-nav" class="pf-list"></div></div>
   </div>
+  <div class="pf-pg" data-pg="behav" hidden><div class="sec"><h2>התנהגות</h2><div id="pf-behav" class="pf-tg"></div></div></div>
+  <div class="pf-pg" data-pg="health" hidden><div class="sec"><h2>יעדים</h2><div id="pf-goals" class="more-list"></div></div></div>
+  <div class="pf-pg" data-pg="phone" hidden><div id="pf-native"></div></div>
+  <div class="pf-pg" data-pg="about" hidden><div id="pf-about"></div></div>
   <div id="pf-more"></div>
 </main>
 <main class="screen" id="scr-upkeep" hidden>
@@ -1330,6 +1348,8 @@ function onBack(){
   const open = [...document.querySelectorAll('dialog[open]')];
   if(open.length){ closeTop(open[open.length - 1]); return; }
   if(!$('task-page').hidden){ $('tp-back').click(); return; }
+  if(screen === 'prefs' && pfPage){ pfGo(null); return; }
+  if(D.config.askExit === false){ if(NATIVE) window.Capacitor.Plugins.Alarm.exit().catch(() => {}); else{ backExit = true; history.go(-2); } return; }
   if(backAsking) return;
   backAsking = true;
   sure('לצאת מהאפליקציה?', 'יציאה', {no: 'להישאר'}).then(y => {
@@ -1426,6 +1446,7 @@ const activeTasks = () => D.tasks.filter(ל.isActiveTask).map(t => ל.normTask(t
 /* ---------- ערכת צבעים ---------- */
 function applyTheme(){
   document.documentElement.dataset.theme = D.config.theme || 'system';
+  document.documentElement.dataset.fs = D.config.fontSize || 'm';
   document.documentElement.style.setProperty('--accent', D.config.accent || '#5B5BF7');
   const dark = D.config.theme === 'dark' || (D.config.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelector('meta[name=theme-color]').content = dark ? '#0F1115' : '#F1F2F5';
@@ -1660,6 +1681,7 @@ function show(s){
   else if(s === 'history' && screen !== 'history') hsTab = 'domains';
   // כניסה לבריאות: תמיד הסיכום היומי של היום, והארוחה של השעה הזו
   if(s === 'kcal' && screen !== 'kcal'){ hTab = 'kcal'; kcDate = today(); kcMeal = mealNow(); }
+  if(s === 'prefs' && screen !== 'prefs') pfPage = null;
   screen = s;
   for(const x of ['today', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills'].includes(s);
@@ -1849,7 +1871,7 @@ function recipeMenu(r){
 // לחיצה ארוכה על לשונית בסרגל: לסידור הלשוניות
 { let t = null, lp = false;
   $('nav').addEventListener('pointerdown', e => { const b = e.target.closest('button[data-scr]'); if(!b) return; lp = false; clearTimeout(t);
-    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); show('prefs'); setTimeout(() => $('pf-nav').scrollIntoView({block: 'start'}), 50); toast('כאן משנים את סדר הלשוניות'); }, 600); });
+    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); show('prefs'); pfGo('look'); setTimeout(() => $('pf-nav').scrollIntoView({block: 'start'}), 50); toast('כאן משנים את סדר הלשוניות'); }, 600); });
   for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('nav').addEventListener(ev, () => clearTimeout(t));
   $('nav').addEventListener('pointermove', e => { if(Math.abs(e.movementX) > 4) clearTimeout(t); });
   $('nav').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
@@ -1966,7 +1988,7 @@ function openCooking(r){
   $('ck-wrap').scrollTop = 0;
   $('dlg-cook').showModal();
   ckPos();
-  if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => { wake = w; }).catch(() => {});
+  if('wakeLock' in navigator && D.config.cookAwake !== false) navigator.wakeLock.request('screen').then(w => { wake = w; }).catch(() => {});
 }
 const ckIdx = () => Math.round($('ck-wrap').scrollTop / Math.max(1, $('ck-wrap').clientHeight));
 function ckPos(){ const n = $('ck-wrap').children.length, i = ckIdx(); $('ck-pos').textContent = n ? `${i + 1}/${n}` : '';
@@ -2005,6 +2027,7 @@ let audioCtx = null, alarm = null;
 const unlockAudio = () => { try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if(audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){} };
 document.addEventListener('pointerdown', unlockAudio, {passive: true});
 function beepBurst(){
+  if(D.config.timerSound === false) return;
   if(!audioCtx) return;
   const t0 = audioCtx.currentTime;
   for(let i = 0; i < 4; i++) for(const [f, d] of [[1046, 0], [1318, .09]]){
@@ -2312,7 +2335,8 @@ async function renderSleep(){
     ${sleepState === 'perm' ? `<div class="card" style="margin-top:12px"><b>😴 מדידת שינה מהטלפון</b><div class="note" style="margin:6px 0 10px">כדי לדעת מתי המסך כבה בלילה ומתי נפתח בבוקר, מאשרים "גישה לנתוני שימוש" ל"ניהול שיגרה". נקראים רק זמני המסך, והם נשארים בטלפון בלבד.</div>
       <button class="btn primary" type="button" id="sl-perm" style="width:100%">פתיחת ההגדרה</button></div>` : note ? `<div class="card note" style="margin-top:12px">${esc(note)}</div>` : ''}
     ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
-      <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span></div>` : ''}
+      <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span>
+      <span class="note" id="sl-goal">${(() => { const g = sleepGoal(), a = last7.reduce((x, n) => x + n.mins, 0) / last7.length; return `🎯 יעד ${durText(g)} · ${a >= g ? '✓ עומד ביעד' : `חסר בערך ${durText(g - a)} בלילה`}`; })()}</span></div>` : ''}
     <div class="sec"><h2 class="bl-h">לילות <span><button class="txt-btn" type="button" id="sl-nap">😴 ＋ שנצ</button> <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></span></h2>
     ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
       return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
@@ -2479,6 +2503,13 @@ async function editProtGoal(){
   const [v] = await ask('יעד חלבון יומי', [{label: 'גרם חלבון ביום', value: cur, num: true, req: true}], {note: `ברירת המחדל: 1.6 גרם לכל ק״ג (${w} ק״ג = ${Math.round(1.6 * w)} גרם)`}) || [];
   if(v == null || !(+v > 0)) return;
   saveK('settings', Object.assign({}, st, {id: 'settings', protGoal: Math.round(+v), updatedAt: nowIso()}));
+}
+const sleepGoal = () => +ל.calSettings(KF()).sleepGoal || 450;
+async function editSleepGoal(){
+  const st = ל.calSettings(KF()), g = sleepGoal();
+  const [v] = await ask('יעד שינה בלילה', [{label: 'שעות (למשל 7.5)', value: Math.round(g / 6) / 10, num: true, req: true}]) || [];
+  if(v == null || !(+v >= 3 && +v <= 12)) return v == null ? null : toast('בין 3 ל-12 שעות', {err: true});
+  saveK('settings', Object.assign({}, st, {id: 'settings', sleepGoal: Math.round(+v * 60), updatedAt: nowIso()}));
 }
 async function editGoal(){
   const st = ל.calSettings(KF());
@@ -4025,7 +4056,7 @@ function engineText(){
 function renderSettings(){
   const c = D.config, topics = storeJson(K.topics, null);
   $('pf-more').innerHTML = `
-    <div class="group"${NATIVE ? ' hidden' : ''}><h3>התראות</h3>
+    <div class="group pf-pg" data-pg="notif"${NATIVE ? ' data-off="1"' : ''}><h3>התראות</h3>
       <div class="note" id="s-engine">${engineText()}</div>
       ${pushOn() ? `<div class="note" style="margin-top:8px">✓ במכשיר הזה ההתראות מגיעות ישר לאפליקציה, עם "✓ בוצע" ו"עוד שעה".</div>
         <div class="btns"><button class="btn" id="s-test" type="button">שלח התראת בדיקה</button></div>`
@@ -4034,33 +4065,30 @@ function renderSettings(){
             : 'כדי שההתראות יגיעו ישר מהאפליקציה, עם כפתורים:'}</div>
         <div class="btns"><button class="btn primary" id="s-push" type="button">הפעלת התראות באפליקציה</button></div>`}
     </div>
-    <div class="group"><h3>שעות</h3>
+    <div class="group pf-pg" data-pg="notif"><h3>שעות</h3>
       <div class="row"><div class="field"><label for="s-from">התראות מ־</label><input type="time" id="s-from" value="${esc(c.activeFrom)}"></div>
         <div class="field"><label for="s-to">עד</label><input type="time" id="s-to" value="${esc(c.activeTo)}"></div></div>
       <div class="row"><div class="field"><label for="s-sum">שעת סיכום בוקר</label><input type="time" id="s-sum" value="${esc(c.summaryTime)}"></div>
         <div class="field"><label for="s-def">שעת ברירת מחדל</label><input type="time" id="s-def" value="${esc(c.defaultTime)}"></div></div>
       <div class="note">התראה שנופלת מחוץ לשעות לא נשלחת. דחייה שנופלת אחרי השעה האחרונה עוברת ל־08:00 בבוקר. סיכום הבוקר נשלח מהמנוע בגוגל.</div>
     </div>
-    <div class="group"><h3>מראה</h3>
-      <div class="row"><div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" value="${esc(c.accent)}" style="width:100%;min-height:48px;border:0;background:transparent"></div></div>
-    </div>
-    <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
+    <div class="group pf-pg" data-pg="doms"><h3>תחומים</h3><div class="note">כל משימה שייכת לתחום. משנים שם וצבע, ו-👁 מסתיר תחום.</div><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
-      <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
-    <div class="group"><h3>📤 ייצוא נתונים</h3><div class="note">דוח בריאות, היסטוריית תרופות ומשימות באקסל, וספר מתכונים ב-PDF.</div>
+    <div class="group pf-pg" data-pg="data"><h3>📤 ייצוא נתונים</h3><div class="note">דוח בריאות, היסטוריית תרופות ומשימות באקסל, וספר מתכונים ב-PDF.</div>
       <button class="btn" id="s-exp" type="button" style="width:100%;margin-top:8px">📤 ייצוא נתונים</button></div>
-    ${LOCAL ? `<div class="group"><h3>💾 גיבוי</h3>
+    ${LOCAL ? `<div class="group pf-pg" data-pg="data"><h3>💾 גיבוי</h3>
       <div class="note">${store(LOCAL_DONE) ? 'הכול נשמר בטלפון. כל יום נשמר גיבוי בטלפון ובהורדות/ניהול שיגרה, וגוגל מגבה אותו לדרייב שלך (גיבוי אוטומטי של אנדרואיד).' : 'עוד מעבירים את הנתונים מגיטהאב…'}
         ${store('משימות.גיבוי') ? `<br>גיבוי אחרון: ${esc(ל.shortDate(ל.localDate(Date.parse(store('משימות.גיבוי')))))} ${esc(ל.localTime(Date.parse(store('משימות.גיבוי'))))}` : ''}</div>
       <div class="btns"><button class="btn primary" id="s-bk-now" type="button">גיבוי עכשיו</button><button class="btn" id="s-bk-share" type="button">📤 שליחה לדרייב</button></div>
       <div class="btns"><button class="btn" id="s-bk-restore" type="button">📥 שחזור מקובץ גיבוי</button></div></div>` : ''}
-    <div class="group"${LOCAL ? ' hidden' : ''}><h3>גיטהאב וסנכרון</h3>
+    <div class="group pf-pg" data-pg="data"${LOCAL ? ' data-off="1"' : ''}><h3>גיטהאב וסנכרון</h3>
       <div class="note" id="s-sync-note">${token ? 'מחובר. ' : 'לא מחובר. '}${esc($('sync-status').textContent)}</div>
       <div class="field"><label for="s-token">${token ? 'החלפת אסימון' : 'אסימון גיטהאב'}</label><input type="password" id="s-token" dir="ltr" autocomplete="off" placeholder="github_pat_..."></div>
       <div class="btns"><button class="btn" id="s-connect" type="button">${token ? 'החלפה' : 'חיבור'}</button><button class="btn" id="s-sync" type="button"${token ? '' : ' disabled'}>סנכרון עכשיו</button>${token ? '<button class="btn danger" id="s-disc" type="button">ניתוק</button>' : ''}</div>
     </div>
-    <div class="group"${LOCAL ? ' hidden' : ''}><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>
-    <div class="btns"><button class="btn primary" id="s-save" type="button">שמירת ההגדרות</button></div>`;
+    <div class="group pf-pg" data-pg="data"${LOCAL ? ' data-off="1"' : ''}><h3>גיבוי</h3><button class="btn" id="s-export" type="button" style="width:100%">ייצוא כל הנתונים לקובץ</button></div>
+    <div class="btns pf-pg" data-pg="notif doms"><button class="btn primary" id="s-save" type="button">שמירת ההגדרות</button></div>`;
+  pfShow();
   $('s-save').onclick = saveSettings;
   renderDomRows(clone(D.domains.filter(x => !x.deleted)));
   $('s-dom-add').onclick = () => { const rows = readDomRows(); rows.push({id: 'd' + uid(), name: '', color: '#64748B', hidden: false, _new: true}); renderDomRows(rows); };
@@ -6015,8 +6043,58 @@ function renderPrefs(){
   $('pf-theme').innerHTML = [['system', 'לפי הטלפון'], ['light', 'בהיר'], ['dark', 'כהה']].map(([k, n]) => `<button type="button" data-th="${k}" class="${(D.config.theme || 'system') === k ? 'on' : ''}">${n}</button>`).join('');
   $('pf-start').innerHTML = btns.filter(b => !hidden.has(b.dataset.scr)).map(b => `<option value="${b.dataset.scr}"${(D.config.startScreen || 'today') === b.dataset.scr ? ' selected' : ''}>${esc(navName(b))}</option>`).join('');
   if(document.activeElement !== $('pf-name')) $('pf-name').value = D.config.userName || '';
+  $('pf-fs').innerHTML = [['s', 'קטן'], ['m', 'רגיל'], ['l', 'גדול'], ['xl', 'גדול מאוד']].map(([k, n]) => `<button type="button" data-fs="${k}" class="${(D.config.fontSize || 'm') === k ? 'on' : ''}">${n}</button>`).join('');
+  $('s-accent').value = D.config.accent || '#5B5BF7';
+  $('pf-behav').innerHTML = PF_TOGGLES.map(([k, t, sub, def]) => `<label><span>${t}<small>${sub}</small></span><input type="checkbox" data-tg="${k}"${(D.config[k] ?? def) ? ' checked' : ''}></label>`).join('');
+  const kst = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
+  $('pf-goals').innerHTML = [['kcal', '🔥', 'יעד קלוריות', `${kNum(kst.goal)} ביום`], ['prot', '💪', 'יעד חלבון', `${kNum(Math.round(+kst.protGoal || 1.6 * w))} גרם ביום`],
+    ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`]].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
+  $('pf-about').innerHTML = `<div class="sec"><h2>ניהול שיגרה</h2><div class="rows">
+      <div><span class="k">גרסה</span><span class="v">1.3${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
+      <div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>
+      <div><span class="k">מתכונים</span><span class="v">${live(D.file.recipes?.recipes).length}</span></div>
+      <div><span class="k">הנתונים נשמרים</span><span class="v">${LOCAL ? 'בטלפון (+ גיבוי לדרייב)' : 'בגיטהאב ובמכשיר'}</span></div></div>
+    <div class="btns"><button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש / עדכון</button></div>
+    <div class="note">ההתקנה מחדש מאותו קישור שומרת את כל הנתונים.</div></div>`;
+  $('pf-upd').onclick = () => window.open('https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3', '_blank');
+  pfShow();
   renderNativePrefs();
 }
+/* תתי נושאים בהגדרות: תפריט, וכל נושא בדף משלו (‹ הגדרות חוזר) */
+var pfPage = null;
+const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר כשמחזיקים משימה, מתכון או לשונית', true],
+  ['askExit', 'לשאול לפני יציאה', 'כפתור "הקודם" במסך רגיל שואל "לצאת מהאפליקציה?"', true],
+  ['timerSound', 'צליל בטיימר', 'כשטיימר מסתיים והאפליקציה פתוחה', true],
+  ['cookAwake', 'מסך דלוק במצב בישול', 'המסך לא נכבה בזמן שמבשלים לפי מתכון', true]];
+function pfPages(){
+  const c = D.config, kst = ל.calSettings(KF()), doms = D.domains.filter(x => !x.deleted).length;
+  return [['look', '🎨', 'תצוגה ולשוניות', `${{system: 'לפי הטלפון', light: 'בהיר', dark: 'כהה'}[c.theme || 'system']} · טקסט ${{s: 'קטן', m: 'רגיל', l: 'גדול', xl: 'גדול מאוד'}[c.fontSize || 'm']} · סדר הלשוניות`],
+    ['notif', '🔔', 'התראות ושעות', `התראות ${c.activeFrom}–${c.activeTo} · סיכום בוקר ${c.summaryTime}`],
+    ['behav', '⚙️', 'התנהגות', 'רטט, יציאה, טיימר, מצב בישול'],
+    ['doms', '🗂️', 'תחומים', `${doms} תחומים`],
+    ['health', '💪', 'יעדי בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())}`],
+    NATIVE && ['phone', '📱', 'טלפון והרשאות', 'בדיקת התראות, יומן, יציאה מהבית'],
+    ['data', '📤', 'ייצוא וגיבוי', 'אקסל, PDF, גיבוי'],
+    ['about', 'ℹ️', 'אודות', 'גרסה ועדכון']].filter(Boolean);
+}
+function pfShow(){
+  const pages = pfPages(), cur = pages.find(p => p[0] === pfPage);
+  if(!cur) pfPage = null;
+  $('pf-menu').hidden = !!pfPage; $('pf-back').hidden = !pfPage;
+  $('pf-h').textContent = cur ? cur[2] : 'הגדרות';
+  if(!pfPage) $('pf-menu').innerHTML = pages.map(([k, i, t, x]) => `<button type="button" class="more-row" data-pg="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">‹</span></button>`).join('');
+  document.querySelectorAll('#scr-prefs .pf-pg').forEach(el => el.hidden = !pfPage || !el.dataset.pg.split(' ').includes(pfPage));
+}
+function pfGo(k){ pfPage = k; pfShow(); scrollTo(0, 0); if(!k) renderPrefs(); }
+$('pf-menu').onclick = e => { const b = e.target.closest('[data-pg]'); if(b) pfGo(b.dataset.pg); };
+$('pf-back').onclick = () => pfGo(null);
+$('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ saveConfig({fontSize: b.dataset.fs}); applyTheme(); renderPrefs(); } };
+$('s-accent').onchange = () => { saveConfig({accent: $('s-accent').value}); applyTheme(); toast('✓ נשמר'); };
+$('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); } };
+$('pf-goals').onclick = async e => { const b = e.target.closest('[data-goal]'); if(!b) return;
+  await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal}[b.dataset.goal])(); renderPrefs(); };
+// רטט קצר (לחיצות) כבוי בהגדרות; רטט של שעון מעורר/טיימר נשאר
+if(navigator.vibrate){ const vib = navigator.vibrate.bind(navigator); navigator.vibrate = p => (typeof p === 'number' && p > 0 && p <= 30 && D.config.haptics === false) ? false : vib(p); }
 $('pf-nav').onclick = e => {
   const ids = navButtons().filter(b => b.dataset.scr !== 'prefs').map(b => b.dataset.scr);
   const h = e.target.closest('[data-hide]'), u = e.target.closest('[data-up]'), d = e.target.closest('[data-down]');
