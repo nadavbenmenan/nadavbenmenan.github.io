@@ -945,7 +945,8 @@ function sleepNights(events, nowMs){
   return Object.values(nights).sort((a, b) => b.date.localeCompare(a.date));
 }
 /** שנצ: הזמנים ביום (date) שהטלפון לא היה בשימוש, בין 20 דקות ל-4 שעות, שמתחילים בין 08:00 ל-21:00. */
-function idleGaps(events, date, nowMs, minMins){
+function idleGaps(events, date, nowMs, minMins, o){
+  o = Object.assign({fromH: 8, toH: 21, maxH: 4}, o);
   const ev = (events || []).filter(e => e && +e.t).slice().sort((a, b) => a.t - b.t), min = (minMins || 20) * 6e4;
   const startK = ev.some(e => e.k === 'unlock') ? 'unlock' : 'on';
   const S = []; let cur = null;
@@ -954,13 +955,34 @@ function idleGaps(events, date, nowMs, minMins){
     else if(e.k === 'off' && cur){ cur.b = Math.max(e.t, cur.a); S.push(cur); cur = null; }
   }
   if(cur) S.push({a: cur.a, b: nowMs || cur.a});
+  // בלי נעילה: מסך שנדלק לכמה שניות (התראה) לא נחשב שימוש
+  const U = startK === 'on' ? S.filter((x, i) => x.b - x.a >= 20e3 || i === S.length - 1) : S;
   const out = [];
-  for(let i = 0; i + 1 < S.length; i++){
-    const from = S[i].b, to = S[i + 1].a, h = +localTime(from).slice(0, 2);
-    if(localDate(from) !== date || h < 8 || h >= 21 || to - from < min || to - from > 4 * 36e5) continue;
+  for(let i = 0; i + 1 < U.length; i++){
+    const from = U[i].b, to = U[i + 1].a, h = +localTime(from).slice(0, 2);
+    if(localDate(from) !== date || h < o.fromH || h >= o.toH || to - from < min || to - from > o.maxH * 36e5) continue;
     out.push({start: from, end: to, mins: Math.round((to - from) / 6e4)});
   }
   return out;
+}
+/** צעדים לכל יום מהרשומות של Health Connect: רק מ-Samsung Health אם יש ממנה רשומות, אחרת מהמקור עם הכי הרבה רשומות (לא סכום של כמה מקורות). */
+const SAMSUNG_HEALTH = 'com.sec.android.app.shealth';
+function stepsByDay(samples){
+  const by = {};
+  for(const x of samples || []){ const k = x.sourceId || ''; (by[k] = by[k] || []).push(x); }
+  const src = by[SAMSUNG_HEALTH] ? SAMSUNG_HEALTH : Object.keys(by).sort((a, b) => by[b].length - by[a].length)[0];
+  const st = {};
+  for(const x of by[src] || []){ const d = localDate(Date.parse(x.startDate)); st[d] = (st[d] || 0) + Math.round(+x.value || 0); }
+  return st;
+}
+/** הצעות לשנצ: כל זמן של שעה ומעלה בלי שימוש בטלפון (07:00–22:00), היום ואתמול, שלא בתוך לילה, לא שנצ שכבר נרשם ולא מה שנדחה. */
+function napSuggest(events, nights, naps, nowMs, dismissed){
+  const no = new Set((dismissed || []).map(Number)), hit = (a, b, x, y) => a < y && b > x, out = [];
+  for(const d of [localDate(nowMs), addDays(localDate(nowMs), -1)])
+    for(const g of idleGaps(events, d, nowMs, 60, {fromH: 7, toH: 22, maxH: 5}))
+      if(!no.has(g.start) && !(nights || []).some(n => !n.deleted && hit(g.start, g.end, n.sleep, n.wake)) && !(naps || []).some(n => !n.deleted && hit(g.start, g.end, n.start, n.end)))
+        out.push(Object.assign({date: d}, g));
+  return out.sort((a, b) => b.start - a.start);
 }
 // תמונות (TheMealDB: 141 שנבחרו ביד, ועוד כ-580 לפי סוג המנה). קבוצה לפי מילה בשם; בתוך קבוצה: כל מתכון מקבל תמונה אחרת.
 const IMG_BASE = 'https://www.themealdb.com/images/media/meals/';
@@ -2293,7 +2315,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
