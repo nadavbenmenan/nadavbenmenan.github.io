@@ -526,6 +526,7 @@
   .more-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .more-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;border:0;text-align:right;color:inherit;width:100%}
   .more-row .i{font-size:26px;flex:none}
+  .nap-sug{display:flex;align-items:center;gap:8px;margin-top:6px} .nap-sug span{flex:1;font-weight:600} .nap-sug .btn{min-height:40px;padding:0 14px}
   .more-row .b{flex:1;min-width:0}
   .more-row .t{font-weight:600;font-size:16px}
   .more-row .s{font-size:13px;color:var(--muted);margin-top:2px}
@@ -923,6 +924,13 @@
   </div>
   <div class="pf-pg" data-pg="behav" hidden><div class="sec"><h2>התנהגות</h2><div id="pf-behav" class="pf-tg"></div></div></div>
   <div class="pf-pg" data-pg="health" hidden><div class="sec"><h2>יעדים</h2><div id="pf-goals" class="more-list"></div></div></div>
+  <div class="pf-pg" data-pg="lists" hidden>
+    <div class="opts" id="pf-l-tabs"></div>
+    <input type="search" id="pf-l-q" placeholder="חיפוש" autocomplete="off" style="width:100%;margin-top:10px">
+    <div class="note" id="pf-l-note"></div>
+    <div id="pf-l-list" class="more-list"></div>
+  </div>
+  <div class="pf-pg" data-pg="sound" hidden><div id="pf-sound"></div></div>
   <div class="pf-pg" data-pg="phone" hidden><div id="pf-native"></div></div>
   <div class="pf-pg" data-pg="about" hidden><div id="pf-about"></div></div>
   <div id="pf-more"></div>
@@ -1897,6 +1905,7 @@ function recipeMenu(r){
   sheet(r.title, [
     ['✏️ עריכת המתכון', () => openRecipeEditor(r)],
     ['🖼️ החלפת תמונה', () => openImagePicker(r)],
+    [`🗂️ קטגוריה: ${ל.recipeCat(r)}`, () => sheet(`קטגוריה: ${r.title}`, ל.RECIPE_CATS.map(c => [(ל.recipeCat(r) === c ? '✓ ' : '') + c, () => { saveRecipe(Object.assign({}, r, {cat: c})); toast(`✓ ${r.title} → ${c}`); }]))],
     ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
   ]);
 }
@@ -2336,7 +2345,8 @@ $('fit-hist').onclick = e => { const b = e.target.closest('[data-a]'); if(b) ope
 /* ---------- שעות שינה: מהטלפון (מתי המסך כבה בלילה ומתי נפתח בבוקר) ---------- */
 const hm = ms => ל.localTime(ms);
 const durText = m => `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`;
-let sleepState = '', sleepAt = 0;
+let sleepState = '', sleepAt = 0, screenEv = null;
+const NAP_NO = 'משימות.שנצ-לא';   // הצעות לשנצ שסומנו "לא"
 async function sleepSync(){
   if(!NATIVE) return sleepState = 'web';
   let st;
@@ -2348,6 +2358,7 @@ async function sleepSync(){
   sleepAt = Date.now();
   try{
     const r = await NAlarm.screenEvents({from: Date.now() - 10 * 864e5});
+    screenEv = r.events || [];
     const have = new Map((KF().sleep || []).map(x => [x.date, x]));   // גם מה שנמחק או תוקן ביד: לא דורסים
     const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && o.src !== 'health' && (o.sleep !== n.sleep || o.wake !== n.wake)); })
       .map(n => Object.assign({id: 'sl' + n.date, src: 'phone', updatedAt: nowIso(), deleted: false}, n));
@@ -2358,6 +2369,8 @@ async function renderSleep(){
   // השינה נמדדת מהטלפון (מתי המסך כבה ונפתח). אם יש שעון עם Samsung Health, הלילות משם גוברים
   await sleepSync(); await healthSync();
   const naps = live(KF().naps).sort((a, b) => b.start - a.start).slice(0, 20);
+  // שעה ומעלה בלי לגעת בטלפון (ביום): מציעים להוסיף כשנצ
+  const napSug = screenEv ? ל.napSuggest(screenEv, live(KF().sleep), live(KF().naps), Date.now(), storeJson(NAP_NO, [])).slice(0, 4) : [];
   const nights = live(KF().sleep).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30), last7 = nights.filter(n => n.date >= ל.addDays(today(), -7));
   // ממוצע של שעה בלילה: מודדים מהצהריים, כדי ש-23:30 ו-00:30 ימוצעו ל-00:00
   const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
@@ -2370,6 +2383,9 @@ async function renderSleep(){
     ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
       <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span>
       <span class="note" id="sl-goal">${(() => { const g = sleepGoal(), a = last7.reduce((x, n) => x + n.mins, 0) / last7.length; return `🎯 יעד ${durText(g)} · ${a >= g ? '✓ עומד ביעד' : `חסר בערך ${durText(g - a)} בלילה`}`; })()}</span></div>` : ''}
+    ${napSug.length ? `<div class="card" id="sl-sug" style="margin-top:12px"><b>😴 היה שנצ?</b><div class="note" style="margin:4px 0 8px">לא נגעת בטלפון יותר משעה:</div>
+      ${napSug.map(g => `<div class="nap-sug"><span>${esc(kDayLabel(g.date))} ${hm(g.start)}–${hm(g.end)} · ${durText(g.mins)}</span>
+        <button class="btn primary" type="button" data-nap-yes="${g.start}" data-end="${g.end}" data-date="${g.date}">✓ שנצ</button><button class="btn" type="button" data-nap-no="${g.start}" aria-label="לא היה שנצ">✗</button></div>`).join('')}</div>` : ''}
     <div class="sec"><h2 class="bl-h">לילות <span><button class="txt-btn" type="button" id="sl-nap">😴 ＋ שנצ</button> <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></span></h2>
     ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
       return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
@@ -2440,9 +2456,12 @@ async function healthSync(force){
     if(last){ const date = ל.localDate(Date.parse(last.startDate)); if(!live(KF().weights).some(w => w.date === date)) saveK('weights', {id: 'w' + date, date, kg: Math.round(+last.value * 10) / 10, src: 'samsung', updatedAt: now, deleted: false}); }
   }catch(e){}
   try{   // צעדים: לכל יום בשבוע האחרון (רק להצגה)
-    const r = await NHealth.queryAggregated({dataType: 'steps', startDate: new Date(ל.at(ל.addDays(today(), -6), '00:00')).toISOString(), endDate: to, bucket: 'day', aggregation: 'sum'});
-    const st = {}; for(const x of r.samples || []) st[ל.localDate(Date.parse(x.startDate) + 36e5)] = Math.round(+x.value || 0);
-    store('משימות.צעדים', JSON.stringify(st));
+    // רק מה ש-Samsung Health רשם. אפליקציות אחרות (Google Fit, מד צעדים של הטלפון) כותבות ל-Health Connect מספרים משלהן,
+    // והסכום הכללי לא תאם את מה שרואים בסמסונג
+    const r = await NHealth.readSamples({dataType: 'steps', startDate: new Date(ל.at(ל.addDays(today(), -6), '00:00')).toISOString(), endDate: to, limit: 10000});
+    const sm = r.samples || [];
+    store('משימות.צעדים', JSON.stringify(ל.stepsByDay(sm)));
+    store('משימות.צעדים-מקור', !sm.length || sm.some(x => x.sourceId === 'com.sec.android.app.shealth') ? '' : (sm[0].sourceName || sm[0].sourceId || ''));
   }catch(e){}
 }
 /** בכושר: חיבור ל-Samsung Health, או צעדים של השבוע. */
@@ -2456,7 +2475,7 @@ async function renderHealthBox(){
   const st = storeJson('משימות.צעדים', {}), days = Array.from({length: 7}, (_, i) => ל.addDays(today(), i - 6)), max = Math.max(1, ...days.map(d => st[d] || 0));
   box.innerHTML = `<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>👣 צעדים היום</b><b style="font-size:24px;color:var(--accent)">${kNum(st[today()] || 0)}</b></div>
     <div class="bars" style="margin-top:8px">${days.map(d => `<i style="height:${Math.max(4, Math.round((st[d] || 0) / max * 60))}px" title="${esc(kDayLabel(d))}: ${kNum(st[d] || 0)}"></i>`).join('')}</div>
-    <div class="note" style="margin:6px 0 0">✓ מחובר ל-Samsung Health · אימונים, שינה ומשקל מתעדכנים לבד</div></div>`;
+    <div class="note" style="margin:6px 0 0">✓ מחובר ל-Samsung Health · אימונים, שינה ומשקל מתעדכנים לבד${store('משימות.צעדים-מקור') ? `<br>הצעדים מ: ${esc(store('משימות.צעדים-מקור'))} (אין צעדים מ-Samsung Health)` : ''}</div></div>`;
 }
 
 /** תיקון ידני של לילה: מתי נרדמת ומתי קמת. */
@@ -2464,7 +2483,7 @@ async function renderHealthBox(){
 async function findNaps(date){
   let gaps = null, why = '';
   if(NATIVE && NAlarm?.screenEvents){
-    try{ const r = await NAlarm.screenEvents({from: ל.at(ל.addDays(date, -1), '12:00')}); gaps = ל.idleGaps(r.events || [], date, Date.now()); }
+    try{ const r = await NAlarm.screenEvents({from: ל.at(ל.addDays(date, -1), '12:00')}); gaps = ל.idleGaps(r.events || [], date, Date.now(), 20, {fromH: 7, toH: 22, maxH: 5}); }
     catch(e){ why = 'צריך לאשר "גישה לנתוני שימוש" כדי לראות מתי הטלפון לא היה בשימוש.'; }
   } else why = 'באפליקציית האנדרואיד יופיעו כאן הזמנים שהטלפון לא היה בשימוש.';
   const have = live(KF().naps).filter(n => n.date === date);
@@ -2488,6 +2507,11 @@ async function editNap(date, n){
   if(n) saveK('naps', Object.assign({}, n, {deleted: true, updatedAt: nowIso()}));
   addNap(date, a, b);
 }
+$('h-sleep').addEventListener('click', e => {
+  const y = e.target.closest('[data-nap-yes]'), n = e.target.closest('[data-nap-no]');
+  if(y) addNap(y.dataset.date, +y.dataset.napYes, +y.dataset.end);
+  if(n){ const l = storeJson(NAP_NO, []); l.push(+n.dataset.napNo); store(NAP_NO, JSON.stringify(l.slice(-60))); renderSleep(); }
+});
 $('h-sleep').addEventListener('click', e => { const b = e.target.closest('[data-nap]'); if(!b) return; const n = live(KF().naps).find(x => x.id === b.dataset.nap); if(!n) return;
   sheet(`שנצ ${kDayLabel(n.date)} · ${durText(n.mins)}`, [['✏️ תיקון השעות', () => editNap(n.date, n)],
     ['🗑 מחיקה', () => { saveK('naps', Object.assign({}, n, {deleted: true, updatedAt: nowIso()})); renderSleep(); }]]); });
@@ -3552,7 +3576,7 @@ function openQuick(){
   quick = {when: 'today', date: null, repeat: '', repTouched: false, domain: visibleDomains()[0]?.id === 'money' ? 'personal' : (visibleDomains()[0]?.id || 'personal'), touched: false};
   $('q-title').value = ''; $('q-time').value = '';
   $('q-clock-t').textContent = ל.localTime(Date.now());
-  quick.cal = store(K.toCal) === '1';   // נזכר בבחירה האחרונה
+  quick.cal = false;   // תמיד כבוי בהתחלה: מדליקים רק כשרוצים שזה ייכנס ליומן
   renderQuick();
   $('dlg-quick').showModal();
   setTimeout(() => $('q-title').focus(), 50);
@@ -3630,7 +3654,6 @@ $('q-save').onclick = () => {
   if(quick.cal && qt.kind !== 'inbox') qt.calendar = true;   // ייכנס ליומן גוגל (באפליקציה העצמאית: ישר ליומן של הטלפון)
   if(quick.leave) qt.onLeave = true;   // ביציאה מהבית ("🚪 לא לשכוח")
   const t = saveTask(qt);
-  store(K.toCal, quick.cal ? '1' : '0');
   $('dlg-quick').close();
   if(t.kind === 'schedule') toast(`נוספה משימה קבועה: ${t.title}, ${ל.repeatText(quick.repeat)}${t.calendar ? '. 📅 גם ביומן' : ''}`);
   else if(t.calendar) toast(`נוספה: ${t.title}. 📅 תיכנס ליומן גוגל בדקות הקרובות`);
@@ -5516,20 +5539,21 @@ async function nativeScheduleNow(){
   const want = timers.filter(t => t.kind !== 'med' && !t.deleted && !t.stopped && t.at > now - 6e4);
   const had = storeJson('משימות.שעונים', []);
   for(const id of had) if(!want.some(t => t.id === id)) await NAlarm.cancel({id}).catch(() => {});
-  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר'})
+  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר', sound: D.config.timerTone || ''})
     .catch(e => toast('השעון המעורר לא נקבע: ' + (e.message || e), {err: true, ms: 8000}));
   store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
   const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), k: 'n:' + n.id, kind: 'task', title: n.title, body: n.message || '', at: n.at,
-      channelId: 'reminders', extra: {u: n.click || ''}}))
+      channelId: remCh('reminders'), extra: {u: n.click || ''}}))
     .concat(morningNotifs(now))
     .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), k: 'm:' + t.id, kind: 'med', title: t.title, body: t.body || '',
-      at: t.at, channelId: 'meds', extra: {u: '#meds'}})))
-    .concat(safeList(() => extraNotifs(now)).map(n => ({id: intId(n.k), k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, channelId: n.kind === 'medstock' ? 'meds' : 'reminders', extra: {u: n.u || '#notif'}})));
+      at: t.at, channelId: remCh('meds'), extra: {u: '#meds'}})))
+    .concat(safeList(() => extraNotifs(now)).map(n => ({id: intId(n.k), k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, channelId: remCh(n.kind === 'medstock' ? 'meds' : 'reminders'), extra: {u: n.u || '#notif'}})));
   notifPlan(list);
   const sig = JSON.stringify(list);
   if(sig === store('משימות.מקומי')) return;
   try{
+    await ensureSoundChannels();
     const pend = await NLN.getPending();
     if(pend?.notifications?.length) await NLN.cancel({notifications: pend.notifications.map(n => ({id: n.id}))});
     if(list.length) await NLN.schedule({notifications: list.map(n => ({id: n.id, title: n.title, body: n.body, channelId: n.channelId,
@@ -5542,7 +5566,7 @@ function morningNotifs(now){
   if(!LOCAL) return [];
   let days; try{ days = dailyInfo(); }catch(e){ return []; }
   return Object.entries(days).slice(0, 2).map(([d, x]) => ({id: intId('morning:' + d), k: 'morning:' + d, kind: 'morning', title: x.morning, body: x.lines.slice(0, 8).join('\n') || 'אין משימות להיום 🎉',
-    at: ל.at(d, D.config.summaryTime || '07:30'), channelId: 'reminders', extra: {u: '#morning'}})).filter(n => n.at > now + 15e3);
+    at: ל.at(d, D.config.summaryTime || '07:30'), channelId: remCh('reminders'), extra: {u: '#morning'}})).filter(n => n.at > now + 15e3);
 }
 /** מה קרה כשהאפליקציה הייתה סגורה: טיימרים שנעצרו מההתראה, או פתיחה מהתראת טיימר. */
 async function nativeEvents(){
@@ -6325,6 +6349,8 @@ function renderPrefs(){
     <div class="btns"><button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש / עדכון</button></div>
     <div class="note">ההתקנה מחדש מאותו קישור שומרת את כל הנתונים.</div></div>`;
   $('pf-upd').onclick = () => window.open('https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3', '_blank');
+  if(pfPage === 'lists') renderPfLists();
+  if(pfPage === 'sound') renderPfSound();
   pfShow();
   renderNativePrefs();
 }
@@ -6344,6 +6370,8 @@ function pfPages(){
     ['notif', '🔔', 'התראות ושעות', `התראות ${c.activeFrom}–${c.activeTo} · סיכום בוקר ${c.summaryTime}`],
     ['behav', '⚙️', 'התנהגות', 'רטט, יציאה, טיימר, מצב בישול'],
     ['doms', '🗂️', 'תחומים', `${doms} תחומים`],
+    ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
+    ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === (c.notifSound || '')) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === (c.timerTone || '')) || SND_TIMER[0])[1]}`],
     ['health', '💪', 'יעדי בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())}`],
     NATIVE && ['phone', '📱', 'טלפון והרשאות', 'בדיקת התראות, יומן, יציאה מהבית'],
     ['data', '📤', 'ייצוא וגיבוי', 'אקסל, PDF, גיבוי'],
@@ -6378,6 +6406,88 @@ $('pf-nav').onclick = e => {
 $('pf-theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ saveConfig({theme: b.dataset.th}); renderPrefs(); } };
 $('pf-name').onchange = () => { saveConfig({userName: $('pf-name').value.trim()}); toast('✓ נשמר'); };
 $('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
+/* ---------- הגדרות ← רשימות: כל המוצרים, המתכונים והמאכלים במקום אחד, לשינוי שם, מחלקה ומחיקה ---------- */
+let pfList = 'shop';
+const PF_LISTS = [['shop', '🛒 מוצרים'], ['recipes', '🍳 מתכונים'], ['foods', '🍽️ מאכלים']];
+function pfListRows(){
+  const q = ל.shopKey($('pf-l-q').value || ''), has = (...x) => !q || ל.shopKey(x.join(' ')).includes(q), byName = (a, b) => (a.t || '').localeCompare(b.t || '', 'he');
+  if(pfList === 'shop') return D.file.shop.items.filter(x => !x.deleted && has(x.name)).map(x => { const i = ל.shopInfo(x);
+    return {k: x.id, i: i.textEmoji || '🛒', t: x.name, s: [i.catName, x.active && '🛒 ברשימה עכשיו', x.count && `נוסף ${x.count === 1 ? 'פעם אחת' : x.count + ' פעמים'}`].filter(Boolean).join(' · ')}; }).sort(byName);
+  if(pfList === 'recipes') return recipeList().filter(r => has(r.title)).map(r => ({k: r.id, i: recipeEmoji(r), t: r.title, s: ל.recipeCat(r)})).sort(byName);
+  return [...live(KF().foods).map(f => ({k: 'f:' + f.id, i: FOOD_ICON(f), t: f.name, s: `${kNum(f.perUnitKcal ?? f.kcal100)} קלוריות ל${f.perUnitKcal != null ? f.units[0].name : '־100 גרם'}`})),
+    ...live(KF().recipes).map(r => ({k: 'r:' + r.id, i: '🧾', t: r.name, s: `מנה ממרכיבים · ${kNum(ל.recipeFood(r).perServing)} למנה`})),
+    ...live(KF().meals).map(m => ({k: 'm:' + m.id, i: '⭐', t: m.name, s: `ארוחה קבועה · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))} קלוריות`}))].filter(x => has(x.t)).sort(byName);
+}
+function renderPfLists(){
+  $('pf-l-tabs').innerHTML = PF_LISTS.map(([k, n]) => `<button type="button" data-l="${k}" class="${pfList === k ? 'on' : ''}">${n}</button>`).join('');
+  const rows = pfListRows(), add = {shop: '＋ מוצר חדש', recipes: '＋ מתכון חדש', foods: '＋ מאכל חדש'}[pfList];
+  $('pf-l-note').textContent = {shop: 'כל המוצרים שהוספת אי פעם (מהם ההצעות בקניות). לוחצים על מוצר: שם, מחלקה או מחיקה.', recipes: 'לוחצים על מתכון: עריכה, קטגוריה, תמונה או מחיקה.',
+    foods: 'מאכלים שהוספת, מנות ממרכיבים וארוחות קבועות (מחישוב הקלוריות).'}[pfList] + ` (${rows.length})`;
+  $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">${add.slice(2)}</span></span></button>` +
+    (rows.length ? rows.map(x => `<button type="button" class="more-row" data-k="${esc(x.k)}"><span class="i">${x.i}</span><span class="b"><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span><span class="side">✏️</span></button>`).join('')
+      : `<div class="empty">${$('pf-l-q').value ? 'לא נמצא' : 'הרשימה ריקה'}</div>`);
+}
+$('pf-l-tabs').onclick = e => { const b = e.target.closest('[data-l]'); if(b){ pfList = b.dataset.l; $('pf-l-q').value = ''; renderPfLists(); } };
+$('pf-l-q').addEventListener('input', () => renderPfLists());
+$('pf-l-list').onclick = async e => {
+  const b = e.target.closest('[data-k]'); if(!b) return;
+  const k = b.dataset.k;
+  if(pfList === 'shop'){
+    if(k === '+'){
+      const [v] = await ask('מוצר חדש', [{label: 'שם המוצר', req: true}], {note: 'נכנס להצעות בקניות (לא לרשימה של עכשיו)'}) || [];
+      const r = v && ל.shopAdd(D.file.shop.items, v, nowIso());
+      if(!r) return v && toast('כבר קיים');
+      saveShop(Object.assign(r, {active: false, count: 0})); if(!r.cat && !ל.shopMatch(r.name)) openShopCat(r, true); return;
+    }
+    const x = D.file.shop.items.find(i => i.id === k); if(!x) return;
+    return sheet(x.name, [
+      ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; if(v && v !== x.name){ saveShop(Object.assign({}, x, {name: v, updatedAt: nowIso()})); toast('✓ נשמר'); } }],
+      [`🗂️ מחלקה: ${ל.shopInfo(x).catName}`, () => openShopCat(x)],
+      x.active ? ['✓ כבר ברשימת הקניות', () => {}] : ['🛒 להוסיף לרשימת הקניות', () => { shopAddName(x.name); toast(`✓ ${x.name} ברשימה`); }],
+      ['🗑 מחיקה (גם מההצעות)', () => { saveShop(Object.assign({}, x, {deleted: true, updatedAt: nowIso()})); toast('נמחק', {undo: () => saveShop(Object.assign({}, x, {deleted: false, updatedAt: nowIso()}))}); }]]);
+  }
+  if(pfList === 'recipes'){ if(k === '+') return openRecipeEditor(null); const r = recipeById(k); return r && recipeMenu(r); }
+  if(k === '+') return sheet('מאכל חדש', [['🍽️ מאכל עם קלוריות', () => openKMy(null)], ['🧾 מנה ממרכיבים', () => openKRec(null)]]);
+  const [t, id] = [k.slice(0, 1), k.slice(2)];
+  if(t === 'f') return openKMy(ל.calFoods(KF()).find(x => x.id === id));
+  if(t === 'r'){ const r = live(KF().recipes).find(x => x.id === id); return r && openKRec(r); }
+  const m = live(KF().meals).find(x => x.id === id); if(m) favMealMenu(m);
+};
+/* ---------- הגדרות ← צלילים: נבחרים מתוך האפליקציה (בלי חנות הצלילים של הטלפון) ---------- */
+// כל צליל = ערוץ התראות משלו (באנדרואיד אי אפשר לשנות צליל של ערוץ קיים). הקבצים: snd_*.wav באתר וב-res/raw
+const SND_NOTIF = [['', 'ברירת המחדל של הטלפון'], ['snd_chime', '🔔 פעמון רך', 1], ['snd_ding', '✨ דינג'], ['snd_drops', '💧 טיפות'], ['snd_marimba', '🎵 מרימבה']];
+const SND_TIMER = [['', '⏰ השעון המעורר של הטלפון'], ['snd_kitchen', '🍳 צפצוף מטבח', 1], ['snd_bells', '🔔 פעמונים'], ['snd_digital', '📟 שעון דיגיטלי'], ['snd_xylo', '🎶 קסילופון']];
+let sndPlayer = null;
+function playSnd(f){ try{ sndPlayer?.pause(); if(f){ sndPlayer = new Audio(f + '.wav'); sndPlayer.play().catch(() => {}); } }catch(e){} }
+function renderPfSound(){
+  const c = D.config, row = (key, cur) => ([k, n, rec]) => `<button type="button" class="more-row${cur === k ? ' today' : ''}" data-snd="${key}" data-v="${k}"><span class="i">${cur === k ? '◉' : '○'}</span><span class="b"><span class="t">${n}${rec ? ' <small class="note" style="margin:0">(מומלץ)</small>' : ''}</span></span><span class="side">${k ? '▶' : ''}</span></button>`;
+  $('pf-sound').innerHTML = `<div class="sec"><h2>🔔 התראות ותזכורות</h2><div class="note">לוחצים לשמוע ולבחור. משימות, תרופות וסיכומים.</div><div class="more-list">${SND_NOTIF.map(row('n', c.notifSound || '')).join('')}</div></div>
+    <div class="sec"><h2>⏱ טיימר</h2><div class="note">מצלצל עד שעוצרים, גם כשהטלפון על שקט (כמו שעון מעורר).</div><div class="more-list">${SND_TIMER.map(row('t', c.timerTone || '')).join('')}</div></div>
+    ${NATIVE ? `<div class="btns"><button class="btn" type="button" id="snd-t1">🔔 התראה לדוגמה בעוד 5 שניות</button><button class="btn" type="button" id="snd-t2">⏱ טיימר לדוגמה בעוד 5 שניות</button></div>` : ''}
+    <div class="note">העוצמה: של ההתראות או של השעון המעורר בטלפון.</div>`;
+  if($('snd-t1')) $('snd-t1').onclick = async () => { await ensureSoundChannels(); await NLN.schedule({notifications: [{id: 77002, title: 'דוגמה: תזכורת', body: 'כך תישמע התראה', channelId: remCh('reminders'), smallIcon: 'ic_stat_notify', schedule: {at: new Date(Date.now() + 5e3), allowWhileIdle: true}}]}).catch(e => toast(e.message, {err: true})); toast('✓ בעוד 5 שניות'); };
+  if($('snd-t2')) $('snd-t2').onclick = () => NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 5e3, title: 'דוגמה: טיימר', body: 'לוחצים "עצור"', sound: D.config.timerTone || ''}).then(() => toast('✓ בעוד 5 שניות')).catch(e => toast(e.message, {err: true}));
+}
+$('pf-sound').addEventListener('click', e => {
+  const b = e.target.closest('[data-snd]'); if(!b) return;
+  playSnd(b.dataset.v);
+  saveConfig(b.dataset.snd === 'n' ? {notifSound: b.dataset.v} : {timerTone: b.dataset.v});
+  renderPfSound(); if(NATIVE) nativeSchedule?.();
+});
+/** ערוץ ההתראות לפי הצליל שנבחר (reminders / reminders_snd_chime). */
+const remCh = base => D.config.notifSound ? `${base}_${D.config.notifSound}` : base;
+async function ensureSoundChannels(){
+  const snd = D.config.notifSound || '';
+  if(!NLN || ensureSoundChannels.k === snd) return;
+  try{
+    if(snd) for(const [b, n] of [['reminders', 'משימות'], ['meds', 'תרופות']])
+      await NLN.createChannel({id: `${b}_${snd}`, name: n, description: 'צליל: ' + (SND_NOTIF.find(x => x[0] === snd) || [])[1], importance: 4, visibility: 1, vibration: true, sound: snd + '.wav'});
+    // ערוצים של צלילים קודמים: נמחקים כדי שלא יהיו כפולים בהגדרות הטלפון
+    const l = await NLN.listChannels?.();
+    for(const ch of l?.channels || []) if(/^(reminders|meds)_snd_/.test(ch.id) && !ch.id.endsWith('_' + snd)) await NLN.deleteChannel?.({id: ch.id});
+    ensureSoundChannels.k = snd;
+  }catch(e){}
+}
 /** באפליקציית האנדרואיד: מצב ההרשאות, ובדיקה אמיתית של התראה ושל שעון מעורר בעוד 10 שניות. */
 async function renderNativePrefs(){
   const box = $('pf-native');
@@ -6396,12 +6506,12 @@ async function renderNativePrefs(){
     ${st.listener === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
       <div class="btns">${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות</button><button class="btn" type="button" id="pf-app">חסום? הגדרות מוגבלות</button>'}</div></div>`}`;
   $('pf-t1').onclick = async () => {
-    try{ await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: 'reminders', smallIcon: 'ic_stat_notify',
+    try{ await ensureSoundChannels(); await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: remCh('reminders'), smallIcon: 'ic_stat_notify',
       schedule: {at: new Date(Date.now() + 10e3), allowWhileIdle: true}}]}); toast('✓ נקבע. אפשר לצאת מהאפליקציה'); }
     catch(e){ toast('שגיאה בהתראה: ' + (e.message || e), {err: true, ms: 8000}); }
   };
   $('pf-t2').onclick = async () => {
-    try{ await NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 10e3, title: 'בדיקת שעון מעורר', body: 'לוחצים "עצור"'}); toast('✓ נקבע. אפשר לנעול את הטלפון'); }
+    try{ await NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 10e3, title: 'בדיקת שעון מעורר', body: 'לוחצים "עצור"', sound: D.config.timerTone || ''}); toast('✓ נקבע. אפשר לנעול את הטלפון'); }
     catch(e){ toast('שגיאה בשעון המעורר: ' + (e.message || e), {err: true, ms: 8000}); }
   };
   $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
