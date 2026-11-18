@@ -365,7 +365,7 @@
   .meds .מקרא{display:flex;gap:14px;font-size:12px;color:var(--צפחה);margin-top:8px;flex-wrap:wrap}
   .meds .מקרא i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px}
   .meds /* חלונית */
-  .תוך{padding:18px}
+  .תוך{padding:18px 18px calc(var(--sb) + 22px)}   /* התרופות: גם כאן מעל פס הניווט של הטלפון */
   .meds .תוך h2{margin:0 0 14px;font-size:18px}
   .meds .תוך h4{margin:18px 0 8px;font-size:14px;color:var(--נייבי);border-top:1px solid var(--קו-רך);padding-top:14px}
   .meds .שדה{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
@@ -2301,6 +2301,7 @@ async function sleepSync(){
 async function renderSleep(){
   // השינה נמדדת מהטלפון (מתי המסך כבה ונפתח). אם יש שעון עם Samsung Health, הלילות משם גוברים
   await sleepSync(); await healthSync();
+  const naps = live(KF().naps).sort((a, b) => b.start - a.start).slice(0, 20);
   const nights = live(KF().sleep).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30), last7 = nights.filter(n => n.date >= ל.addDays(today(), -7));
   // ממוצע של שעה בלילה: מודדים מהצהריים, כדי ש-23:30 ו-00:30 ימוצעו ל-00:00
   const avgClock = l => { const v = l.map(ms => { const [h, m] = hm(ms).split(':').map(Number); return ((h + 12) % 24) * 60 + m; }); const a = Math.round(v.reduce((x, y) => x + y, 0) / v.length);
@@ -2312,14 +2313,17 @@ async function renderSleep(){
       <button class="btn primary" type="button" id="sl-perm" style="width:100%">פתיחת ההגדרה</button></div>` : note ? `<div class="card note" style="margin-top:12px">${esc(note)}</div>` : ''}
     ${last7.length ? `<div class="sl-avg" style="margin-top:12px"><span class="note">ממוצע ב-${last7.length} הלילות האחרונים</span><b>${durText(last7.reduce((x, n) => x + n.mins, 0) / last7.length)} שעות</b>
       <span>נרדם בערך ב-${avgClock(last7.map(n => n.sleep))} · קם בערך ב-${avgClock(last7.map(n => n.wake))}</span></div>` : ''}
-    <div class="sec"><h2 class="bl-h">לילות <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></h2>
+    <div class="sec"><h2 class="bl-h">לילות <span><button class="txt-btn" type="button" id="sl-nap">😴 ＋ שנצ</button> <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></span></h2>
     ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
       return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
         <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : n.src === 'health' ? ' · Samsung Health' : ''}</div>
         <div class="sl-bar"><i style="right:${Math.max(0, Math.min(100, x0 * 100)).toFixed(1)}%;width:${Math.min(100, n.mins / (14 * 60) * 100).toFixed(1)}%"></i></div></button>`; }).join('')
-      : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>`;
+      : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>
+    ${naps.length ? `<div class="sec"><h2>😴 שנצים</h2>${naps.map(n => `<button type="button" class="sl-row" data-nap="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
+      <div class="s">${hm(n.start)} ← ${hm(n.end)}</div></button>`).join('')}</div>` : ''}`;
   if($('sl-perm')) $('sl-perm').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
   $('sl-add').onclick = () => editSleep(null);
+  $('sl-nap').onclick = () => findNaps(today());
 }
 /* ---------- Samsung Health (דרך Health Connect של גוגל): שינה, אימונים, צעדים, משקל ---------- */
 const NHealth = NATIVE ? window.Capacitor?.Plugins?.Health : null;
@@ -2399,6 +2403,37 @@ async function renderHealthBox(){
 }
 
 /** תיקון ידני של לילה: מתי נרדמת ומתי קמת. */
+/** שנצ: הזמנים ביום שהטלפון לא היה בשימוש (20 דקות עד 4 שעות), ובוחרים מה היה שנצ. אפשר לעבור ליום קודם, או להוסיף ביד. */
+async function findNaps(date){
+  let gaps = null, why = '';
+  if(NATIVE && NAlarm?.screenEvents){
+    try{ const r = await NAlarm.screenEvents({from: ל.at(ל.addDays(date, -1), '12:00')}); gaps = ל.idleGaps(r.events || [], date, Date.now()); }
+    catch(e){ why = 'צריך לאשר "גישה לנתוני שימוש" כדי לראות מתי הטלפון לא היה בשימוש.'; }
+  } else why = 'באפליקציית האנדרואיד יופיעו כאן הזמנים שהטלפון לא היה בשימוש.';
+  const have = live(KF().naps).filter(n => n.date === date);
+  const items = (gaps || []).filter(g => !have.some(n => n.start < g.end && n.end > g.start))
+    .map(g => [`😴 ${hm(g.start)} – ${hm(g.end)} · ${durText(g.mins)}`, () => { addNap(date, g.start, g.end); }]);
+  sheet(`שנצ ${kDayLabel(date) === 'היום' ? 'היום' : 'ב' + kDayLabel(date)}`, [...items,
+    ['✏️ הוספה ידנית', () => editNap(date)],
+    ...(date > ל.addDays(today(), -14) ? [['← יום קודם', () => findNaps(ל.addDays(date, -1))]] : [])],
+    why || (items.length ? 'הזמנים שהטלפון לא היה בשימוש. בוחרים מה היה שנצ:' : 'לא מצאתי זמן ארוך בלי שימוש בטלפון ביום הזה.'));
+}
+function addNap(date, start, end){
+  saveK('naps', {id: 'nap' + start.toString(36), date, start, end, mins: Math.round((end - start) / 6e4), updatedAt: nowIso(), deleted: false});
+  toast(`😴 שנצ של ${durText(Math.round((end - start) / 6e4))} נוסף`); renderSleep();
+}
+async function editNap(date, n){
+  const v = await ask(n ? 'תיקון השנצ' : 'שנצ', [{label: 'נרדמתי בשעה', value: n ? hm(n.start) : '14:00', req: true}, {label: 'קמתי בשעה', value: n ? hm(n.end) : '14:30', req: true}], {ok: 'שמירה'});
+  if(!v) return;
+  const ok = x => /^\d{1,2}:\d{2}$/.test(x); if(!ok(v[0]) || !ok(v[1])) return toast('שעה כמו 14:30', {err: true});
+  const a = ל.at(date, v[0].padStart(5, '0')), b = ל.at(date, v[1].padStart(5, '0'));
+  if(!(b > a)) return toast('שעת הקימה צריכה להיות אחרי ההירדמות', {err: true});
+  if(n) saveK('naps', Object.assign({}, n, {deleted: true, updatedAt: nowIso()}));
+  addNap(date, a, b);
+}
+$('h-sleep').addEventListener('click', e => { const b = e.target.closest('[data-nap]'); if(!b) return; const n = live(KF().naps).find(x => x.id === b.dataset.nap); if(!n) return;
+  sheet(`שנצ ${kDayLabel(n.date)} · ${durText(n.mins)}`, [['✏️ תיקון השעות', () => editNap(n.date, n)],
+    ['🗑 מחיקה', () => { saveK('naps', Object.assign({}, n, {deleted: true, updatedAt: nowIso()})); renderSleep(); }]]); });
 async function editSleep(n){
   const d0 = n ? n.date : ל.addDays(today(), -1);
   const v = await ask(n ? 'תיקון הלילה' : 'לילה חדש', [{label: 'נרדמתי בשעה', value: n ? hm(n.sleep) : '23:30', req: true}, {label: 'קמתי בשעה', value: n ? hm(n.wake) : '07:00', req: true}],
@@ -2622,6 +2657,107 @@ function favMealMenu(m){
   ], m.items.map(i => `${i.name} (${kNum(i.kcal)})`).join(' · '));
 }
 const FOOD_ICON = f => ל.FOODS.some(b => b.id === f.id) ? '✏️' : '🍽️';
+/* ---------- ייצוא נתונים (מההגדרות): אקסל ו-PDF ---------- */
+function exportMenu(){
+  sheet('📤 ייצוא נתונים', [
+    ['📊 דוח בריאות (אקסל): קלוריות, חלבון, פעילות, שינה, משקל', exportHealth],
+    ['💊 היסטוריית תרופות (אקסל)', exportMeds],
+    ['✅ משימות שבוצעו (אקסל)', exportTasks],
+    ['📖 ספר מתכונים (PDF)', exportRecipes],
+  ], 'הקובץ נשמר בהורדות/ניהול שיגרה, ואפשר לשלוח אותו (דרייב, מייל, וואטסאפ).');
+}
+const u8To64 = u => { let x = ''; for(let i = 0; i < u.length; i += 0x8000) x += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(x); };
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+async function saveExport(name, bytes, mime){
+  window.__lastExport = {name, size: bytes.length};
+  if(NPhone?.exportFile){
+    try{ const r = await NPhone.exportFile({name, b64: u8To64(bytes), mime}); toast(r?.downloads ? '✓ נשמר בהורדות/ניהול שיגרה' : '✓ הקובץ מוכן'); }
+    catch(e){ toast('הייצוא נכשל: ' + (e.message || e), {err: true}); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type: mime})); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('✓ הקובץ ירד');
+}
+const xlName = kind => `${kind} ${today()}.xlsx`;
+const hmm = m => m ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}` : '';
+function exportHealth(){
+  const f = KF() || {}, ents = live(f.entries), acts = live(f.acts), sleep = live(f.sleep), wts = live(f.weights), naps = live(f.naps);
+  const days = [...new Set([...ents.map(e => e.date), ...acts.map(a => a.date), ...sleep.map(n => n.date), ...wts.map(w => w.date), ...naps.map(z => z.date)])].filter(Boolean).sort().reverse();
+  if(!days.length) return toast('אין עדיין נתוני בריאות לייצוא');
+  const sl = new Map(sleep.map(n => [n.date, n])), r1 = v => Math.round((+v || 0) * 10) / 10;
+  const daily = [['תאריך', 'יום', 'נאכלו (קלוריות)', 'יעד', 'נשרפו בפעילות', 'מאזן', 'חלבון (ג׳)', 'יעד חלבון', 'משקל (ק״ג)', 'שינה (שעות)', 'נרדם', 'קם', 'שנצ']];
+  for(const d of days){
+    const x = ל.calDay(f, d), n = sl.get(d), w = wts.find(w => w.date === d);
+    daily.push([d, dayName(d), x.eaten, x.goal, x.burned, x.eaten - x.burned - x.goal, r1(x.protein), Math.round(x.protGoal), w ? +w.kg : '',
+      n ? hmm(n.mins) : '', n ? hm(n.sleep) : '', n ? hm(n.wake) : '', hmm(naps.filter(z => z.date === d).reduce((s, z) => s + z.mins, 0))]);
+  }
+  const mealName = id => (ל.MEALS.find(m => m[0] === id) || [, ''])[1];
+  const meals = [['תאריך', 'ארוחה', 'מאכל', 'כמות', 'קלוריות', 'חלבון (ג׳)'],
+    ...ents.sort((a, b) => b.date.localeCompare(a.date) || (a.addedAt || '').localeCompare(b.addedAt || '')).map(e => [e.date, mealName(e.meal), e.name, qtyText(e), Math.round(+e.kcal || 0), r1(e.protein ?? e.prot)])];
+  const fit = [['תאריך', 'פעילות', 'פירוט', 'קלוריות'],
+    ...acts.sort((a, b) => b.date.localeCompare(a.date)).map(a => [a.date, a.name || (ל.ACTIVITIES[a.type] || {}).name || a.type || '', actText(a), Math.round(+a.kcal || 0)])];
+  const night = [['לילה של', 'נרדם', 'קם', 'משך', 'התעוררויות', 'מקור'],
+    ...sleep.sort((a, b) => b.date.localeCompare(a.date)).map(n => [n.date, hm(n.sleep), hm(n.wake), hmm(n.mins), n.wakeups || 0, n.manual ? 'ידני' : n.src === 'health' ? 'Samsung Health' : 'הטלפון'])];
+  const weight = [['תאריך', 'משקל (ק״ג)'], ...wts.sort((a, b) => b.date.localeCompare(a.date)).map(w => [w.date, +w.kg])];
+  return saveExport(xlName('דוח בריאות'), ל.makeXlsx([{name: 'סיכום יומי', rows: daily}, {name: 'ארוחות', rows: meals}, {name: 'פעילות', rows: fit}, {name: 'שינה', rows: night}, {name: 'שנצים', rows: [['תאריך', 'מ-', 'עד', 'משך'], ...naps.sort((a, b) => b.start - a.start).map(z => [z.date, hm(z.start), hm(z.end), hmm(z.mins)])]}, {name: 'משקל', rows: weight}]), XLSX_MIME);
+}
+function exportMeds(){
+  const recs = window.medsExport ? window.medsExport() : [];
+  if(!recs.length) return toast('אין עדיין רישומי תרופות');
+  const by = {}; for(const r of recs){ const k = r.name + '|' + r.unit; (by[k] = by[k] || {name: r.name, unit: r.unit, n: 0, qty: 0, first: r.date, last: r.date}); const b = by[k];
+    b.n++; b.qty += r.qty; if(r.date < b.first) b.first = r.date; if(r.date > b.last) b.last = r.date; }
+  return saveExport(xlName('היסטוריית תרופות'), ל.makeXlsx([
+    {name: 'רישומים', rows: [['תאריך', 'יום', 'שעה', 'תרופה', 'כמות', 'יחידה', 'סיווג'], ...recs.map(r => [r.date, r.date ? dayName(r.date) : '', r.time, r.name, r.qty, r.unit, r.cat])]},
+    {name: 'סיכום לפי תרופה', rows: [['תרופה', 'פעמים', 'סך הכול', 'יחידה', 'מתאריך', 'עד תאריך'], ...Object.values(by).map(b => [b.name, b.n, Math.round(b.qty * 100) / 100, b.unit, b.first, b.last])]}]), XLSX_MIME);
+}
+function exportTasks(){
+  const rows = [];
+  for(const r of D.occ){
+    if(r.deleted || r.status !== 'done' || !r.doneAt) continue;
+    const t = taskById(r.taskId); if(!t) continue;
+    const ms = ל.toMs(r.doneAt), d = ל.localDate(ms), dom = D.domains.find(x => x.id === t.domain);
+    rows.push([d, dayName(d), ל.localTime(ms), t.title, dom ? dom.name : '', r.note || '']);
+  }
+  if(!rows.length) return toast('אין עדיין משימות שבוצעו');
+  rows.sort((a, b) => (b[0] + b[2]).localeCompare(a[0] + a[2]));
+  return saveExport(xlName('משימות שבוצעו'), ל.makeXlsx([{name: 'בוצעו', rows: [['תאריך', 'יום', 'שעה', 'משימה', 'תחום', 'הערה'], ...rows]}]), XLSX_MIME);
+}
+/** ספר מתכונים: עמוד HTML מסודר לפי קטגוריות, וממנו PDF (בטלפון: הדפסה ← שמירה כ-PDF). */
+function recipesHtml(){
+  const list = recipeList().slice().sort((a, b) => a.title.localeCompare(b.title, 'he')), cats = {};
+  for(const r of list) (cats[ל.recipeCat(r)] = cats[ל.recipeCat(r)] || []).push(r);
+  const order = ל.RECIPE_CATS.filter(c => cats[c]);
+  const one = r => { const pic = picUrl(r), meta = [r.prep && 'הכנה: ' + r.prep, r.cook && 'בישול/אפייה: ' + r.cook, r.total && 'סה״כ: ' + r.total, r.servings && 'מנות: ' + r.servings, r.level].filter(Boolean);
+    return `<article>${pic ? `<img src="${esc(pic)}" alt="">` : ''}<h2>${esc(r.title)}</h2>${r.desc ? `<p class="d">${esc(r.desc)}</p>` : ''}${meta.length ? `<p class="m">${meta.map(esc).join(' · ')}</p>` : ''}
+      ${(r.ingredients || []).length ? `<h3>מצרכים</h3><ul>${r.ingredients.map(x => /:\s*$/.test(x) ? `<li class="h">${esc(x)}</li>` : `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      ${(r.steps || []).length ? `<h3>אופן ההכנה</h3><ol>${r.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
+      ${r.notes ? `<h3>הערות</h3><p>${esc(r.notes).replace(/\n/g, '<br>')}</p>` : ''}</article>`; };
+  return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>ספר המתכונים</title><style>
+    body{font-family:Rubik,Arial,sans-serif;color:#1d1d35;margin:0;padding:24px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    h1{color:#5B5BF7;font-size:30px;margin:0 0 4px}.sub{color:#777;margin:0 0 18px}
+    .toc{columns:2;font-size:14px;margin-bottom:10px}.toc b{display:block;color:#5B5BF7;margin-top:8px}
+    .cat{page-break-before:always;color:#fff;background:#5B5BF7;border-radius:12px;padding:10px 16px;font-size:24px;margin:0 0 14px}
+    article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0 16px;overflow:hidden}
+    article img{float:left;width:150px;height:110px;object-fit:cover;border-radius:10px;margin:0 14px 8px 0}
+    h2{font-size:20px;margin:0 0 4px}h3{font-size:15px;color:#5B5BF7;margin:10px 0 4px}.d{margin:0;color:#444}.m{margin:2px 0;color:#777;font-size:13px}
+    ul,ol{margin:0;padding-inline-start:22px}li.h{list-style:none;font-weight:700;margin-inline-start:-18px;margin-top:4px}
+  </style></head><body><h1>📖 ספר המתכונים</h1><p class="sub">${list.length} מתכונים · ${esc(ל.shortDate(today()))}</p>
+  <div class="toc">${order.map(c => `<b>${esc(c)}</b>${cats[c].map(r => esc(r.title)).join('<br>')}`).join('')}</div>
+  ${order.map(c => `<div class="cat">${esc(c)}</div>${cats[c].map(one).join('')}`).join('')}</body></html>`;
+}
+async function exportRecipes(){
+  if(!recipeList().length) return toast('אין עדיין מתכונים');
+  const html = recipesHtml(); window.__lastExport = {name: 'ספר מתכונים', html};
+  if(NPhone?.printHtml){
+    toast('נפתח מסך ההדפסה. בוחרים "שמירה כ-PDF"', {ms: 6000});
+    try{ await NPhone.printHtml({html, name: `ספר מתכונים ${today()}`}); }catch(e){ toast('לא הצלחתי לפתוח את ההדפסה: ' + (e.message || e), {err: true}); }
+    return;
+  }
+  const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px'; document.body.appendChild(fr);
+  fr.srcdoc = html; fr.onload = () => { try{ fr.contentWindow.print(); }catch(e){} setTimeout(() => fr.remove(), 60e3); };
+}
+
 function sheet(title, items, note){
   $('ks-title').textContent = title;
   $('ks-body').innerHTML = (note ? `<div class="note">${esc(note)}</div>` : '') + items.map(([t], i) => `<button class="btn" type="button" data-i="${i}">${esc(t)}</button>`).join('') + '<button class="btn" type="button" data-x="1">סגירה</button>';
@@ -3911,6 +4047,8 @@ function renderSettings(){
     <div class="group"><h3>תחומים</h3><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
       <button class="btn" id="s-calc" type="button" style="width:100%;margin-top:8px">מחשבון</button></div>
+    <div class="group"><h3>📤 ייצוא נתונים</h3><div class="note">דוח בריאות, היסטוריית תרופות ומשימות באקסל, וספר מתכונים ב-PDF.</div>
+      <button class="btn" id="s-exp" type="button" style="width:100%;margin-top:8px">📤 ייצוא נתונים</button></div>
     ${LOCAL ? `<div class="group"><h3>💾 גיבוי</h3>
       <div class="note">${store(LOCAL_DONE) ? 'הכול נשמר בטלפון. כל יום נשמר גיבוי בטלפון ובהורדות/ניהול שיגרה, וגוגל מגבה אותו לדרייב שלך (גיבוי אוטומטי של אנדרואיד).' : 'עוד מעבירים את הנתונים מגיטהאב…'}
         ${store('משימות.גיבוי') ? `<br>גיבוי אחרון: ${esc(ל.shortDate(ל.localDate(Date.parse(store('משימות.גיבוי')))))} ${esc(ל.localTime(Date.parse(store('משימות.גיבוי'))))}` : ''}</div>
@@ -3935,6 +4073,7 @@ function renderSettings(){
   $('s-test') && ($('s-test').onclick = testNotification);
   $('s-push') && ($('s-push').onclick = enablePush);
   $('s-export').onclick = exportAll;
+  $('s-exp').onclick = exportMenu;
   if($('s-bk-now')) $('s-bk-now').onclick = () => backupNow('ui').then(renderSettings);
   if($('s-bk-share')) $('s-bk-share').onclick = shareBackup;
   if($('s-bk-restore')) $('s-bk-restore').onclick = restoreBackup;
@@ -5190,6 +5329,9 @@ const פתוח = () => !$('כרטיסים').closest('.screen').hidden;
 window.medsRender = () => צייר_הכל();
 window.medsSync = () => סנכרן();
 // לווידג'ט ולסיכום הבוקר: תרופות יומיות, והאם נלקחו היום
+window.medsExport = () => פעילות().map(r => { const t = תרופה(r.מזהה_תרופה || מזהה_של(r));
+  return {date: r.תאריך || '', time: r.שעה || '', name: t?.שם || r.תרופה || '', qty: +r.כמות || 1, unit: יחידה_של(r), cat: r.סיווג || ''}; })
+  .sort((x, y) => (y.date + y.time).localeCompare(x.date + x.time));
 window.medsLow = () => גלויות().filter(t => מלאי_של(t)?.נמוך).map(t => t.שם);
 window.medsDaily = () => גלויות().filter(t => t.סוג === 'יומית').map(t => ({name: t.שם, taken: !!של_תרופה(t.id).find(r => r.תאריך === תאריך_של(new Date()))}));
 window.medsSync = () => סנכרן();
