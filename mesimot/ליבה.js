@@ -2068,7 +2068,21 @@ function shopAdd(items, name, nowIso){
   const r = {id: cur ? cur.id : shopId(clean), name: cur ? cur.name : clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
     boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
   if(cur && cur.cat) r.cat = cur.cat;
+  if(cur && cur.fav) r.fav = true;
   return r;
+}
+/** רשומה למוצר (גם מוצר מהרשימה המובנית שעוד לא השתמשו בו), בלי להכניס לרשימת הקניות. */
+function shopRecord(items, name, nowIso){
+  const clean = canonName(name), live = (items || []).filter(x => !x.deleted);
+  const cur = live.find(x => x.id === shopId(clean)) || live.find(x => sameProduct(canonName(x.name), clean));
+  return cur ? Object.assign({}, cur) : {id: shopId(clean), name: clean, active: false, count: 0, addedAt: nowIso, boughtAt: null, updatedAt: nowIso, deleted: false};
+}
+/** כל המוצרים להגדרות: שלי (בלי מה שנמחק/הוסתר) ואחריהם כל הרשימה המובנית שעוד לא אצלי. */
+function shopAll(items){
+  const mine = (items || []).filter(x => !x.deleted), known = new Set(mine.map(x => shopStemKey(canonName(x.name))));
+  return mine.filter(x => !x.hidden).map(x => ({key: x.id, name: x.name, rec: x}))
+    .concat(SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name))).map(x => ({key: 'c:' + x.name, name: x.name, rec: null})))
+    .map(x => { const i = shopInfo(x.rec || x.name); return Object.assign(x, {cat: i.cat, emoji: i.textEmoji, fav: !!(x.rec && x.rec.fav)}); });
 }
 function shopBuy(item, nowIso){ return Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); }
 function shopSetCat(item, cat, nowIso){ return Object.assign({}, item, {cat: SHOP_CAT[cat] ? cat : 'other', updatedAt: nowIso}); }
@@ -2080,15 +2094,15 @@ function shopSuggest(items, query, limit){
   // מתאים להקלדה: מכיל את הטקסט, או אותן מילים בכתיב אחר ("בננה" מוצא "בננות")
   const fits = name => { const n = shopKey(name), w = n.split(' ');
     return n.includes(q) || qWords.every(a => w.some(b => sameWord(a, b))); };
-  const past = mine.filter(x => !x.active && (!q || aliasesOf(x.name).some(fits)))
-    .sort((a, b) => (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name));
+  const past = mine.filter(x => !x.active && !x.hidden && (!q || aliasesOf(x.name).some(fits)))
+    .sort((a, b) => +!!b.fav - +!!a.fav || (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name));
   // מהרשימה המובנית: לסירוגין בין המחלקות, כדי שבהתחלה יופיע מגוון ולא רק ירקות
   // ברשימה המובנית: רק מילה שמתחילה במה שהוקלד ("גב" = גבינה, לא עגבניות)
   const hit = n => { n = shopNorm(n); return n.startsWith(q) || n.includes(' ' + q) || qWords.every(a => n.split(' ').some(b => sameWord(a, b))); };
   const cat = SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name)) && (!q || [x.name, ...x.aliases].some(hit)))
     .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
     .map(x => ({name: x.name, catalog: true}));
-  return past.concat(cat).slice(0, limit || 12).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
+  return past.concat(cat).slice(0, Math.max(limit || 12, past.filter(x => x.fav).length)).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
 }
 const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
 /** הרשימה מחולקת למחלקות, לפי סדר ההליכה בסופר. */
@@ -2315,7 +2329,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
