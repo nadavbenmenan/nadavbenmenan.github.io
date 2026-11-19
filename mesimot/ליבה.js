@@ -1555,6 +1555,39 @@ function recipeFood(r){
     total, perServing: Math.round(total / n), recipe: true, updatedAt: r.updatedAt, deleted: r.deleted};
 }
 
+/* ---------- זיהוי אוכל מתמונה (Gemini) ---------- */
+// הבקשה ל-Gemini נבנית כאן, והתשובה מתורגמת לרשימת מאכלים. המפתח לא עובר דרך כאן: הוא רק בטלפון.
+const AI_FOOD_PROMPT = 'זהה את כל המאכלים והמשקאות שבתמונה. לכל אחד: name = שם קצר ופשוט בעברית כמו במאגר מזון ישראלי (למשל "אורז לבן מבושל", "חזה עוף", "סלט ירקות", "לחם מלא"), '
+  + 'grams = הערכת המשקל בגרמים של מה שמופיע בצלחת (לפי גודל הכלים והחפצים בתמונה), kcal100 = קלוריות ל-100 גרם, prot100 = גרם חלבון ל-100 גרם. '
+  + 'מנה מורכבת שלא ניתן להפריד (למשל פיצה, שקשוקה) = פריט אחד. אם אין אוכל בתמונה, מחזירים רשימה ריקה.';
+function aiFoodRequest(b64, mime){
+  return {contents: [{parts: [{text: AI_FOOD_PROMPT}, {inline_data: {mime_type: mime || 'image/jpeg', data: b64}}]}],
+    generationConfig: {temperature: 0.2, responseMimeType: 'application/json', responseSchema: {type: 'ARRAY', items: {type: 'OBJECT',
+      properties: {name: {type: 'STRING'}, grams: {type: 'NUMBER'}, kcal100: {type: 'NUMBER'}, prot100: {type: 'NUMBER'}}, required: ['name', 'grams', 'kcal100']}}}};
+}
+/** התשובה של Gemini → [{name, grams, kcal100, prot100}] עם ערכים סבירים בלבד (עד 12). */
+function aiFoodParse(resp){
+  let t = resp;
+  if(t && typeof t === 'object' && !Array.isArray(t)) t = (t.candidates?.[0]?.content?.parts || []).map(x => x.text || '').join('');
+  let arr = t;
+  if(typeof t === 'string'){
+    const m = t.replace(/```(json)?/g, '').match(/\[[\s\S]*\]/);
+    try{ arr = JSON.parse(m ? m[0] : t); }catch(e){ return []; }
+  }
+  if(arr && !Array.isArray(arr)) arr = arr.items || arr.foods || [];
+  const num = (v, lo, hi) => { const n = +v; return isFinite(n) && n >= lo && n <= hi ? Math.round(n * 10) / 10 : null; };
+  return (Array.isArray(arr) ? arr : []).map(x => ({name: String(x?.name || '').trim().slice(0, 60), grams: num(x?.grams, 1, 3000), kcal100: num(x?.kcal100, 0, 950), prot100: num(x?.prot100, 0, 100)}))
+    .filter(x => x.name && x.grams != null && x.kcal100 != null).map(x => Object.assign(x, {grams: Math.round(x.grams)})).slice(0, 12);
+}
+/** מאכלים מהמאגר שמתאימים לשם שזוהה: קודם השם המלא, ואז בלי המילים האחרונות. best = הראשון שהקלוריות שלו קרובות להערכה. */
+function aiFoodMatch(file, item){
+  const words = shopNorm(item.name).split(' ').filter(Boolean), seen = new Set(), cands = [];
+  for(let n = words.length; n >= 1 && cands.length < 6; n--)
+    for(const f of foodSuggest(file, words.slice(0, n).join(' '), 6)) if(!seen.has(f.id) && cands.length < 6){ seen.add(f.id); cands.push(f); }
+  const near = f => item.kcal100 < 30 || (+f.kcal100 >= item.kcal100 / 2.5 && +f.kcal100 <= item.kcal100 * 2.5);
+  return {cands, best: cands.find(near) || null};
+}
+
 /* ---------- יומן גוגל דרך המנוע ---------- */
 // משימה עם calendar: true נכנסת ליומן גוגל של המשתמש. המנוע (שרץ בחשבון שלו) יוצר את האירוע, ושומר ב-משימות/יומן.json
 // מה נוצר: {v, events: [{id: מזהה המשימה, eventId, series, sig, updatedAt, deleted}]}. שינוי במשימה = האירוע הישן נמחק וחדש נוצר.
@@ -2330,7 +2363,7 @@ return {
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
-  foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems,
+  foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
