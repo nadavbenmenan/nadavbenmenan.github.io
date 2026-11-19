@@ -303,6 +303,14 @@
   .kc-sug{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .kc-sug button{display:flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:14px;padding:10px 12px;text-align:right;color:inherit}
   .kc-sug button .n{flex:1}
+  .kp-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .kp-it{background:var(--card);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+  .kp-it.off{opacity:.45}
+  .kp-it .top{display:flex;align-items:center;gap:8px}
+  .kp-it .top b{flex:1}
+  .kp-it .row{display:flex;gap:8px;align-items:center}
+  .kp-it select{flex:1;min-width:0}
+  .kp-it input[type=number]{width:80px}
   .kc-sug button small{color:var(--muted)}
   .kc-sel-name{font-size:20px;font-weight:700;margin:14px 0 8px}
   .kc-kcal{display:flex;align-items:center;gap:10px;margin-top:12px;background:var(--soft);border-radius:14px;padding:10px 12px;flex-wrap:wrap}
@@ -936,6 +944,7 @@
     <div id="pf-l-bar" class="sel-bar" hidden></div>
   </div>
   <div class="pf-pg" data-pg="sound" hidden><div id="pf-sound"></div></div>
+  <div class="pf-pg" data-pg="ai" hidden><div id="pf-ai"></div></div>
   <div class="pf-pg" data-pg="places" hidden><div id="pf-places"></div></div>
   <div class="pf-pg" data-pg="cal" hidden><div id="pf-calr"></div></div>
   <div class="pf-pg" data-pg="phone" hidden><div id="pf-native"></div></div>
@@ -1089,9 +1098,21 @@
       <div class="kc-kcal"><span>קלוריות</span><input type="number" inputmode="numeric" id="kf-kcal" aria-label="קלוריות"><span class="note" id="kf-calc"></span></div>
       <div class="btns"><button class="btn" id="kf-fav" type="button">☆ למועדפים</button><button class="btn" id="kf-fix" type="button">✏️ עריכת המאכל</button><button class="btn" id="kf-del" type="button" style="color:var(--red)">מחיקה</button></div>
     </div>
-    <div class="btns" id="kf-newrow"><button class="btn" id="kf-new" type="button">＋ מאכל חדש</button><button class="btn" id="kf-newrec" type="button">🧾 מנה חדשה ממרכיבים</button></div>
+    <div class="btns" id="kf-newrow"><button class="btn" id="kf-new" type="button">＋ מאכל חדש</button><button class="btn" id="kf-newrec" type="button">🧾 מנה חדשה ממרכיבים</button><button class="btn" id="kf-photo" type="button">📷 זיהוי מתמונה</button></div>
   </div>
 </dialog>
+<dialog id="dlg-kphoto" class="full" aria-label="זיהוי מתמונה"><div class="dlg-head">
+    <button class="txt-btn" id="kp-close">ביטול</button><h2>📷 מה בתמונה</h2><button class="txt-btn" id="kp-ok">הוספה</button></div>
+  <div class="dlg">
+    <div class="opts kc-meals-pick" id="kp-meal"></div>
+    <img id="kp-img" alt="" style="display:block;max-width:100%;max-height:200px;border-radius:14px;margin:10px auto 0">
+    <div class="note" id="kp-st"></div>
+    <div id="kp-list" class="kp-list"></div>
+    <div class="note" id="kp-sum" style="font-weight:600"></div>
+    <div class="btns"><button class="btn" type="button" id="kp-again">📷 תמונה אחרת</button></div>
+  </div>
+</dialog>
+<input type="file" id="kp-cam" accept="image/*" capture="environment" hidden><input type="file" id="kp-gal" accept="image/*" hidden>
 <dialog id="dlg-kmy" aria-label="מאכל במאגר"><div class="dlg">
   <h2 id="km-title">מאכל חדש</h2>
   <div class="field"><label for="km-name">שם</label><input type="text" id="km-name" placeholder="למשל: סלט של אמא"></div>
@@ -1274,9 +1295,10 @@ try{ if(LOCAL && !localStorage.getItem('משימות.משימות') && !localSto
 const NEW_USER = (() => { try{ return !!localStorage.getItem('משימות.משתמש-חדש'); }catch(e){ return false; } })();
 function mirrorData(){
   const o = {};
-  for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k !== 'משימות.אסימון') o[k] = localStorage.getItem(k); }
+  for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k !== 'משימות.אסימון' && k !== AIK) o[k] = localStorage.getItem(k); }
   return o;
 }
+const AIK = 'משימות.gemini-מפתח';   // מפתח Gemini: רק בטלפון. לא בקוד, לא בגיבוי ולא בגיטהאב
 const mirrorText = () => JSON.stringify({app: 'ניהול שיגרה', v: 1, at: new Date().toISOString(), data: mirrorData()});
 async function mirrorNow(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); try{ await NPhone.write({name: 'mirror', text: mirrorText()}); }catch(e){} }
 function mirrorSoon(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); mirrorT = setTimeout(mirrorNow, 1500); }
@@ -5546,7 +5568,7 @@ async function nativeScheduleNow(){
   const want = timers.filter(t => t.kind !== 'med' && !t.deleted && !t.stopped && t.at > now - 6e4);
   const had = storeJson('משימות.שעונים', []);
   for(const id of had) if(!want.some(t => t.id === id)) await NAlarm.cancel({id}).catch(() => {});
-  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר', sound: D.config.timerTone || ''})
+  for(const t of want) if(t.at > now) await NAlarm.schedule({id: t.id, at: t.at, title: t.title, body: t.body ? `עבר ${t.body}` : 'הזמן עבר', sound: tSndFile()})
     .catch(e => toast('השעון המעורר לא נקבע: ' + (e.message || e), {err: true, ms: 8000}));
   store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
@@ -6396,6 +6418,7 @@ function renderPrefs(){
   $('pf-upd').onclick = () => window.open('https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3', '_blank');
   if(pfPage === 'lists') renderPfLists();
   if(pfPage === 'sound') renderPfSound();
+  if(pfPage === 'ai') renderPfAi();
   if(pfPage === 'places') renderPfPlaces();
   if(pfPage === 'cal') renderPfCal();
   pfShow();
@@ -6418,7 +6441,8 @@ function pfPages(){
     ['behav', '⚙️', 'התנהגות', 'רטט, יציאה, טיימר, מצב בישול'],
     ['doms', '🗂️', 'תחומים', `${doms} תחומים`],
     ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
-    ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === (c.notifSound || '')) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === (c.timerTone || '')) || SND_TIMER[0])[1]}`],
+    ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === nSnd()) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === tSnd()) || SND_TIMER[0])[1]}`],
+    ['ai', '📷', 'זיהוי אוכל מתמונה', store(AIK) ? '✓ Gemini מחובר' : 'לא מחובר · צריך מפתח Gemini (חינם)'],
     ['health', '💪', 'יעדי בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())}`],
     NATIVE && ['places', '📍', 'בית ועבודה', 'הגעה: מה לעשות שם · יציאה מהבית: מה לקחת'],
     NATIVE && ['cal', '📅', 'יומן', c.calRead === false ? 'לא קורא את היומן' : `אירועים בסיכום · תזכורת ${c.eventLead === 0 ? 'כבויה' : leadText(c.eventLead ?? 30) + ' לפני'}`],
@@ -6556,25 +6580,147 @@ $('pf-l-list').onclick = async e => {
   if(t === 'r'){ const r = live(KF().recipes).find(x => x.id === id); return r && openKRec(r); }
   const m = live(KF().meals).find(x => x.id === id); if(m) favMealMenu(m);
 };
+/* ---------- זיהוי אוכל מתמונה (Gemini) ---------- */
+// מצלמים → התמונה מוקטנת (עד 1024) → Gemini מחזיר מאכלים, גרמים וקלוריות ל-100 גרם → כל מאכל מותאם למאגר,
+// ואם אין התאמה טובה: לפי ההערכה של Gemini (ונשמר כמאכל אישי). מאשרים או מתקנים, ונכנס ליום.
+const AI_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+async function geminiCall(body, key){
+  let last = null;
+  for(const m of AI_MODELS){
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': key}, body: JSON.stringify(body)});
+    if(r.ok) return r.json();
+    let msg = ''; try{ msg = (await r.json()).error?.message || ''; }catch(e){}
+    last = Object.assign(new Error(r.status === 400 && /api key/i.test(msg) ? 'המפתח לא תקין' : r.status === 403 ? 'המפתח לא מורשה' : r.status === 429 ? 'נגמרה המכסה החינמית לרגע. מנסים שוב בעוד דקה' : `שגיאה מ-Gemini (${r.status})`), {code: r.status});
+    if(r.status !== 404) throw last;   // 404 = הדגם לא קיים יותר: מנסים את הבא
+  }
+  throw last;
+}
+function shrinkImage(file, max){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, (max || 1024) / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.85)); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('התמונה לא נפתחה')); };
+    img.src = url;
+  });
+}
+let kp = null;   // {meal, items: [{name, grams, kcal100, prot100, on, pick ('ai' או id של מאכל), cands}]}
+function photoStart(meal){
+  if(!store(AIK)) return sheet('📷 זיהוי מתמונה', [['⚙️ לחיבור Gemini (חינם, 5 דקות)', () => { show('prefs'); pfGo('ai'); }]], 'צריך פעם אחת מפתח של Gemini. הוא נשמר רק בטלפון.');
+  kp = {meal: meal || kf?.meal || 'lunch', items: []};
+  sheet('📷 זיהוי מתמונה', [['📷 לצלם', () => $('kp-cam').click()], ['🖼 מהגלריה', () => $('kp-gal').click()]]);
+}
+for(const id of ['kp-cam', 'kp-gal']) $(id).addEventListener('change', async e => {
+  const f = e.target.files?.[0]; e.target.value = ''; if(!f || !kp) return;
+  if($('dlg-kfood').open) $('dlg-kfood').close();
+  if(!$('dlg-kphoto').open) $('dlg-kphoto').showModal();
+  kp.items = []; kp.busy = true; $('kp-img').src = ''; renderKPhoto('⏳ מזהה…');
+  try{
+    const data = await shrinkImage(f, 1024); $('kp-img').src = data;
+    const resp = await geminiCall(ל.aiFoodRequest(data.split(',')[1], 'image/jpeg'), store(AIK));
+    kp.items = ל.aiFoodParse(resp).map(x => { const m = ל.aiFoodMatch(KF(), x); return Object.assign(x, {on: true, cands: m.cands, pick: m.best ? m.best.id : 'ai'}); });
+    kp.busy = false; renderKPhoto(kp.items.length ? 'בודקים, מתקנים את הכמות או את ההתאמה, ו"הוספה".' : 'לא זוהה אוכל בתמונה.');
+  }catch(err){ kp.busy = false; renderKPhoto('✗ ' + (err.message === 'Failed to fetch' ? 'אין חיבור לאינטרנט' : err.message)); }
+});
+const kpFood = x => x.pick === 'ai' ? null : x.cands.find(f => f.id === x.pick);
+const kpKcal = x => { const f = kpFood(x); return Math.round(x.grams * (f ? +f.kcal100 : x.kcal100) / 100); };
+function renderKPhoto(st){
+  if(st != null) $('kp-st').textContent = st;
+  $('kp-meal').innerHTML = ל.MEALS.map(([id, n, e]) => `<button type="button" data-m="${id}" class="${kp.meal === id ? 'on' : ''}">${e} ${n}</button>`).join('');
+  $('kp-list').innerHTML = kp.items.map((x, i) => `<div class="kp-it${x.on ? '' : ' off'}" data-i="${i}">
+      <div class="top"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="להוסיף"><b>${esc(x.name)}</b><span class="note" style="margin:0">${kNum(kpKcal(x))} קל׳</span></div>
+      <div class="row"><input type="number" inputmode="numeric" data-g value="${x.grams}" aria-label="גרמים"><span class="note" style="margin:0">גרם</span>
+        <select data-pick aria-label="התאמה במאגר">${x.cands.map(f => `<option value="${esc(f.id)}"${x.pick === f.id ? ' selected' : ''}>${esc(f.name)} · ${kNum(f.kcal100)}/100</option>`).join('')}
+          <option value="ai"${x.pick === 'ai' ? ' selected' : ''}>לפי Gemini · ${kNum(x.kcal100)}/100</option></select></div></div>`).join('');
+  const on = kp.items.filter(x => x.on);
+  $('kp-sum').textContent = on.length ? `סה״כ: ${kNum(on.reduce((s, x) => s + kpKcal(x), 0))} קלוריות` : '';
+  $('kp-ok').disabled = !!kp.busy || !on.length;
+}
+$('kp-meal').onclick = e => { const b = e.target.closest('[data-m]'); if(b && kp){ kp.meal = b.dataset.m; renderKPhoto(); } };
+$('kp-list').addEventListener('change', e => {
+  const row = e.target.closest('[data-i]'); if(!row) return; const x = kp.items[+row.dataset.i];
+  if(e.target.matches('[data-on]')) x.on = e.target.checked;
+  if(e.target.matches('[data-pick]')) x.pick = e.target.value;
+  if(e.target.matches('[data-g]')) x.grams = Math.max(1, Math.round(+e.target.value || 0));
+  renderKPhoto();
+});
+$('kp-close').onclick = () => $('dlg-kphoto').close();
+$('kp-again').onclick = () => photoStart(kp?.meal);
+$('kf-photo').onclick = () => photoStart(kf?.meal);
+$('kp-ok').onclick = () => {
+  const on = (kp?.items || []).filter(x => x.on && x.grams > 0); if(!on.length) return;
+  const t = nowIso(), mine = live(KF().foods), newFoods = [], entries = [];
+  on.forEach((x, n) => {
+    let f = kpFood(x);
+    if(!f){   // לא נמצא במאגר: מאכל אישי חדש לפי Gemini (או אותו מאכל אישי, אם כבר נוצר בעבר)
+      f = mine.concat(newFoods).find(m => m.name === x.name && Math.abs(+m.kcal100 - x.kcal100) < 1);
+      if(!f){ f = {id: 'my' + uid() + n, name: x.name, kcal100: x.kcal100, ...(x.prot100 != null ? {prot100: x.prot100} : {}), units: [], fromPhoto: true, updatedAt: t, deleted: false}; newFoods.push(f); }
+    }
+    entries.push(ל.calEntry(f, {date: kcDate, meal: kp.meal, qty: x.grams, unit: 'גרם', addedAt: t}, t));
+  });
+  if(newFoods.length) saveK('foods', newFoods);
+  saveK('entries', entries);
+  $('dlg-kphoto').close();
+  toast(`נוסף: ${entries.length} מאכלים, ${kNum(entries.reduce((s, e) => s + e.kcal, 0))} קלוריות`, {undo: () => saveK('entries', entries.map(e => Object.assign({}, e, {deleted: true, updatedAt: nowIso()})))});
+};
+/* הגדרות ← זיהוי אוכל מתמונה: המפתח נכנס כאן ונשמר רק בטלפון */
+function renderPfAi(){
+  const k = store(AIK);
+  $('pf-ai').innerHTML = k ? `<div class="sec"><h2>✓ Gemini מחובר</h2><div class="note">מפתח: ••••${esc(k.slice(-4))} (שמור רק בטלפון הזה)</div>
+      <div class="btns"><button class="btn" type="button" id="ai-test">בדיקת חיבור</button><button class="btn" type="button" id="ai-del" style="color:var(--red)">ניתוק</button></div></div>
+      <div class="sec"><h2>איך משתמשים</h2><div class="note">❤️ בריאות ← ＋ ← 📷 זיהוי מתמונה. מצלמים את הצלחת, בודקים את הכמויות ו"הוספה".<br>הזיהוי טוב, אבל הכמות היא הערכה: כדאי לתקן גרמים כשיודעים.</div></div>`
+    : `<div class="sec"><h2>📷 זיהוי אוכל מתמונה</h2><div class="note">מצלמים צלחת, ו-Gemini (של גוגל) מזהה מה יש בה ומעריך כמה גרם. בחינם, עד כמה מאות תמונות ביום.</div></div>
+      <div class="sec"><h2>חיבור (פעם אחת)</h2><div class="note">1. נכנסים לאתר של גוגל ומתחברים עם חשבון גוגל.<br>2. "Create API key" (אם שואל על פרויקט: לבחור כל אחד, או ליצור חדש).<br>3. מעתיקים את המפתח (מתחיל ב-AIza) ומדביקים כאן.</div>
+        <div class="btns"><button class="btn" type="button" id="ai-open">🌐 לאתר של גוגל</button></div>
+        <input type="password" id="ai-key" placeholder="הדבקת המפתח" autocomplete="off" dir="ltr" style="margin-top:10px">
+        <div class="btns"><button class="btn primary" type="button" id="ai-save">שמירה ובדיקה</button></div>
+        <div class="note">המפתח נשמר רק בטלפון: לא בקוד, לא בגיבוי ולא נשלח לשום מקום חוץ מגוגל. התמונות נשלחות לגוגל לזיהוי.</div></div>`;
+  const test = async key => { const r = await geminiCall({contents: [{parts: [{text: 'ענה רק: OK'}]}]}, key); return !!r; };
+  if($('ai-open')) $('ai-open').onclick = () => window.open('https://aistudio.google.com/apikey', '_blank');
+  if($('ai-save')) $('ai-save').onclick = async () => {
+    const key = $('ai-key').value.trim(); if(!/^[\w-]{20,}$/.test(key)) return toast('המפתח לא נראה תקין', {err: true});
+    $('ai-save').disabled = true; toast('בודק…');
+    try{ await test(key); store(AIK, key); toast('✓ Gemini מחובר'); renderPfAi(); }
+    catch(e){ toast('✗ ' + (e.message === 'Failed to fetch' ? 'אין חיבור לאינטרנט' : e.message), {err: true, ms: 6000}); $('ai-save').disabled = false; }
+  };
+  if($('ai-test')) $('ai-test').onclick = async () => { try{ await test(store(AIK)); toast('✓ עובד'); }catch(e){ toast('✗ ' + e.message, {err: true, ms: 6000}); } };
+  if($('ai-del')) $('ai-del').onclick = () => { store(AIK, null); toast('נותק'); renderPfAi(); };
+}
 /* ---------- הגדרות ← צלילים: נבחרים מתוך האפליקציה (בלי חנות הצלילים של הטלפון) ---------- */
 // כל צליל = ערוץ התראות משלו (באנדרואיד אי אפשר לשנות צליל של ערוץ קיים). הקבצים: snd_*.wav באתר וב-res/raw
 const SND_NOTIF = [['', 'ברירת המחדל של הטלפון'], ['snd_chime', '🔔 פעמון רך', 1], ['snd_ding', '✨ דינג'], ['snd_drops', '💧 טיפות'], ['snd_marimba', '🎵 מרימבה']];
 const SND_TIMER = [['', '⏰ השעון המעורר של הטלפון'], ['snd_kitchen', '🍳 צפצוף מטבח', 1], ['snd_bells', '🔔 פעמונים'], ['snd_digital', '📟 שעון דיגיטלי'], ['snd_xylo', '🎶 קסילופון']];
+// עוצמה: לכל צליל יש 4 קבצים (snd_x_v1..v3, ו-snd_x = הכי חזק). ברירת המחדל: רגוע (2)
+const SND_VOL = [[1, '🔈 שקט'], [2, '🔉 רגוע', 1], [3, '🔊 בינוני'], [4, '📢 חזק']];
+const nSnd = () => D.config.notifSound ?? 'snd_chime', tSnd = () => D.config.timerTone ?? 'snd_kitchen';
+const nVol = () => +D.config.notifVol || 2, tVol = () => +D.config.timerVol || 2;
+const sndFile = (s, v) => s ? (v >= 4 ? s : `${s}_v${v}`) : '';
+const nSndFile = () => sndFile(nSnd(), nVol()), tSndFile = () => sndFile(tSnd(), tVol());
 let sndPlayer = null;
 function playSnd(f){ try{ sndPlayer?.pause(); if(f){ sndPlayer = new Audio(f + '.wav'); sndPlayer.play().catch(() => {}); } }catch(e){} }
 function renderPfSound(){
-  const c = D.config, row = (key, cur) => ([k, n, rec]) => `<button type="button" class="more-row${cur === k ? ' today' : ''}" data-snd="${key}" data-v="${k}"><span class="i">${cur === k ? '◉' : '○'}</span><span class="b"><span class="t">${n}${rec ? ' <small class="note" style="margin:0">(מומלץ)</small>' : ''}</span></span><span class="side">${k ? '▶' : ''}</span></button>`;
-  $('pf-sound').innerHTML = `<div class="sec"><h2>🔔 התראות ותזכורות</h2><div class="note">לוחצים לשמוע ולבחור. משימות, תרופות וסיכומים.</div><div class="more-list">${SND_NOTIF.map(row('n', c.notifSound || '')).join('')}</div></div>
-    <div class="sec"><h2>⏱ טיימר</h2><div class="note">מצלצל עד שעוצרים, גם כשהטלפון על שקט (כמו שעון מעורר).</div><div class="more-list">${SND_TIMER.map(row('t', c.timerTone || '')).join('')}</div></div>
+  const row = (key, cur) => ([k, n, rec]) => `<button type="button" class="more-row${cur === k ? ' today' : ''}" data-snd="${key}" data-v="${k}"><span class="i">${cur === k ? '◉' : '○'}</span><span class="b"><span class="t">${n}${rec ? ' <small class="note" style="margin:0">(מומלץ)</small>' : ''}</span></span><span class="side">${k ? '▶' : ''}</span></button>`;
+  const vol = (key, snd, cur) => snd ? `<span class="lbl">עוצמה</span><div class="opts" data-vol="${key}">${SND_VOL.map(([v, n]) => `<button type="button" data-vv="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`
+    : '<div class="note">העוצמה של צליל הטלפון נקבעת בהגדרות הטלפון.</div>';
+  $('pf-sound').innerHTML = `<div class="sec"><h2>🔔 התראות ותזכורות</h2><div class="note">לוחצים לשמוע ולבחור. משימות, תרופות וסיכומים.</div><div class="more-list">${SND_NOTIF.map(row('n', nSnd())).join('')}</div>${vol('n', nSnd(), nVol())}</div>
+    <div class="sec"><h2>⏱ טיימר</h2><div class="note">מצלצל עד שעוצרים, גם כשהטלפון על שקט (כמו שעון מעורר).</div><div class="more-list">${SND_TIMER.map(row('t', tSnd())).join('')}</div>${vol('t', tSnd(), tVol())}</div>
     ${NATIVE ? `<div class="btns"><button class="btn" type="button" id="snd-t1">🔔 התראה לדוגמה בעוד 5 שניות</button><button class="btn" type="button" id="snd-t2">⏱ טיימר לדוגמה בעוד 5 שניות</button></div>` : ''}
-    <div class="note">העוצמה: של ההתראות או של השעון המעורר בטלפון.</div>`;
+    <div class="note">העוצמה כאן יחסית: גם עוצמת ההתראות (או השעון המעורר) בטלפון משפיעה.</div><div id="snd-bat"></div>`;
+  if(NATIVE) NAlarm.status().then(st => { if(st.battery === false && $('snd-bat')){ $('snd-bat').innerHTML = `<div class="sec"><h2>⏰ תזכורת הגיעה באיחור?</h2><div class="note">הטלפון חוסך סוללה ומעכב התראות בכמה דקות. מאשרים פעם אחת, והן מגיעות בדקה המדויקת.</div><div class="btns"><button class="btn primary" type="button" id="snd-bat-b">🔋 לאשר תזכורות בזמן</button></div></div>`;
+    $('snd-bat-b').onclick = () => NAlarm.openSettings({what: 'battery'}).catch(e => toast(e.message, {err: true})); } }).catch(() => {});
   if($('snd-t1')) $('snd-t1').onclick = async () => { await ensureSoundChannels(); await NLN.schedule({notifications: [{id: 77002, title: 'דוגמה: תזכורת', body: 'כך תישמע התראה', channelId: remCh('reminders'), smallIcon: 'ic_stat_notify', schedule: {at: new Date(Date.now() + 5e3), allowWhileIdle: true}}]}).catch(e => toast(e.message, {err: true})); toast('✓ בעוד 5 שניות'); };
-  if($('snd-t2')) $('snd-t2').onclick = () => NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 5e3, title: 'דוגמה: טיימר', body: 'לוחצים "עצור"', sound: D.config.timerTone || ''}).then(() => toast('✓ בעוד 5 שניות')).catch(e => toast(e.message, {err: true}));
+  if($('snd-t2')) $('snd-t2').onclick = () => NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 5e3, title: 'דוגמה: טיימר', body: 'לוחצים "עצור"', sound: tSndFile()}).then(() => toast('✓ בעוד 5 שניות')).catch(e => toast(e.message, {err: true}));
 }
 $('pf-sound').addEventListener('click', e => {
+  const v = e.target.closest('[data-vv]');
+  if(v){ const n = v.closest('[data-vol]').dataset.vol === 'n';
+    saveConfig(n ? {notifVol: +v.dataset.vv} : {timerVol: +v.dataset.vv}); playSnd(n ? nSndFile() : tSndFile());
+    renderPfSound(); if(NATIVE) nativeSchedule?.(); return; }
   const b = e.target.closest('[data-snd]'); if(!b) return;
-  playSnd(b.dataset.v);
   saveConfig(b.dataset.snd === 'n' ? {notifSound: b.dataset.v} : {timerTone: b.dataset.v});
+  playSnd(b.dataset.snd === 'n' ? nSndFile() : tSndFile());
   renderPfSound(); if(NATIVE) nativeSchedule?.();
 });
 /* ---------- הגדרות ← בית ועבודה: מיקום לכל מקום, ואילו תחומים "שייכים" לו ---------- */
@@ -6624,13 +6770,13 @@ async function renderPfCal(){
   if($('cr-perm')) $('cr-perm').onclick = async () => { if(store(EVK) == null) await NPhone.calendars().catch(() => {}); renderPfCal(); };
 }
 /** ערוץ ההתראות לפי הצליל שנבחר (reminders / reminders_snd_chime). */
-const remCh = base => D.config.notifSound ? `${base}_${D.config.notifSound}` : base;
+const remCh = base => nSndFile() ? `${base}_${nSndFile()}` : base;
 async function ensureSoundChannels(){
-  const snd = D.config.notifSound || '';
+  const snd = nSndFile();
   if(!NLN || ensureSoundChannels.k === snd) return;
   try{
     if(snd) for(const [b, n] of [['reminders', 'משימות'], ['meds', 'תרופות']])
-      await NLN.createChannel({id: `${b}_${snd}`, name: n, description: 'צליל: ' + (SND_NOTIF.find(x => x[0] === snd) || [])[1], importance: 4, visibility: 1, vibration: true, sound: snd + '.wav'});
+      await NLN.createChannel({id: `${b}_${snd}`, name: n, description: 'צליל: ' + (SND_NOTIF.find(x => x[0] === nSnd()) || [])[1] + ' · ' + (SND_VOL.find(x => x[0] === nVol()) || [])[1], importance: 4, visibility: 1, vibration: true, sound: snd + '.wav'});
     // ערוצים של צלילים קודמים: נמחקים כדי שלא יהיו כפולים בהגדרות הטלפון
     const l = await NLN.listChannels?.();
     for(const ch of l?.channels || []) if(/^(reminders|meds)_snd_/.test(ch.id) && !ch.id.endsWith('_' + snd)) await NLN.deleteChannel?.({id: ch.id});
@@ -6645,9 +6791,9 @@ async function renderNativePrefs(){
   try{ st = await NAlarm.status(); }catch(e){ st = {err: e.message}; }
   const ok = v => v ? '✓' : '✗';
   box.innerHTML = `<div class="sec"><h2>📱 אפליקציית אנדרואיד</h2><div class="pf-stat">
-      ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול`}</div>
+      ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול${st.battery === undefined ? '' : `<br>${ok(st.battery)} בלי חיסכון סוללה (תזכורות בדקה המדויקת)`}`}</div>
     <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
-    <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
+    <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}${st.battery === false ? '<button class="btn" type="button" id="pf-bat">🔋 תזכורות בזמן</button>' : ''}</div></div>
     ${LOCAL && NPhone?.calendars ? `<div class="sec"><h2>📅 יומן <span id="pf-cal" class="note" style="margin:0"></span></h2>
       <div class="btns"><button class="btn" type="button" id="pf-cal-pick">בחירת יומן</button></div><div id="pf-cal-ev" class="more-list" style="margin-top:8px"></div></div>` : ''}
     ${NPhone?.homeStatus ? `<div class="sec"><h2>📍 בית ועבודה</h2><div class="btns"><button class="btn" type="button" id="pf-go-places">להגדרות המקומות ‹</button></div></div>` : ''}
@@ -6659,10 +6805,11 @@ async function renderNativePrefs(){
     catch(e){ toast('שגיאה בהתראה: ' + (e.message || e), {err: true, ms: 8000}); }
   };
   $('pf-t2').onclick = async () => {
-    try{ await NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 10e3, title: 'בדיקת שעון מעורר', body: 'לוחצים "עצור"', sound: D.config.timerTone || ''}); toast('✓ נקבע. אפשר לנעול את הטלפון'); }
+    try{ await NAlarm.schedule({id: 'test-' + Date.now(), at: Date.now() + 10e3, title: 'בדיקת שעון מעורר', body: 'לוחצים "עצור"', sound: tSndFile()}); toast('✓ נקבע. אפשר לנעול את הטלפון'); }
     catch(e){ toast('שגיאה בשעון המעורר: ' + (e.message || e), {err: true, ms: 8000}); }
   };
   $('pf-set').onclick = () => NAlarm.openSettings({what: 'notifications'}).catch(e => toast(e.message, {err: true}));
+  if($('pf-bat')) $('pf-bat').onclick = () => NAlarm.openSettings({what: 'battery'}).catch(e => toast(e.message, {err: true}));
   if($('pf-fs')) $('pf-fs').onclick = () => NAlarm.openSettings({what: 'fullscreen'}).catch(e => toast(e.message, {err: true}));
   if($('pf-cal')){
     const list = await NPhone.calendars().catch(() => null);
