@@ -312,17 +312,20 @@
   .kc-sug{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .kc-sug button{display:flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:14px;padding:10px 12px;text-align:right;color:inherit}
   .kc-sug button .n{flex:1}
-  .calc{max-width:420px;margin:0 auto}
-  .calc-disp{background:var(--card);border-radius:20px;padding:14px 18px;text-align:right;min-height:96px;display:flex;flex-direction:column;justify-content:flex-end}
-  .calc-expr{font-size:20px;color:var(--muted);min-height:28px;word-break:break-all}
-  .calc-res{font-size:42px;font-weight:700;line-height:1.15;word-break:break-all}
-  .calc-res.prev{color:var(--muted);font-weight:500;font-size:28px}
-  .calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
-  .calc-keys button{height:62px;border:0;border-radius:18px;background:var(--card);color:inherit;font:500 26px/1 inherit;font-family:inherit}
+  /* מחשבון: ממלא את כל המסך שבין הכותרת לסרגל התחתון. הגדלים קבועים, כדי שלא יקפוץ בזמן החישוב */
+  #scr-calc:not([hidden]){display:flex;flex-direction:column;height:100vh;height:100dvh;padding-bottom:calc(var(--sb) + 76px);overflow:hidden}
+  .calc{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0;width:100%;max-width:520px;margin:0 auto}
+  .calc-disp{flex:0 0 auto;background:var(--card);border-radius:20px;padding:12px 18px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end}
+  .calc-expr,.calc-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  .calc-expr::-webkit-scrollbar,.calc-res::-webkit-scrollbar{display:none}
+  .calc-expr{font-size:24px;line-height:34px;height:34px;color:var(--muted)}
+  .calc-res{font-size:52px;line-height:66px;height:66px;font-weight:700}
+  .calc-keys{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(6,1fr);gap:10px}
+  .calc-keys button{min-height:0;border:0;border-radius:18px;background:var(--card);color:inherit;font-family:inherit;font-size:30px;font-weight:500;line-height:1}
   .calc-keys button:active{filter:brightness(.92)}
-  .calc-keys .fn{background:var(--soft);font-size:22px}
-  .calc-keys .op{background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--accent);font-size:28px}
-  .calc-keys .eq{grid-column:1/-1;background:var(--accent);color:var(--on-accent);height:56px;font-size:28px}
+  .calc-keys .fn{background:var(--soft);font-size:26px}
+  .calc-keys .op{background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--accent);font-size:32px}
+  .calc-keys .eq{grid-column:1/-1;background:var(--accent);color:var(--on-accent);font-size:32px}
   .rc-acts{display:flex;gap:6px;margin-top:12px}
   .rc-acts .btn{flex:1;min-width:0;padding-inline:6px;font-size:14.5px;white-space:nowrap}
   .kp-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
@@ -986,7 +989,6 @@
       <button type="button" data-k="=" class="eq">=</button>
     </div>
   </div>
-  <div class="sec" id="calc-hist-sec"><h2>היסטוריה <button class="txt-btn" type="button" id="calc-clear">ניקוי</button></h2><div id="calc-hist" class="more-list"></div></div>
 </main>
 
 <main class="screen" id="scr-upkeep" hidden>
@@ -1833,7 +1835,7 @@ function renderAll(){
   else if(screen === 'bills') renderBills();
   else if(screen === 'notif') renderNotif();
   else if(screen === 'meds'){ window.medsRender?.(); }
-  else if(screen === 'calc') renderCalc();
+  else if(screen === 'calc') renderCalcPad();
   else if(screen === 'docs') renderDocs();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
@@ -6649,20 +6651,15 @@ $('pf-l-list').onclick = async e => {
   const m = live(KF().meals).find(x => x.id === id); if(m) favMealMenu(m);
 };
 /* ---------- מחשבון ---------- */
-// החישוב בליבה (calcEval, בלי eval). התוצאה מוצגת תוך כדי הקלדה; "=" שומר בהיסטוריה (בטלפון בלבד, 30 אחרונים)
-const CALC_K = 'משימות.מחשבון';
+// החישוב בליבה (calcEval, בלי eval). התוצאה מוצגת תוך כדי הקלדה, באותו גודל גם אחרי "=", כדי שלא יקפוץ
 let calcX = '', calcDone = false;
 const calcFmt = v => v == null ? '' : v.toLocaleString('en-US', {maximumFractionDigits: 10});
-function calcHist(){ return storeJson(CALC_K, []); }
-function renderCalc(){
+function renderCalcPad(){
   const v = ל.calcEval(calcX);
-  $('calc-expr').textContent = calcX.replace(/(\d+(?:\.\d*)?)/g, m => m.includes('.') ? (+m.split('.')[0]).toLocaleString('en-US') + '.' + m.split('.')[1] : (+m).toLocaleString('en-US'));
-  const res = $('calc-res');
-  res.textContent = calcDone ? calcFmt(v) : v != null && /[-+×÷%(]/.test(calcX.replace(/^-/, '')) ? calcFmt(v) : calcX ? '' : '0';
-  res.classList.toggle('prev', !calcDone && !!calcX);
-  const h = calcHist();
-  $('calc-hist-sec').hidden = !h.length;
-  $('calc-hist').innerHTML = h.map((x, i) => `<button type="button" class="more-row" data-h="${i}"><span class="b"><span class="t"><b dir="ltr">${esc(calcFmt(x.v))}</b></span><span class="s" dir="ltr" style="text-align:right">${esc(x.e)}</span></span><span class="side">↩</span></button>`).join('');
+  const ex = $('calc-expr'), res = $('calc-res');
+  ex.textContent = calcX.replace(/(\d+(?:\.\d*)?)/g, m => m.includes('.') ? (+m.split('.')[0]).toLocaleString('en-US') + '.' + m.split('.')[1] : (+m).toLocaleString('en-US'));
+  res.textContent = v != null ? calcFmt(v) : calcX ? res.textContent || '' : '0';
+  ex.scrollLeft = ex.scrollWidth; res.scrollLeft = 0;
 }
 function calcKey(k){
   const ops = '+−×÷';
@@ -6671,7 +6668,6 @@ function calcKey(k){
   else if(k === '='){
     const v = ל.calcEval(calcX);
     if(v == null){ if(calcX) toast('החישוב לא שלם', {err: true}); return; }
-    if(!calcDone && /[-+×÷%(−]/.test(calcX.replace(/^[-−]/, ''))){ const h = calcHist(); h.unshift({e: calcX, v}); store(CALC_K, JSON.stringify(h.slice(0, 30))); }
     calcDone = true;
   }else{
     if(calcDone){ const v = ל.calcEval(calcX); calcX = ops.includes(k) || k === '%' ? String(v ?? '') : ''; calcDone = false; }
@@ -6685,11 +6681,9 @@ function calcKey(k){
     calcX += k;
   }
   navigator.vibrate?.(5);
-  renderCalc();
+  renderCalcPad();
 }
 $('calc-keys').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if(b) calcKey(b.dataset.k); });
-$('calc-hist').onclick = e => { const b = e.target.closest('[data-h]'); if(!b) return; const x = calcHist()[+b.dataset.h]; calcX = String(x.v); calcDone = false; renderCalc(); };
-$('calc-clear').onclick = () => { store(CALC_K, null); renderCalc(); };
 $('calc-res').onclick = () => { const t = $('calc-res').textContent.replace(/,/g, ''); if(t) navigator.clipboard?.writeText(t).then(() => toast('הועתק: ' + t)).catch(() => {}); };
 document.addEventListener('keydown', e => {
   if(screen !== 'calc' || e.target.closest('input,textarea,select') || document.querySelector('dialog[open]')) return;
