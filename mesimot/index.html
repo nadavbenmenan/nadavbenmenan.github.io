@@ -312,6 +312,19 @@
   .kc-sug{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .kc-sug button{display:flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:14px;padding:10px 12px;text-align:right;color:inherit}
   .kc-sug button .n{flex:1}
+  .calc{max-width:420px;margin:0 auto}
+  .calc-disp{background:var(--card);border-radius:20px;padding:14px 18px;text-align:right;min-height:96px;display:flex;flex-direction:column;justify-content:flex-end}
+  .calc-expr{font-size:20px;color:var(--muted);min-height:28px;word-break:break-all}
+  .calc-res{font-size:42px;font-weight:700;line-height:1.15;word-break:break-all}
+  .calc-res.prev{color:var(--muted);font-weight:500;font-size:28px}
+  .calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .calc-keys button{height:62px;border:0;border-radius:18px;background:var(--card);color:inherit;font:500 26px/1 inherit;font-family:inherit}
+  .calc-keys button:active{filter:brightness(.92)}
+  .calc-keys .fn{background:var(--soft);font-size:22px}
+  .calc-keys .op{background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--accent);font-size:28px}
+  .calc-keys .eq{grid-column:1/-1;background:var(--accent);color:var(--on-accent);height:56px;font-size:28px}
+  .rc-acts{display:flex;gap:6px;margin-top:12px}
+  .rc-acts .btn{flex:1;min-width:0;padding-inline:6px;font-size:14.5px;white-space:nowrap}
   .kp-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .kp-it{background:var(--card);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
   .kp-it.off{opacity:.45}
@@ -960,6 +973,22 @@
   <div class="pf-pg" data-pg="about" hidden><div id="pf-about"></div></div>
   <div id="pf-more"></div>
 </main>
+<main class="screen" id="scr-calc" hidden>
+  <h1 class="hello">מחשבון</h1>
+  <div class="calc">
+    <div class="calc-disp"><div class="calc-expr" id="calc-expr" dir="ltr"></div><div class="calc-res" id="calc-res" dir="ltr">0</div></div>
+    <div class="calc-keys" id="calc-keys" dir="ltr">
+      <button type="button" data-k="C" class="fn">C</button><button type="button" data-k="(" class="fn">(</button><button type="button" data-k=")" class="fn">)</button><button type="button" data-k="÷" class="op">÷</button>
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="×" class="op">×</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="−" class="op">−</button>
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="+" class="op">+</button>
+      <button type="button" data-k="%" class="fn">%</button><button type="button" data-k="0">0</button><button type="button" data-k=".">.</button><button type="button" data-k="⌫" class="fn" aria-label="מחיקה">⌫</button>
+      <button type="button" data-k="=" class="eq">=</button>
+    </div>
+  </div>
+  <div class="sec" id="calc-hist-sec"><h2>היסטוריה <button class="txt-btn" type="button" id="calc-clear">ניקוי</button></h2><div id="calc-hist" class="more-list"></div></div>
+</main>
+
 <main class="screen" id="scr-upkeep" hidden>
   <h1 class="hello">תחזוקה שוטפת</h1>
   <div id="up-list" class="more-list"></div>
@@ -1000,6 +1029,7 @@
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
   <button data-scr="bills"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>חשבונות</button>
+  <button data-scr="calc"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15v2.5M8.5 18h.01M12 18h.01"/></svg>מחשבון</button>
   <button data-scr="prefs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 6.5l2 1.2M17.8 16.3l2 1.2M4.2 17.5l2-1.2M17.8 7.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>הגדרות</button>
 </nav>
 
@@ -1778,8 +1808,8 @@ function show(s){
   if(s === 'kcal' && screen !== 'kcal'){ hTab = 'kcal'; kcDate = today(); kcMeal = mealNow(); }
   if(s === 'prefs' && screen !== 'prefs') pfPage = null;
   screen = s;
-  for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history']) $('scr-' + x).hidden = x !== s;
-  $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills', 'notif'].includes(s);
+  for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history', 'calc']) $('scr-' + x).hidden = x !== s;
+  $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills', 'notif', 'calc'].includes(s);
   $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   if(s === 'prefs') renderSettings();
@@ -1803,6 +1833,7 @@ function renderAll(){
   else if(screen === 'bills') renderBills();
   else if(screen === 'notif') renderNotif();
   else if(screen === 'meds'){ window.medsRender?.(); }
+  else if(screen === 'calc') renderCalc();
   else if(screen === 'docs') renderDocs();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
@@ -2033,8 +2064,9 @@ function renderRecipe(){
   $('r-body').innerHTML = `
     <div class="rc-hero" data-img="${esc(r.id)}"${picStyle(r)}>${picUrl(r) ? '' : recipeEmoji(r)}</div>
     ${r.desc ? `<div style="color:var(--muted);font-size:16px">${esc(r.desc)}</div>` : ''}
+    <div class="rc-acts">${ing.length ? '<button class="btn primary" type="button" id="r-shop">🛒 הוסף לסל</button>' : ''}<button class="btn" type="button" id="r-wa">📤 וואטסאפ</button>${steps.length ? '<button class="btn" type="button" id="r-cook">👨‍🍳 מצב בישול</button>' : ''}</div>
     ${ing.length ? `<div class="rc-scale"><span class="lbl">כמות</span><div class="opts" id="r-scale">${[[.5, 'חצי'], [1, 'רגיל'], [2, 'פי 2']].map(([f, n]) => `<button type="button" data-f="${f}" class="${rcScale === f ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
-    ${ing.length ? `<div class="rc-sec"><h3>מצרכים${rcScale !== 1 ? ` <span class="note" style="margin:0">(${rcScale === 2 ? 'פי 2' : 'חצי'})</span>` : ''} <button class="btn primary" type="button" id="r-shop">🛒 לקניות</button></h3>
+    ${ing.length ? `<div class="rc-sec"><h3>מצרכים${rcScale !== 1 ? ` <span class="note" style="margin:0">(${rcScale === 2 ? 'פי 2' : 'חצי'})</span>` : ''}</h3>
       <div class="rc-box">${ing.map((x, i) => /[:：]\s*$/.test(x) ? `<div class="rc-subh">${esc(x.replace(/[:：]\s*$/, ''))}</div>`
         : `<label class="rc-ing${rcGot.has(i) ? ' got' : ''}"><input type="checkbox" data-i="${i}"${rcGot.has(i) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div></div>` : ''}
     ${steps.length ? `<div class="rc-sec"><h3>אופן ההכנה</h3><div class="rc-box">${(() => { let num = 0; return steps.map(x => {
@@ -2047,11 +2079,7 @@ function renderRecipe(){
     ${safeImg(r.source) ? `<div style="margin-top:14px"><a href="${esc(r.source)}" target="_blank" rel="noopener">🔗 המתכון המקורי</a></div>` : ''}
     ${(() => { const m = [['זמן הכנה', r.prep], ['זמן אפייה/בישול', r.cook], ['זמן כולל', r.total], ['רמת קושי', r.level], ['מנות', ל.scaleServings(r.servings, rcScale)]].filter(x => x[1]);
       return m.length ? `<div class="rc-meta">${m.map(([k, v]) => `<div><span>${k}</span>${esc(v)}</div>`).join('')}</div>` : ''; })()}
-    <div class="btns" style="margin-top:20px">
-      <button class="btn" type="button" id="r-wa">שליחה בוואטסאפ</button>
-      ${steps.length ? `<button class="btn primary" type="button" id="r-cook">👨‍🍳 מצב בישול</button>` : ''}
-    </div>
-    <div class="btns"><button class="btn" type="button" id="r-del" style="color:var(--red)">מחיקת המתכון</button></div>`;
+    <div class="btns" style="margin-top:20px"><button class="btn" type="button" id="r-del" style="color:var(--red)">מחיקת המתכון</button></div>`;
   $('r-body').querySelectorAll('.rc-ing input').forEach(cb => cb.onchange = () => {
     const i = +cb.dataset.i; cb.checked ? rcGot.add(i) : rcGot.delete(i); cb.closest('.rc-ing').classList.toggle('got', cb.checked);
   });
@@ -2237,7 +2265,7 @@ setInterval(() => {
   renderTimers();
   if($('dlg-timer').open) renderTimerDlg();
 }, 1000);
-/** "🛒 לקניות": כל המצרכים נכנסים לרשימת הקניות, כל אחד כמוצר (מה שכבר ברשימה לא נכנס פעמיים). */
+/** "🛒 הוסף לסל": כל המצרכים נכנסים לרשימת הקניות, כל אחד כמוצר (מה שכבר ברשימה לא נכנס פעמיים). */
 function recipeToShop(r){
   const added = [];
   for(const x of r.ingredients || []){
@@ -2248,7 +2276,7 @@ function recipeToShop(r){
   }
   persist('shop', true); changed();
   if(!added.length) return toast('כל המצרכים כבר ברשימת הקניות');
-  toast(`🛒 נוספו לקניות: ${added.map(x => x.name).join(', ')}`, {ms: 6000, undo: () => {
+  toast(`🛒 נוספו לסל: ${added.map(x => x.name).join(', ')}`, {ms: 6000, undo: () => {
     const t = nowIso();
     D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, added.map(x => Object.assign({}, x, {active: false, count: Math.max(0, (x.count || 1) - 1), updatedAt: t})))};
     persist('shop', true); changed();
@@ -2263,7 +2291,9 @@ function openRecipeEditor(r, paste){
   $('re-body').innerHTML = `
     <details class="field"${paste ? ' open' : ''}><summary class="lbl" style="cursor:pointer">📋 ${r ? 'הדבקה מחדש של המתכון (מחליף את מה שלמטה)' : 'הדבקת מתכון'}</summary>
       <textarea id="re-paste" style="min-height:160px;margin-top:8px" placeholder="שם המתכון&#10;מצרכים:&#10;...&#10;אופן ההכנה:&#10;..."></textarea>
-      <button class="btn primary" type="button" id="re-parse" style="margin-top:8px;width:100%">פירוק למצרכים ושלבים</button></details>
+      <div class="btns" style="margin-top:8px"><button class="btn primary" type="button" id="re-parse">פירוק למצרכים ושלבים</button><button class="btn" type="button" id="re-file">📄 ממסמך</button></div>
+      <input type="file" id="re-file-in" hidden accept=".txt,.md,.text,.html,.htm,.docx,.pdf,image/*,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <div class="note">מסמך: טקסט, Word, PDF או אתר שמור. צילום של מתכון: עם Gemini (הגדרות ← 📷).</div></details>
     <div class="field"><label for="re-t">שם המתכון</label><input type="text" id="re-t" value="${esc(rcEdit.title)}"></div>
     <div class="field"><span class="lbl">תמונה</span><div class="img-pick" id="re-pick"></div></div>
     <div class="row"><div class="field"><label for="re-cat">קטגוריה</label><select id="re-cat">${['', ...ל.RECIPE_CATS].map(c => `<option value="${esc(c)}"${(rcEdit.title ? ל.recipeCat(rcEdit) : rcEdit.cat || '') === c ? ' selected' : ''}>${esc(c || 'בלי')}</option>`).join('')}</select></div>
@@ -2288,6 +2318,16 @@ function openRecipeEditor(r, paste){
   };
   refreshPick();
   $('re-t').addEventListener('input', () => { if(!pickSt.manual) refreshPick(); });
+  if($('re-file')) $('re-file').onclick = () => $('re-file-in').click();
+  if($('re-file-in')) $('re-file-in').onchange = async e => {
+    const f = e.target.files?.[0]; e.target.value = ''; if(!f) return;
+    toast('קורא את המסמך…');
+    try{
+      const text = await recipeFileText(f);
+      if(!text.trim()) throw new Error('לא נמצא טקסט במסמך');
+      $('re-paste').value = text; $('re-parse').click();
+    }catch(err){ toast('✗ ' + (err.message || err), {err: true, ms: 7000}); }
+  };
   if($('re-parse')) $('re-parse').onclick = () => {
     const p = ל.parseRecipeText($('re-paste').value);
     if(!p.title && !p.ingredients.length && !p.steps.length) return toast('לא הצלחתי לקרוא מתכון מהטקסט', {err: true});
@@ -4426,7 +4466,7 @@ function onboard(step){
 
 /* ---------- התקנה חדשה: גיבוי, כמה שאלות, והסבר קצר ---------- */
 const NAV_PICK = [['todo', '📝 משימות'], ['shop', '🛒 קניות'], ['recipes', '🍳 מתכונים'], ['kcal', '❤️ בריאות'], ['meds', '💊 תרופות'], ['upkeep', '🔧 תחזוקה'],
-  ['docs', '📄 מסמכים'], ['calendar', '📅 לוח שנה'], ['history', '🕘 היסטוריה'], ['bills', '🧾 חשבונות לדייר']];
+  ['docs', '📄 מסמכים'], ['calendar', '📅 לוח שנה'], ['history', '🕘 היסטוריה'], ['bills', '🧾 חשבונות לדייר'], ['calc', '🧮 מחשבון']];
 let wz = {};
 function welcome(step){
   const b = $('o-body'), done = () => { store(K.onboard, '1'); $('dlg-onboard').close(); renderAll(); handleHash(); };
@@ -6608,6 +6648,112 @@ $('pf-l-list').onclick = async e => {
   if(t === 'r'){ const r = live(KF().recipes).find(x => x.id === id); return r && openKRec(r); }
   const m = live(KF().meals).find(x => x.id === id); if(m) favMealMenu(m);
 };
+/* ---------- מחשבון ---------- */
+// החישוב בליבה (calcEval, בלי eval). התוצאה מוצגת תוך כדי הקלדה; "=" שומר בהיסטוריה (בטלפון בלבד, 30 אחרונים)
+const CALC_K = 'משימות.מחשבון';
+let calcX = '', calcDone = false;
+const calcFmt = v => v == null ? '' : v.toLocaleString('en-US', {maximumFractionDigits: 10});
+function calcHist(){ return storeJson(CALC_K, []); }
+function renderCalc(){
+  const v = ל.calcEval(calcX);
+  $('calc-expr').textContent = calcX.replace(/(\d+(?:\.\d*)?)/g, m => m.includes('.') ? (+m.split('.')[0]).toLocaleString('en-US') + '.' + m.split('.')[1] : (+m).toLocaleString('en-US'));
+  const res = $('calc-res');
+  res.textContent = calcDone ? calcFmt(v) : v != null && /[-+×÷%(]/.test(calcX.replace(/^-/, '')) ? calcFmt(v) : calcX ? '' : '0';
+  res.classList.toggle('prev', !calcDone && !!calcX);
+  const h = calcHist();
+  $('calc-hist-sec').hidden = !h.length;
+  $('calc-hist').innerHTML = h.map((x, i) => `<button type="button" class="more-row" data-h="${i}"><span class="b"><span class="t"><b dir="ltr">${esc(calcFmt(x.v))}</b></span><span class="s" dir="ltr" style="text-align:right">${esc(x.e)}</span></span><span class="side">↩</span></button>`).join('');
+}
+function calcKey(k){
+  const ops = '+−×÷';
+  if(k === 'C'){ calcX = ''; calcDone = false; }
+  else if(k === '⌫'){ if(calcDone){ calcDone = false; } else calcX = calcX.slice(0, -1); }
+  else if(k === '='){
+    const v = ל.calcEval(calcX);
+    if(v == null){ if(calcX) toast('החישוב לא שלם', {err: true}); return; }
+    if(!calcDone && /[-+×÷%(−]/.test(calcX.replace(/^[-−]/, ''))){ const h = calcHist(); h.unshift({e: calcX, v}); store(CALC_K, JSON.stringify(h.slice(0, 30))); }
+    calcDone = true;
+  }else{
+    if(calcDone){ const v = ל.calcEval(calcX); calcX = ops.includes(k) || k === '%' ? String(v ?? '') : ''; calcDone = false; }
+    const last = calcX.slice(-1);
+    if(ops.includes(k)){
+      if(!calcX && k !== '−') return;
+      if(ops.includes(last)) calcX = calcX.slice(0, -1);
+    }
+    if(k === '.'){ const num = /[\d.]*$/.exec(calcX)[0]; if(num.includes('.')) return; if(!num) calcX += '0'; }
+    if(k === '%' && !/[\d)]$/.test(calcX)) return;
+    calcX += k;
+  }
+  navigator.vibrate?.(5);
+  renderCalc();
+}
+$('calc-keys').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if(b) calcKey(b.dataset.k); });
+$('calc-hist').onclick = e => { const b = e.target.closest('[data-h]'); if(!b) return; const x = calcHist()[+b.dataset.h]; calcX = String(x.v); calcDone = false; renderCalc(); };
+$('calc-clear').onclick = () => { store(CALC_K, null); renderCalc(); };
+$('calc-res').onclick = () => { const t = $('calc-res').textContent.replace(/,/g, ''); if(t) navigator.clipboard?.writeText(t).then(() => toast('הועתק: ' + t)).catch(() => {}); };
+document.addEventListener('keydown', e => {
+  if(screen !== 'calc' || e.target.closest('input,textarea,select') || document.querySelector('dialog[open]')) return;
+  const map = {'*': '×', 'x': '×', '/': '÷', '-': '−', '+': '+', 'Enter': '=', '=': '=', 'Backspace': '⌫', 'Escape': 'C', ',': '.'};
+  const k = map[e.key] || (/^[\d.%()]$/.test(e.key) ? e.key : null);
+  if(k){ e.preventDefault(); calcKey(k); }
+});
+/* ---------- מתכון ממסמך: טקסט, Word, PDF, אתר שמור, או תמונה (Gemini) ---------- */
+// docx = zip: מוצאים את word/document.xml בתיקייה המרכזית ופותחים (deflate-raw) בלי ספריות
+async function unzipEntry(buf, name){
+  const v = new DataView(buf), u8 = new Uint8Array(buf);
+  let e = buf.byteLength - 22; while(e >= 0 && v.getUint32(e, true) !== 0x06054b50) e--;
+  if(e < 0) throw new Error('הקובץ פגום');
+  let p = v.getUint32(e + 16, true); const n = v.getUint16(e + 10, true), td = new TextDecoder();
+  for(let k = 0; k < n; k++){
+    const method = v.getUint16(p + 10, true), size = v.getUint32(p + 20, true), nl = v.getUint16(p + 28, true), xl = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), off = v.getUint32(p + 42, true);
+    if(td.decode(u8.subarray(p + 46, p + 46 + nl)) === name){
+      const start = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true), data = u8.subarray(start, start + size);
+      if(method === 0) return td.decode(data);
+      return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    }
+    p += 46 + nl + xl + cl;
+  }
+  throw new Error('זה לא מסמך Word');
+}
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('צריך אינטרנט כדי לקרוא PDF')); document.head.appendChild(s); }); }
+async function pdfText(buf){
+  const V = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  if(!window.pdfjsLib){ await loadScript(V + 'pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = V + 'pdf.worker.min.js'; }
+  const doc = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise, out = [];
+  for(let i = 1; i <= Math.min(doc.numPages, 20); i++){
+    const c = await (await doc.getPage(i)).getTextContent();
+    out.push(ל.pdfLines(c.items.map(it => ({str: it.str, x: it.transform[4], y: it.transform[5]}))));
+  }
+  return out.join('\n');
+}
+const fileB64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
+async function geminiTranscribe(f, mime){
+  if(!store(AIK)) throw new Error('תמונה או PDF סרוק: צריך לחבר Gemini (הגדרות ← 📷 זיהוי אוכל מתמונה)');
+  const b64 = mime === 'image/jpeg' && f.size > 1.5e6 ? (await shrinkImage(f, 1600)).split(',')[1] : await fileB64(f);
+  const resp = await geminiCall({contents: [{parts: [{text: 'העתק את המתכון שבקובץ כטקסט, כפי שהוא כתוב: שם, מצרכים (שורה לכל מצרך) ואופן ההכנה (שורה לכל שלב). בלי הסברים ובלי תוספות.'},
+    {inline_data: {mime_type: mime, data: b64}}]}], generationConfig: {temperature: 0}}, store(AIK));
+  return (resp.candidates?.[0]?.content?.parts || []).map(x => x.text || '').join('');
+}
+async function recipeFileText(f){
+  const n = (f.name || '').toLowerCase(), type = f.type || '';
+  if(/\.docx$/.test(n) || type.includes('wordprocessingml')) return ל.docxText(await unzipEntry(await f.arrayBuffer(), 'word/document.xml'));
+  if(/\.pdf$/.test(n) || type === 'application/pdf'){
+    const t = await pdfText(await f.arrayBuffer());
+    return t.replace(/\s/g, '').length > 40 ? t : geminiTranscribe(f, 'application/pdf');   // PDF סרוק: בלי טקסט
+  }
+  if(type.startsWith('image/')) return geminiTranscribe(f, /png|webp/.test(type) ? type : 'image/jpeg');
+  if(/\.doc$/.test(n)) throw new Error('קובץ Word ישן (doc): לשמור כ-docx או להעתיק את הטקסט');
+  const raw = await f.text();
+  if(/\.html?$/.test(n) || /^\s*<(!doctype|html)/i.test(raw)){
+    const d = new DOMParser().parseFromString(raw, 'text/html');
+    d.querySelectorAll('script,style,noscript,nav,footer,header,aside').forEach(x => x.remove());
+    d.querySelectorAll('br').forEach(x => x.replaceWith('\n'));
+    d.querySelectorAll('p,div,li,h1,h2,h3,h4,h5,h6,tr,section,article').forEach(x => x.append('\n'));
+    d.querySelectorAll('li').forEach(x => x.prepend('- '));
+    return (d.body?.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n');
+  }
+  return raw;
+}
 /* ---------- זיהוי אוכל מתמונה (Gemini) ---------- */
 // מצלמים → התמונה מוקטנת (עד 1024) → Gemini מחזיר מאכלים, גרמים וקלוריות ל-100 גרם → כל מאכל מותאם למאגר,
 // ואם אין התאמה טובה: לפי ההערכה של Gemini (ונשמר כמאכל אישי). מאשרים או מתקנים, ונכנס ליום.
