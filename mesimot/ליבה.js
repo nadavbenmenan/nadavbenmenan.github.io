@@ -661,29 +661,31 @@ const isDurationOnly = l => { const d = durationsIn(l); return d.length > 0 && l
 const LEVELS = {'קל': 'קל', 'קלה': 'קל', 'פשוט': 'קל', 'פשוטה': 'קל', 'easy': 'קל', 'בינוני': 'בינוני', 'בינונית': 'בינוני', 'medium': 'בינוני',
   'מאתגר': 'מאתגר', 'מאתגרת': 'מאתגר', 'קשה': 'מאתגר', 'מורכב': 'מאתגר', 'מורכבת': 'מאתגר', 'hard': 'מאתגר'};
 const RX = {
-  junkMark: /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️​-‏‪-‮*_#~`>|]/gu,
+  junkMark: /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{2190}-\u{21FF}\u{25A0}-\u{25FF}️​-‏‪-‮*_#~`>|]/gu,
   // מספור "1." ולא מספר עשרוני "1.5"
-  bullet: /^(?:[-–—•●▪▫◦·✓✔☐☑□■◆○*+]|\d{1,2}\s*[.)](?![\d/])|\(\d{1,2}\)|[א-י]\s*[.)](?=\s)|שלב\s*\d+\s*[:.)-]?)\s*/,
-  numbered: /^(?:\d{1,2}\s*[.)](?![\d/])|\(\d{1,2}\)|שלב\s*\d+)/,
+  bullet: /^(?:(?:[-–—•●▪▫◦·✓✔☐☑□■◆○*+]\s*)?\[[ xX✓✔]?\]|[-–—•●▪▫◦·✓✔☐☑□■◆○*+]|\d{1,2}\s*[.)](?![\d/])|\d{1,2}\s+[-–—](?=\s)|\(\d{1,2}\)|[א-י]\s*[.)](?=\s)|שלב\s*\d+\s*[:.)-]?|שלב\s+(?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שביעי|שמיני|תשיעי|עשירי|אחרון|אחרונה)\s*[:.)-]?)\s*/,
+  numbered: /^(?:\d{1,2}\s*[.)](?![\d/])|\d{1,2}\s+[-–—]\s|\(\d{1,2}\)|שלב\s*\d+|שלב\s+(?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שביעי|שמיני|תשיעי|עשירי|אחרון|אחרונה))/,
   numOnly: /^(?:\d{1,2}\s*[.)]?|שלב\s*\d+\s*[:.]?)$/,
   ing: /^(?:רשימת\s+)?ה?(מצרכים|מרכיבים|רכיבים|חומרים|מה צריך|ingredients)(?:\s.{0,25})?$/i,
-  steps: /^(?:אופן\s+ה?הכנה|הוראות(?:\s+ה?הכנה)?|ה?הכנה|שלבי\s+ה?הכנה|דרך\s+ה?הכנה|כך\s+מכינים|איך\s+מכינים|instructions|directions|method|preparation)(?:\s.{0,20})?$/i,
-  notes: /^(?:הערות|הערה|טיפים|טיפ|טיפים והערות|הערות וטיפים|notes?|tips?)$/i,
-  junk: /^(?:הדפסה|הדפס|שתפו|שתף|שיתוף|שמור|שמרו|שמירה|לייק|אהבתי|מצב בישול|הוספה לרשימה|הוספה לקניות|דירוג|פרסומת|בתיאבון.*|לחצו כאן.*|קראו עוד.*|print|share|save|jump to recipe)$/i,
+  steps: /^(?:אופן\s+ה?הכנה|ה?הוראות(?:\s+ה?הכנה)?|ה?הכנה|ה?שלבים|שלבי\s+ה?הכנה|דרך\s+ה?הכנה|כך\s+מכינים|איך\s+מכינים|instructions|directions|method|preparation)(?:\s.{0,20})?$/i,
+  notes: /^(?:הערות|הערה|טיפים|טיפ|טיפים והערות|הערות וטיפים|(?:ערך|ערכים)\s+תזונתי(?:ים)?(?:\s.{0,20})?|notes?|tips?)$/i,
+  junk: /^(?:דף\s+הבית\b.*|.*\s>\s.*\s>\s.*|פורסם\s.*|הדפס(?:ה)?\s+(?:ה?מתכון)|שתפו\s+ב.*|שמור(?:ו)?\s+ל.*|הדפסה|הדפס|שתפו|שתף|שיתוף|שמור|שמרו|שמירה|לייק|אהבתי|מצב בישול|הוספה לרשימה|הוספה לקניות|דירוג|פרסומת|בתיאבון.*|לחצו כאן.*|קראו עוד.*|print|share|save|jump to recipe)$/i,
   rating: /[★☆⭐]|^\d(?:\.\d)?\s*\(\d+\s*(?:דירוגים|ratings?)\)/,
-  stop: /^(?:תגובות|מתכונים נוספים|מתכונים דומים|עוד מתכונים|אולי יעניין|הירשמו|comments|related)/i,
-  intro: /^(?:הנה|להלן|בשמחה|כמובן|בטח|אשמח|הכנתי|זה ה?מתכון|קיבלת|מצרף|מצורף|here is|here's|sure)\b|שצירפת|ששלחת|מהתמונות|מהתמונה/i,
-  secExact: /^(?:ה?מצרכים|ה?מרכיבים|רכיבים|חומרים|ingredients|אופן\s+ה?הכנה|הוראות(?:\s+ה?הכנה)?|שלבי\s+ה?הכנה|instructions|directions|method|ה?הכנה|הערות|טיפים|notes?|tips?)$/i,
+  stop: /^(?:כל\s+הזכויות|הצטרפו|הירשמו|תגובות|מתכונים נוספים|מתכונים דומים|עוד מתכונים|אולי יעניין|הירשמו|comments|related)/i,
+  intro: /^(?:הנה|להלן|בשמחה|כמובן|בטח|אשמח|הכנתי|זה ה?מתכון|קיבלת|מצרף|מצורף|here is|here's|sure)(?=[\s,!.:]|$)|שצירפת|ששלחת|מהתמונות|מהתמונה/i,
+  secExact: /^(?:ה?מצרכים|ה?מרכיבים|רכיבים|חומרים|ingredients|אופן\s+ה?הכנה|ה?הוראות(?:\s+ה?הכנה)?|שלבי\s+ה?הכנה|ה?שלבים|instructions|directions|method|ה?הכנה|הערות|הערה|טיפים|טיפ|(?:ערך|ערכים)\s+תזונתי(?:ים)?(?:\s.{0,20})?|notes?|tips?)$/i,
+  // סוף של צ'אט: "בתיאבון!", "רוצה גרסה טבעונית?" — מכאן לא נכנס כלום
+  outro: /^(?:בתיאבון|תהנו|תיהנו|שיהיה\s+טעים|רוצה|רוצים|תרצה|תרצי|תרצו|אם\s+תרצ|אשמח\s+ל|מקווה|בהצלחה|לבריאות|enjoy|bon appetit|let me know|would you like)/i,
 };
 const META = [[/^(?:זמן\s+ה?הכנה|זמן\s+עבודה|prep\s*time)$/i, 'prep'], [/^(?:זמן\s+ה?(?:אפייה|בישול)|cook\s*time|bake\s*time)$/i, 'cook'],
-  [/^(?:זמן\s+כולל(?:\s+להכנה)?|סה["״]?כ\s+זמן|total\s*time)$/i, 'total'], [/^(?:רמת\s+ה?קושי|דרגת\s+קושי|קושי|difficulty)$/i, 'level'],
+  [/^(?:זמן\s+כולל(?:\s+להכנה)?|סה["״]?כ\s+זמן|זמן|total\s*time)$/i, 'total'], [/^(?:רמת\s+ה?קושי|דרגת\s+קושי|קושי|difficulty)$/i, 'level'],
   [/^(?:מספר\s+מנות|מנות|כמות|תפוקה|סועדים|servings|yield)$/i, 'servings'], [/^(?:קישור\s+למקור|מקור|לינק|קישור|source)$/i, 'source'],
-  [/^(?:מאת|כותב|צילום|סגנון|כשרות|מטבח|קטגוריה|תגיות|author)$/i, 'skip']];
+  [/^(?:מאת|כותב|נכתב\s+ע.*|צילום|סגנון|כשרות|מטבח|קטגוריה|תגיות|author)$/i, 'skip']];
 const QTY_START = new RegExp(`^(?:[\\d½¼¾⅛⅓⅔]|(?:${UNITS})(?=\\s))`);
 function parseRecipeText(text){
   const r = {title: '', desc: '', ingredients: [], steps: [], notes: '', prep: '', cook: '', total: '', level: '', servings: '', source: ''};
   const notes = [], before = [], seen = new Set();
-  let part = null, field = null, numbered = false, joinNext = false;
+  let part = null, field = null, numbered = false, joinNext = false, introTitle = '';
   const key = l => l.replace(RX.junkMark, '').replace(/[:：\-–—.]+\s*$/, '').replace(/\s+/g, ' ').trim();
   const setMeta = (f, v) => {
     v = v.trim();
@@ -693,9 +695,25 @@ function parseRecipeText(text){
     else r[f] = key(v).slice(0, 30);
   };
   const isSub = l => /[:：]$/.test(l) && key(l).length <= 25 && !/\d/.test(l);
-  for(let raw of String(text || '').split(/\r?\n/)){
-    raw = raw.replace(/\*\*|__/g, '').replace(/\s+/g, ' ').trim();
+  // טבלה (| מצרך | כמות |): כל שורה = "כמות מצרך". שורה עם כמה פרטים ("זמן הכנה: 20 דקות | מנות: 4"): כל אחד בנפרד
+  const lines = [];
+  for(let l of String(text || '').split(/\r?\n/)){
+    l = l.replace(/\*\*|__/g, '').trim();
+    if(/^\|.*\|$/.test(l)){
+      const cells = l.slice(1, -1).split('|').map(x => x.trim());
+      if(cells.every(x => /^:?-{2,}:?$/.test(x) || !x)) continue;
+      if(cells.some(x => /^(?:רכיב|מצרך|מרכיב|כמות|ingredient|amount|quantity)$/i.test(x))) continue;
+      const q = cells.findIndex((x, i) => i && QTY_START.test(x));
+      lines.push(q > 0 ? (cells[q].includes(cells[0]) ? cells[q] : [cells[q], ...cells.filter((x, i) => i !== q)].filter(Boolean).join(' ')) : cells.filter(Boolean).join(' '));
+    }else if(/\s\|\s/.test(l)) lines.push(...l.split(/\s\|\s/));
+    else lines.push(l);
+  }
+  for(let raw of lines){
+    raw = raw.replace(/\s+/g, ' ').trim();
     if(!raw) continue;
+    // "מתאים ל-6 מנות", "ל-4 סועדים"
+    const sv = /^[*_]*(?:מתאים\s+)?ל-?\s*(\d+(?:-\d+)?)\s+(?:מנות|סועדים|אנשים)[*_]*$/.exec(raw);
+    if(sv){ r.servings = sv[1]; continue; }
     // 10. קישור
     const url = /https?:\/\/\S+/.exec(raw);
     if(url){ if(!r.source) r.source = url[0]; raw = raw.replace(url[0], '').trim(); if(!key(raw)) continue; }
@@ -703,7 +721,8 @@ function parseRecipeText(text){
     if(!k) continue;
     // 8. אתרים ואפליקציות
     if(RX.stop.test(k)) break;
-    if(RX.junk.test(k) || RX.rating.test(raw)) continue;
+    if(RX.outro.test(k) && (r.ingredients.length || r.steps.length)) break;
+    if(RX.junk.test(k) || RX.rating.test(raw) || /\s>\s.*\s>\s/.test(raw) || /^\d{1,2}[./ ](?:\d{1,2}|[א-ת]+)[./ ]\d{2,4}$/.test(k)) continue;   // פירורי לחם של אתר, תאריך
     // 4. פרטים (שורה אחת או שתיים)
     const mm = /^([^:：]{2,24})[:：]\s*(.*)$/.exec(raw);
     const head = key(mm ? mm[1] : raw), rest = mm ? key(mm[2]) ? mm[2].trim() : '' : '';   // "*הכנה:*": הכוכבית אחרי הנקודתיים היא לא תוכן
@@ -721,6 +740,7 @@ function parseRecipeText(text){
       part = sec; numbered = false; joinNext = false;
       if(rest) raw = rest; else continue;
     }else if(part === 'tail') continue;
+    else if(!part && before.length && isSub(raw) && !RX.intro.test(key(raw))) part = 'ing';   // "לבסיס:" אחרי השם, בלי כותרת "מצרכים"
     if(seen.has(raw)) continue;   // 1. שורה כפולה
     seen.add(raw);
     if(part === 'ing'){
@@ -748,10 +768,18 @@ function parseRecipeText(text){
     }else{
       const c = raw.replace(RX.junkMark, '').replace(/\s+/g, ' ').trim();
       // 14. פתיח של צ'אט לפני הכותרות
+      if(c && RX.intro.test(c) && !introTitle){ const m = /מתכון\s+(?:ל|של\s+)(?=[א-ת])(.{3,40}?)[:.!]*$/.exec(c); if(m) introTitle = m[1].trim(); }
       if(c && !(RX.intro.test(c) || (/[:：]$/.test(c) && c.length > 30 && !r.ingredients.length && !r.steps.length))) before.push(c);
     }
   }
-  r.notes = notes.join('\n');
+  // 17. ניקוי סופי: תווים מיוחדים בהתחלה ובסוף ("; " "." בסוף מצרך, ":" שנשאר), שאלות של צ'אט, ופסקה אחת ארוכה → משפטים
+  const trimEdge = x => x.replace(/^[\s\-–—•·*:;,.>|]+/, '').replace(/[\s;,*|>]+$/, '').trim();
+  r.ingredients = r.ingredients.map(x => /:$/.test(x) ? x : trimEdge(x).replace(/(?<!\d)\.$/, '').trim()).filter(Boolean);
+  r.steps = r.steps.map(x => /:$/.test(x) ? x : trimEdge(x)).filter(x => x && !/\?$/.test(x));
+  if(!numbered && r.steps.length <= 2 && r.steps.some(x => x.length > 160))
+    r.steps = r.steps.flatMap(x => x.length > 160 ? x.split(/(?<=[.!])\s+(?=[א-תA-Za-z])/).map(y => y.trim()).filter(Boolean) : [x]);
+  for(let i = notes.length - 1; i >= 0; i--) if(/\?$/.test(notes[i])) notes.splice(i, 1);
+  r.notes = notes.map(trimEdge).filter(Boolean).join('\n');
   // 13. בלי כותרות בכלל
   if(!r.ingredients.length && !r.steps.length && before.length > 1){
     const [first, ...others] = before;
@@ -761,6 +789,7 @@ function parseRecipeText(text){
       (QTY_START.test(c) || (c.length <= 30 && !/[.!]$/.test(c)) ? r.ingredients : r.steps).push(c);
     }
   }
+  if(!before.length && introTitle) before.push(introTitle);   // "הנה מתכון לעוף בתנור:" ואין שם אחר
   // 15. שם עם מקף: לפני המקף שם, אחריו תיאור
   if(before.length){
     const dash = before[0].split(/\s[–—-]\s/);
@@ -1553,6 +1582,82 @@ function recipeFood(r){
   const base = new Map(allBuiltin().map(f => [f.id, f])), pr = (r.items || []).reduce((s, i) => { const f = base.get(i.foodId); const p = i.prot ?? (prot100Of(f) == null ? 0 : (+i.grams || 0) * prot100Of(f) / 100); return s + p; }, 0);
   return {id: r.id, name: r.name, kcal100: grams ? Math.round(total / grams * 100) : 0, prot100: grams ? Math.round(pr / grams * 1000) / 10 : null, units: [{name: 'מנה', g: grams ? Math.round(grams / n) : 100}],
     total, perServing: Math.round(total / n), recipe: true, updatedAt: r.updatedAt, deleted: r.deleted};
+}
+
+/* ---------- מתכון ממסמך ---------- */
+/** טקסט מ-word/document.xml של קובץ docx: פסקה = שורה, טאב = רווח, רשימה ממוספרת/תבליטים = "- ". */
+function docxText(xml){
+  const dec = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  const out = [];
+  for(const p of String(xml || '').split(/<\/w:p>/)){
+    let line = '';
+    for(const m of p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br\/>|<w:tc>/g)) line += m[1] != null ? dec(m[1]) : m[0] === '<w:tc>' ? ' | ' : m[0] === '<w:br/>' ? '\n' : ' ';
+    line = line.replace(/^\s*\|\s*/, '');
+    if(/<w:numPr>/.test(p) && line.trim()) line = '- ' + line.trim();
+    out.push(line.replace(/[ \t]+/g, ' ').trim());
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+/** שורות מטקסט של PDF (pdf.js): פריטים לפי גובה (y), מימין לשמאל בעברית. */
+function pdfLines(items){
+  const rows = [];
+  for(const it of items || []){
+    if(!it.str || !it.str.trim()) continue;
+    const y = Math.round(it.y), row = rows.find(r => Math.abs(r.y - y) <= 3);
+    if(row) row.items.push(it); else rows.push({y, items: [it]});
+  }
+  rows.sort((a, b) => b.y - a.y);
+  return rows.map(r => { const rtl = r.items.some(x => /[א-ת]/.test(x.str));
+    return r.items.sort((a, b) => rtl ? b.x - a.x : a.x - b.x).map(x => x.str).join(' ').replace(/\s+/g, ' ').trim(); }).join('\n');
+}
+
+/* ---------- מחשבון ---------- */
+// חישוב בלי eval: + − × ÷, סוגריים, מינוס אונרי, ואחוז כמו במחשבון של הטלפון: "200+10%" = 220, "50×10%" = 5.
+function calcEval(expr){
+  const src = String(expr || '').replace(/[×xX*]/g, '*').replace(/[÷:/]/g, '/').replace(/[−–—]/g, '-').replace(/,/g, '').replace(/\s+/g, '');
+  if(!src) return null;
+  let i = 0;
+  const peek = () => src[i], eat = c => src[i] === c ? (i++, true) : false;
+  function primary(){
+    if(eat('-')){ const x = primary(); return {v: -x.v, pct: x.pct}; }
+    if(eat('+')) return primary();
+    let x;
+    if(eat('(')){ x = {v: expr0()}; if(!eat(')') && i < src.length) throw new Error('סוגר'); }
+    else{
+      const m = /^(\d+\.?\d*|\.\d+)/.exec(src.slice(i));
+      if(!m) throw new Error('מספר');
+      i += m[0].length; x = {v: parseFloat(m[0])};
+    }
+    if(eat('%')) x = {v: x.v, pct: true};
+    return x;
+  }
+  function term(){
+    let a = primary(); a = {v: a.pct ? a.v / 100 : a.v};
+    for(;;){
+      if(eat('*')){ const b = primary(); a = {v: a.v * (b.pct ? b.v / 100 : b.v)}; }
+      else if(eat('/')){ const b = primary(); const d = b.pct ? b.v / 100 : b.v; if(d === 0) throw new Error('חלוקה באפס'); a = {v: a.v / d}; }
+      else return a;
+    }
+  }
+  // אחוז אחרי + או −: מהמספר שלפניו
+  function termPct(left){
+    const save = i, b = primary();
+    if(b.pct && (i >= src.length || /[+\-)]/.test(peek()))) return left * b.v / 100;
+    i = save; return term().v;
+  }
+  function expr0(){
+    let a = term().v;
+    for(;;){
+      if(eat('+')) a += termPct(a);
+      else if(eat('-')) a -= termPct(a);
+      else return a;
+    }
+  }
+  try{
+    const v = expr0();
+    if(i < src.length || !isFinite(v)) return null;
+    return Math.round(v * 1e10) / 1e10;
+  }catch(e){ return null; }
 }
 
 /* ---------- זיהוי אוכל מתמונה (Gemini) ---------- */
@@ -2363,7 +2468,7 @@ return {
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
-  foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT,
+  foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
