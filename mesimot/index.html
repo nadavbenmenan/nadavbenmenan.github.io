@@ -526,6 +526,10 @@
   .more-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .more-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;border:0;text-align:right;color:inherit;width:100%}
   .more-row .i{font-size:26px;flex:none}
+  .more-row.sel{outline:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+  .pf-l-h{font-size:15px;margin:14px 4px 4px;color:var(--muted)} .pf-l-h small{font-weight:400}
+  .sel-bar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--card);border-radius:16px;padding:8px;margin-top:10px;box-shadow:0 4px 18px rgba(0,0,0,.18);z-index:5}
+  .sel-bar span{flex:1;font-weight:700;padding:0 6px} .sel-bar .btn{min-height:42px;padding:0 10px}
   .nap-sug{display:flex;align-items:center;gap:8px;margin-top:6px} .nap-sug span{flex:1;font-weight:600} .nap-sug .btn{min-height:40px;padding:0 14px}
   .more-row .b{flex:1;min-width:0}
   .more-row .t{font-weight:600;font-size:16px}
@@ -929,6 +933,7 @@
     <input type="search" id="pf-l-q" placeholder="חיפוש" autocomplete="off" style="width:100%;margin-top:10px">
     <div class="note" id="pf-l-note"></div>
     <div id="pf-l-list" class="more-list"></div>
+    <div id="pf-l-bar" class="sel-bar" hidden></div>
   </div>
   <div class="pf-pg" data-pg="sound" hidden><div id="pf-sound"></div></div>
   <div class="pf-pg" data-pg="places" hidden><div id="pf-places"></div></div>
@@ -1786,7 +1791,7 @@ function renderShop(){
   // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
   if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
   $('shop-sug-box').style.marginTop = q || !groups.length ? '' : '22px';
-  $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
+  $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.fav ? '⭐' : ''}${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
   $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
     <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
       <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
@@ -6455,8 +6460,6 @@ let pfList = 'shop';
 const PF_LISTS = [['shop', '🛒 מוצרים'], ['recipes', '🍳 מתכונים'], ['foods', '🍽️ מאכלים']];
 function pfListRows(){
   const q = ל.shopKey($('pf-l-q').value || ''), has = (...x) => !q || ל.shopKey(x.join(' ')).includes(q), byName = (a, b) => (a.t || '').localeCompare(b.t || '', 'he');
-  if(pfList === 'shop') return D.file.shop.items.filter(x => !x.deleted && has(x.name)).map(x => { const i = ל.shopInfo(x);
-    return {k: x.id, i: i.textEmoji || '🛒', t: x.name, s: [i.catName, x.active && '🛒 ברשימה עכשיו', x.count && `נוסף ${x.count === 1 ? 'פעם אחת' : x.count + ' פעמים'}`].filter(Boolean).join(' · ')}; }).sort(byName);
   if(pfList === 'recipes') return recipeList().filter(r => has(r.title)).map(r => ({k: r.id, i: recipeEmoji(r), t: r.title, s: ל.recipeCat(r)})).sort(byName);
   return [...live(KF().foods).map(f => ({k: 'f:' + f.id, i: FOOD_ICON(f), t: f.name, s: `${kNum(f.perUnitKcal ?? f.kcal100)} קלוריות ל${f.perUnitKcal != null ? f.units[0].name : '־100 גרם'}`})),
     ...live(KF().recipes).map(r => ({k: 'r:' + r.id, i: '🧾', t: r.name, s: `מנה ממרכיבים · ${kNum(ל.recipeFood(r).perServing)} למנה`})),
@@ -6464,6 +6467,8 @@ function pfListRows(){
 }
 function renderPfLists(){
   $('pf-l-tabs').innerHTML = PF_LISTS.map(([k, n]) => `<button type="button" data-l="${k}" class="${pfList === k ? 'on' : ''}">${n}</button>`).join('');
+  if(pfList === 'shop') return renderShopPf();
+  renderSelBar();
   const rows = pfListRows(), add = {shop: '＋ מוצר חדש', recipes: '＋ מתכון חדש', foods: '＋ מאכל חדש'}[pfList];
   $('pf-l-note').textContent = {shop: 'כל המוצרים שהוספת אי פעם (מהם ההצעות בקניות). לוחצים על מוצר: שם, מחלקה או מחיקה.', recipes: 'לוחצים על מתכון: עריכה, קטגוריה, תמונה או מחיקה.',
     foods: 'מאכלים שהוספת, מנות ממרכיבים וארוחות קבועות (מחישוב הקלוריות).'}[pfList] + ` (${rows.length})`;
@@ -6471,7 +6476,63 @@ function renderPfLists(){
     (rows.length ? rows.map(x => `<button type="button" class="more-row" data-k="${esc(x.k)}"><span class="i">${x.i}</span><span class="b"><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span><span class="side">✏️</span></button>`).join('')
       : `<div class="empty">${$('pf-l-q').value ? 'לא נמצא' : 'הרשימה ריקה'}</div>`);
 }
-$('pf-l-tabs').onclick = e => { const b = e.target.closest('[data-l]'); if(b){ pfList = b.dataset.l; $('pf-l-q').value = ''; renderPfLists(); } };
+/* מוצרים: כל המוצרים (גם מהרשימה המובנית). לחיצה ארוכה מסמנת ופותחת חלון; כשיש מסומנים, לחיצה מסמנת עוד,
+   ולמטה פס: ⭐ למועדפים / 🗑 מחיקה לכולם יחד. הסימון נשאר גם אחרי שסוגרים את החלון. */
+const pfSel = new Set();
+const shopRows = () => { const q = ל.shopKey($('pf-l-q').value || ''); return ל.shopAll(D.file.shop.items).filter(x => !q || ל.shopKey(x.name).includes(q)); };
+const shopRowOf = k => ל.shopAll(D.file.shop.items).find(x => x.key === k);
+/** הרשומה של המוצר (נוצרת למוצר מובנה), עם שינוי. */
+const shopRecWith = (x, ch) => Object.assign(x.rec ? Object.assign({}, x.rec) : ל.shopRecord(D.file.shop.items, x.name, nowIso()), ch, {updatedAt: nowIso()});
+function shopSaveMany(recs){ D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, recs)}; persist('shop', true); changed(); }
+function shopFavMany(rows, on){
+  const before = rows.map(x => x.rec).filter(Boolean);
+  shopSaveMany(rows.map(x => shopRecWith(x, {fav: on})));
+  toast(on ? `⭐ ${rows.length === 1 ? rows[0].name + ' במועדפים' : rows.length + ' מוצרים במועדפים'}` : `הוסר מהמועדפים`, {undo: () => shopSaveMany(rows.map(x => x.rec ? Object.assign({}, x.rec, {updatedAt: nowIso()}) : shopRecWith(x, {fav: false})))});
+}
+function shopHideMany(rows){
+  shopSaveMany(rows.map(x => shopRecWith(x, {hidden: true, active: false, fav: false})));
+  toast(rows.length === 1 ? `נמחק: ${rows[0].name}` : `נמחקו ${rows.length} מוצרים`, {undo: () => shopSaveMany(rows.map(x => x.rec ? Object.assign({}, x.rec, {updatedAt: nowIso()}) : shopRecWith(x, {hidden: false})))});
+}
+function shopItemMenu(x){
+  sheet(x.name, [
+    [x.fav ? '★ הסרה מהמועדפים' : '⭐ הוספה למועדפים', () => shopFavMany([x], !x.fav)],
+    ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; if(v && v !== x.name){ saveShop(shopRecWith(x, {name: v})); toast('✓ נשמר'); } }],
+    [`🗂️ מחלקה: ${(ל.SHOP_CATS.find(c => c.id === x.cat) || {}).name || 'אחר'}`, () => openShopCat(shopRecWith(x, {}))],
+    x.rec?.active ? ['✓ כבר ברשימת הקניות', () => {}] : ['🛒 להוסיף לרשימת הקניות', () => { shopAddName(x.name); toast(`✓ ${x.name} ברשימה`); }],
+    ['🗑 מחיקה (גם מההצעות)', () => { pfSel.delete(x.key); shopHideMany([x]); }]]);
+}
+function renderShopPf(){
+  const rows = shopRows(), favs = rows.filter(x => x.fav);
+  const row = x => `<button type="button" class="more-row${pfSel.has(x.key) ? ' sel' : ''}" data-k="${esc(x.key)}"><span class="i">${pfSel.has(x.key) ? '✅' : x.emoji || '🛒'}</span><span class="b"><span class="t">${x.fav ? '⭐ ' : ''}${esc(x.name)}</span>${x.rec?.active ? '<span class="s">🛒 ברשימה עכשיו</span>' : ''}</span></button>`;
+  const groups = ל.SHOP_CATS.map(c => [c, rows.filter(x => x.cat === c.id)]).filter(([, l]) => l.length);
+  $('pf-l-note').textContent = `כל המוצרים (${rows.length}). לחיצה ארוכה: סימון, מועדפים, עריכה או מחיקה. אפשר לסמן כמה יחד.`;
+  $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">מוצר חדש</span></span></button>`
+    + (favs.length ? `<h3 class="pf-l-h">⭐ מועדפים</h3>${favs.map(row).join('')}` : '')
+    + (groups.length ? groups.map(([c, l]) => `<h3 class="pf-l-h">${c.emoji} ${esc(c.name)} <small>${l.length}</small></h3>${l.sort((a, b) => a.name.localeCompare(b.name, 'he')).map(row).join('')}`).join('') : '<div class="empty">לא נמצא</div>');
+  renderSelBar();
+}
+function renderSelBar(){
+  const n = pfList === 'shop' ? pfSel.size : 0;
+  $('pf-l-bar').hidden = !n;
+  if(n) $('pf-l-bar').innerHTML = `<span>${n === 1 ? 'מוצר אחד' : n + ' מוצרים'}</span><button class="btn" type="button" data-sel="fav">⭐ למועדפים</button><button class="btn" type="button" data-sel="del" style="color:var(--red)">🗑 מחיקה</button><button class="btn" type="button" data-sel="x" aria-label="ביטול הסימון">✕</button>`;
+}
+$('pf-l-bar').onclick = async e => {
+  const b = e.target.closest('[data-sel]'); if(!b) return;
+  const rows = [...pfSel].map(shopRowOf).filter(Boolean);
+  if(b.dataset.sel === 'fav') shopFavMany(rows, true);
+  if(b.dataset.sel === 'del'){ if(!await sure(`למחוק ${rows.length === 1 ? 'את ' + rows[0].name : rows.length + ' מוצרים'}? (גם מההצעות)`, 'מחיקה', {danger: true})) return; shopHideMany(rows); }
+  pfSel.clear(); renderPfLists();
+};
+// לחיצה ארוכה על מוצר: מסמן ופותח את החלון
+{ let t = null, lp = false;
+  $('pf-l-list').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); lp = false; clearTimeout(t);
+    if(!b || pfList !== 'shop' || b.dataset.k === '+') return;
+    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); const x = shopRowOf(b.dataset.k); if(!x) return; pfSel.add(x.key); renderPfLists(); shopItemMenu(x); }, 550); });
+  for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('pf-l-list').addEventListener(ev, () => clearTimeout(t));
+  $('pf-l-list').addEventListener('pointermove', e => { if(Math.abs(e.movementY) > 4) clearTimeout(t); });
+  $('pf-l-list').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
+  $('pf-l-list').addEventListener('contextmenu', e => { if(e.target.closest('[data-k]')) e.preventDefault(); }); }
+$('pf-l-tabs').onclick = e => { const b = e.target.closest('[data-l]'); if(b){ pfList = b.dataset.l; pfSel.clear(); $('pf-l-q').value = ''; renderPfLists(); } };
 $('pf-l-q').addEventListener('input', () => renderPfLists());
 $('pf-l-list').onclick = async e => {
   const b = e.target.closest('[data-k]'); if(!b) return;
@@ -6483,12 +6544,10 @@ $('pf-l-list').onclick = async e => {
       if(!r) return v && toast('כבר קיים');
       saveShop(Object.assign(r, {active: false, count: 0})); if(!r.cat && !ל.shopMatch(r.name)) openShopCat(r, true); return;
     }
-    const x = D.file.shop.items.find(i => i.id === k); if(!x) return;
-    return sheet(x.name, [
-      ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; if(v && v !== x.name){ saveShop(Object.assign({}, x, {name: v, updatedAt: nowIso()})); toast('✓ נשמר'); } }],
-      [`🗂️ מחלקה: ${ל.shopInfo(x).catName}`, () => openShopCat(x)],
-      x.active ? ['✓ כבר ברשימת הקניות', () => {}] : ['🛒 להוסיף לרשימת הקניות', () => { shopAddName(x.name); toast(`✓ ${x.name} ברשימה`); }],
-      ['🗑 מחיקה (גם מההצעות)', () => { saveShop(Object.assign({}, x, {deleted: true, updatedAt: nowIso()})); toast('נמחק', {undo: () => saveShop(Object.assign({}, x, {deleted: false, updatedAt: nowIso()}))}); }]]);
+    const x = shopRowOf(k); if(!x) return;
+    // כשיש מסומנים: לחיצה מסמנת / מורידה סימון
+    if(pfSel.size){ pfSel.has(k) ? pfSel.delete(k) : pfSel.add(k); return renderPfLists(); }
+    return shopItemMenu(x);
   }
   if(pfList === 'recipes'){ if(k === '+') return openRecipeEditor(null); const r = recipeById(k); return r && recipeMenu(r); }
   if(k === '+') return sheet('מאכל חדש', [['🍽️ מאכל עם קלוריות', () => openKMy(null)], ['🧾 מנה ממרכיבים', () => openKRec(null)]]);
