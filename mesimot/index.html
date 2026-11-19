@@ -931,6 +931,8 @@
     <div id="pf-l-list" class="more-list"></div>
   </div>
   <div class="pf-pg" data-pg="sound" hidden><div id="pf-sound"></div></div>
+  <div class="pf-pg" data-pg="places" hidden><div id="pf-places"></div></div>
+  <div class="pf-pg" data-pg="cal" hidden><div id="pf-calr"></div></div>
   <div class="pf-pg" data-pg="phone" hidden><div id="pf-native"></div></div>
   <div class="pf-pg" data-pg="about" hidden><div id="pf-about"></div></div>
   <div id="pf-more"></div>
@@ -5622,7 +5624,8 @@ async function nativeInit(){
   }catch(e){}
   await nativeEvents();
   nativeSchedule();
-  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') nativeEvents(); });
+  calEventsSync();
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ nativeEvents(); calEventsSync(); } });
 }
 
 
@@ -5837,6 +5840,33 @@ async function pickCalendar(list){
 }
 /** הסיכום של היום (ושל יומיים קדימה) לווידג'ט ולסיכום הבוקר: משימות, תרופות יומיות, ומשימות דחופות מהרשימה. */
 /** מה יש ביום: משימות (גם תחזוקה וימים מיוחדים), משימות פתוחות מהרשימה (בלי תאריך או עד היום), תרופות יומיות, מלאי שנגמר. */
+/* ---------- היומן של הטלפון: האירועים (לא רק מה שהאפליקציה הכניסה) נכנסים לסיכום היומי והשבועי, ותזכורת לפני ---------- */
+const EVK = 'משימות.אירועי-יומן';
+let evAt = 0;
+async function calEventsSync(force){
+  if(!NATIVE || !NPhone?.calendarEvents || D.config.calRead === false) return;
+  if(!force && Date.now() - evAt < 10 * 6e4) return;
+  evAt = Date.now();
+  try{
+    const r = await NPhone.calendarEvents({from: ל.at(today(), '00:00'), to: ל.at(ל.addDays(today(), 8), '00:00')});
+    // מה שהאפליקציה עצמה הכניסה ליומן (משימות 📅) כבר מופיע כמשימה
+    const mine = new Set(Object.values(storeJson('משימות.יומן-טלפון', {})).map(x => +x.eid).filter(Boolean));
+    const titles = new Set(D.tasks.filter(ל.isActiveTask).map(t => ל.shopKey(t.title)));
+    const evs = (r.events || []).filter(e => !mine.has(+e.eid) && !titles.has(ל.shopKey(e.title)))
+      .map(e => ({eid: e.eid, title: String(e.title).slice(0, 120), begin: +e.begin, end: +e.end, allDay: !!e.allDay, where: e.where || ''}));
+    const sig = JSON.stringify(evs);
+    if(sig !== store(EVK)){ store(EVK, sig); dailySoon(); nativeSchedule(); if(screen === 'today' || screen === 'notif') renderAll(); }
+  }catch(e){}
+}
+/** אירועים ביום d. יום שלם: התאריך נשמר ב-UTC. */
+function eventsOn(d){
+  if(D.config.calRead === false) return [];
+  return storeJson(EVK, []).filter(e => e.allDay ? new Date(e.begin).toISOString().slice(0, 10) === d : ל.localDate(e.begin) === d)
+    .sort((a, b) => +b.allDay - +a.allDay || a.begin - b.begin);
+}
+const evText = e => (e.allDay ? '' : ל.localTime(e.begin) + ' ') + e.title + (e.where ? ` (${e.where})` : '');
+const LEADS = [[0, 'בלי תזכורת'], [10, '10 דקות'], [15, 'רבע שעה'], [30, 'חצי שעה'], [60, 'שעה'], [120, 'שעתיים'], [1440, 'יום לפני']];
+const leadText = m => (LEADS.find(x => x[0] === m) || [0, m + ' דקות'])[1];
 function morningItems(d){
   d = d || today();
   const now = d === today() ? Date.now() : ל.at(d, '06:00'), v = ל.buildView(data(), now), out = [], seen = new Set();
@@ -5850,6 +5880,7 @@ function morningItems(d){
     out.push({k: 'info', key: 'b:' + b.task.id + b.next, icon: b.emoji, text: `${b.task.person || b.label}: ${b.label} ${b.inDays ? 'מחר' : 'היום'}`});
   for(const x of todoItems().filter(x => !x.done && !x.removed && (!x.due || x.due <= d)).sort((a, b) => (b.urg || 0) - (a.urg || 0)))
     out.push({k: 'todo', key: 'td:' + x.id, id: x.id, icon: x.urg === 2 ? '🔴' : x.urg === 1 ? '🟠' : '📝', text: x.title + (x.time && x.due === d ? ' ' + x.time : '')});
+  for(const e of safe(() => eventsOn(d))) if(d !== today() || e.allDay || e.end > Date.now()) out.push({k: 'info', key: 'ev:' + e.eid + ':' + e.begin, icon: '📅', text: evText(e)});
   for(const m of safe(() => window.medsDaily?.())) if(d !== today() || !m.taken) out.push({k: 'med', key: 'm:' + m.name, icon: '💊', text: m.name});
   for(const n of safe(() => window.medsLow?.())) out.push({k: 'info', key: 's:' + n, icon: '🛒', text: `${n}: נגמר בקרוב, לקנות`});
   return out;
@@ -5864,7 +5895,9 @@ function dailyInfo(){
     const leave = [...[...v.overdue, ...v.todays].filter(x => x.task.onLeave).map(x => '🔔 ' + ל.displayTitle(x.task)),
       ...D.tasks.filter(t => t.onLeave && !t.deleted && !t.archived && t.kind === 'inbox').map(t => '🔔 ' + t.title),
       ...ל.leaveItems(titles)];
-    days[d] = {leave, title: `היום · ${dayName(d)} ${ל.shortDate(d)}`, morning: `☀️ בוקר טוב · ${lines.length ? (lines.length === 1 ? 'דבר אחד' : lines.length + ' דברים') + ' להיום' : 'יום פנוי'}`, lines};
+    // הגעה הביתה / לעבודה: המשימות של היום בתחומים שנבחרו להגדרות לכל מקום
+    const pd = placeDoms(), at = pl => [...v.overdue, ...v.todays].filter((x, i, a) => pd[pl].includes(x.task.domain) && a.findIndex(y => y.task.id === x.task.id) === i).map(x => '• ' + ל.displayTitle(x.task));
+    days[d] = {leave, home: at('home'), work: at('work'), title: `היום · ${dayName(d)} ${ל.shortDate(d)}`, morning: `☀️ בוקר טוב · ${lines.length ? (lines.length === 1 ? 'דבר אחד' : lines.length + ' דברים') + ' להיום' : 'יום פנוי'}`, lines};
   }
   return days;
 }
@@ -5872,7 +5905,7 @@ function dailyInfo(){
 /* ---------- מסך "התראות": סיכום שבועי, השבוע הקרוב, מה מתוזמן, ומה נשלח ---------- */
 // מה שנקבע בטלפון נשמר ברשימה (מתוכננות). כשהזמן שלו עובר הוא עובר ליומן (נשלחו), 60 יום אחורה.
 const NLOG = 'משימות.התראות-נשלחו', NPLAN = 'משימות.התראות-מתוכננות', NSEEN = 'משימות.התראות-נראה';
-const NICON = {task: '✅', med: '💊', morning: '☀️', weight: '⚖️', medstock: '💊', bill: '💳', week: '📊', calweek: '📅'};
+const NICON = {event: '📅', task: '✅', med: '💊', morning: '☀️', weight: '⚖️', medstock: '💊', bill: '💳', week: '📊', calweek: '📅'};
 const safeList = f => { try{ return f() || []; }catch(e){ return []; } };
 function notifLog(){
   const now = Date.now(), plan = storeJson(NPLAN, []), log = storeJson(NLOG, []);
@@ -5927,6 +5960,7 @@ function weekAhead(start){
     const items = v.todays.map(x => (x.task.special === 'birthday' ? '🎂 ' : x.task.upkeep ? (x.task.emoji || '🔧') + ' ' : '• ') + ל.displayTitle(x.task));
     for(const b of safeList(() => ל.birthdaysView(D.tasks, d))) if(b.inDays === 0 && !v.todays.some(x => x.task.id === b.task.id)) items.push(`${b.emoji} ${b.task.person || ''} ${b.label}`.trim());
     for(const x of todoItems().filter(x => !x.done && !x.removed && x.due === d)) items.push('📝 ' + x.title);
+    for(const e of safeList(() => eventsOn(d))) items.push('📅 ' + evText(e));
     out.push({d, items});
   }
   return out;
@@ -5961,6 +5995,12 @@ function extraNotifs(now){
       const at = nextAt(ל.addDays(ch.date, 7), '10:00', now, 7);
       out.push({k: 'charge:' + ch.id + ':' + ל.localDate(at), kind: 'bill', title: '⏳ חשבון לדייר עוד לא שולם', body: `${chargeTitle(ch)} · נשלח ${ל.shortDate(ch.date)}`, at, u: '#bills'});
     }
+  }
+  const lead = c.eventLead ?? 30;
+  if(lead > 0) for(const e of storeJson(EVK, []).filter(e => !e.allDay && c.calRead !== false)){
+    const at = e.begin - lead * 6e4;
+    if(at > now + 15e3 && at < now + 8 * 864e5) out.push({k: 'ev:' + e.eid + ':' + e.begin, kind: 'event', title: `📅 בעוד ${leadText(lead)}: ${e.title}`,
+      body: `${lead >= 1440 ? kDayLabel(ל.localDate(e.begin)) + ' ' : ''}${ל.localTime(e.begin)}${e.where ? ' · ' + e.where : ''}`, at, u: '#notif'});
   }
   if(c.weekSum !== false){
     const sat = nextDow(6, '20:00', now), st = weekStats(ל.localDate(sat));
@@ -6351,6 +6391,8 @@ function renderPrefs(){
   $('pf-upd').onclick = () => window.open('https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3', '_blank');
   if(pfPage === 'lists') renderPfLists();
   if(pfPage === 'sound') renderPfSound();
+  if(pfPage === 'places') renderPfPlaces();
+  if(pfPage === 'cal') renderPfCal();
   pfShow();
   renderNativePrefs();
 }
@@ -6373,6 +6415,8 @@ function pfPages(){
     ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
     ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === (c.notifSound || '')) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === (c.timerTone || '')) || SND_TIMER[0])[1]}`],
     ['health', '💪', 'יעדי בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())}`],
+    NATIVE && ['places', '📍', 'בית ועבודה', 'הגעה: מה לעשות שם · יציאה מהבית: מה לקחת'],
+    NATIVE && ['cal', '📅', 'יומן', c.calRead === false ? 'לא קורא את היומן' : `אירועים בסיכום · תזכורת ${c.eventLead === 0 ? 'כבויה' : leadText(c.eventLead ?? 30) + ' לפני'}`],
     NATIVE && ['phone', '📱', 'טלפון והרשאות', 'בדיקת התראות, יומן, יציאה מהבית'],
     ['data', '📤', 'ייצוא וגיבוי', 'אקסל, PDF, גיבוי'],
     ['about', 'ℹ️', 'אודות', 'גרסה ועדכון']].filter(Boolean);
@@ -6385,7 +6429,7 @@ function pfShow(){
   if(!pfPage) $('pf-menu').innerHTML = pages.map(([k, i, t, x]) => `<button type="button" class="more-row" data-pg="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">‹</span></button>`).join('');
   document.querySelectorAll('#scr-prefs .pf-pg').forEach(el => el.hidden = !pfPage || !el.dataset.pg.split(' ').includes(pfPage));
 }
-function pfGo(k){ pfPage = k; pfShow(); scrollTo(0, 0); if(!k) renderPrefs(); }
+function pfGo(k){ pfPage = k; pfShow(); scrollTo(0, 0); renderPrefs(); }
 $('pf-menu').onclick = e => { const b = e.target.closest('[data-pg]'); if(b) pfGo(b.dataset.pg); };
 $('pf-back').onclick = () => pfGo(null);
 $('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ saveConfig({fontSize: b.dataset.fs}); applyTheme(); renderPrefs(); } };
@@ -6474,6 +6518,52 @@ $('pf-sound').addEventListener('click', e => {
   saveConfig(b.dataset.snd === 'n' ? {notifSound: b.dataset.v} : {timerTone: b.dataset.v});
   renderPfSound(); if(NATIVE) nativeSchedule?.();
 });
+/* ---------- הגדרות ← בית ועבודה: מיקום לכל מקום, ואילו תחומים "שייכים" לו ---------- */
+// הגעה (גדר של 200 מטר): התראה עם המשימות של היום בתחומים של המקום. יציאה מהבית: "מה לקחת" (כמו קודם)
+const PLACES = [['home', '🏠', 'בית', 'בהגעה הביתה: מה לעשות בבית. ביציאה: מה לקחת'], ['work', '💼', 'עבודה', 'בהגעה לעבודה: מה לעשות שם']];
+function placeDoms(){ const p = D.config.placeDoms || {}; return {home: p.home || ['home'], work: p.work || ['work']}; }
+async function renderPfPlaces(){
+  const box = $('pf-places'); if(!box) return;
+  const hs = NPhone?.homeStatus ? await NPhone.homeStatus().catch(() => ({})) : {}, pd = placeDoms(), doms = D.domains.filter(d => !d.deleted);
+  box.innerHTML = ((hs.home || hs.work) && !hs.always ? `<div class="card" style="margin-top:12px"><b>📍 צריך מיקום "כל הזמן"</b><div class="note" style="margin:6px 0 10px">בלי זה הטלפון לא מודיע על הגעה ויציאה כשהאפליקציה סגורה. המיקום נבדק רק מול הבית והעבודה ולא נשמר.</div>
+      <button class="btn primary" type="button" id="pl-always" style="width:100%">אישור מיקום</button></div>` : '')
+    + PLACES.map(([k, i, n, sub]) => `<div class="sec"><h2>${i} ${n} <span class="note" style="margin:0">${hs[k] ? (hs.always ? '✓ פועל' : '✗ חסר אישור מיקום') : 'לא הוגדר'}</span></h2>
+      <div class="note">${sub}</div>
+      <div class="btns"><button class="btn${hs[k] ? '' : ' primary'}" type="button" data-pl-set="${k}">📍 ${hs[k] ? 'עדכון: ' : ''}${n === 'בית' ? 'הבית' : 'העבודה'} כאן</button>
+        ${hs[k] ? `<button class="btn" type="button" data-pl-test="${k}">בדיקה</button><button class="btn" type="button" data-pl-del="${k}" aria-label="מחיקת המיקום">🗑</button>` : ''}</div>
+      <div class="field"><span class="lbl">משימות מהתחומים:</span><div class="opts">${doms.map(d => `<button type="button" data-pl-dom="${k}" data-d="${esc(d.id)}" class="${pd[k].includes(d.id) ? 'on' : ''}">${esc(d.name)}</button>`).join('')}</div></div></div>`).join('')
+    + (hs.home && hs.always ? `<div class="btns"><button class="btn" type="button" id="pl-leave-test">🚪 בדיקת יציאה מהבית</button></div>` : '');
+  if($('pl-always')) $('pl-always').onclick = () => NPhone.alwaysLocation().then(renderPfPlaces).catch(e => toast(e.message || String(e), {err: true}));
+  if($('pl-leave-test')) $('pl-leave-test').onclick = () => { dailySoon(); setTimeout(() => NPhone.testLeave().then(() => toast('נשלחה התראת בדיקה (אם יש מה לקחת היום)')).catch(e => toast(e.message, {err: true})), 1800); };
+}
+$('pf-places').addEventListener('click', async e => {
+  const s1 = e.target.closest('[data-pl-set]'), t = e.target.closest('[data-pl-test]'), d = e.target.closest('[data-pl-del]'), dm = e.target.closest('[data-pl-dom]');
+  if(s1){ const k = s1.dataset.plSet, n = k === 'home' ? 'הבית' : 'העבודה';
+    try{ const r = await NPhone.setHome({place: k}); toast(r.always ? `✓ ${n} נשמר` : `✓ ${n} נשמר. עכשיו מאשרים מיקום "כל הזמן"`, {ms: 4000}); if(!r.always) await NPhone.alwaysLocation().catch(() => {}); }
+    catch(err){ toast(err.message || String(err), {err: true}); }
+    renderPfPlaces(); }
+  if(t){ dailySoon(); setTimeout(() => NPhone.testArrive({place: t.dataset.plTest}).then(() => toast('נשלחה התראת בדיקה (אם יש משימות היום בתחומים האלה)')).catch(err => toast(err.message, {err: true})), 1800); }
+  if(d && await sure(`למחוק את המיקום של ${d.dataset.plDel === 'home' ? 'הבית' : 'העבודה'}?`)){ await NPhone.clearHome({place: d.dataset.plDel}).catch(() => {}); renderPfPlaces(); }
+  if(dm){ const pd = placeDoms(), k = dm.dataset.plDom, set = new Set(pd[k]); set.has(dm.dataset.d) ? set.delete(dm.dataset.d) : set.add(dm.dataset.d);
+    saveConfig({placeDoms: Object.assign(pd, {[k]: [...set]})}); dailySoon(); renderPfPlaces(); }
+});
+/* ---------- הגדרות ← יומן: קריאת האירועים, ותזכורת כמה זמן לפני ---------- */
+async function renderPfCal(){
+  const box = $('pf-calr'); if(!box) return;
+  const c = D.config, on = c.calRead !== false, lead = c.eventLead ?? 30;
+  if(on) await calEventsSync(true);
+  const evs = on ? [0, 1, 2].flatMap(i => eventsOn(ל.addDays(today(), i)).map(e => [ל.addDays(today(), i), e])) : [];
+  box.innerHTML = `<div class="sec"><div class="pf-tg"><label><span>קריאת האירועים מהיומן<small>האירועים של היום בסיכום הבוקר ובווידג'ט, והשבוע בסיכום של יום ראשון</small></span><input type="checkbox" id="cr-on"${on ? ' checked' : ''}></label></div></div>
+    ${on ? `<div class="sec"><h2>⏰ תזכורת לפני אירוע</h2><div class="opts" id="cr-lead">${LEADS.map(([m, n]) => `<button type="button" data-m="${m}" class="${lead === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+    <div class="sec"><h2>מה יש ביומן <span class="note" style="margin:0">היום ויומיים קדימה</span></h2>
+      ${evs.length ? `<div class="more-list">${evs.map(([d, e]) => `<div class="more-row"><span class="i">📅</span><span class="b"><span class="t">${esc(e.title)}</span><span class="s">${esc(kDayLabel(d))}${e.allDay ? ' · כל היום' : ' · ' + ל.localTime(e.begin)}${e.where ? ' · ' + esc(e.where) : ''}</span></span></div>`).join('')}</div>`
+        : `<div class="empty">${store(EVK) == null ? 'לא הצלחתי לקרוא את היומן. צריך לאשר גישה ליומן' : 'אין אירועים ביומן בימים הקרובים'}</div>`}
+      <div class="btns"><button class="btn" type="button" id="cr-perm">${store(EVK) == null ? 'אישור גישה ליומן' : '🔄 רענון'}</button></div>
+      <div class="note">משימות שהאפליקציה עצמה הכניסה ליומן לא מופיעות פעמיים.</div></div>` : ''}`;
+  $('cr-on').onchange = () => { saveConfig({calRead: $('cr-on').checked}); if(!$('cr-on').checked) store(EVK, null); dailySoon(); nativeSchedule(); renderPfCal(); };
+  if($('cr-lead')) $('cr-lead').onclick = e => { const b = e.target.closest('[data-m]'); if(!b) return; saveConfig({eventLead: +b.dataset.m}); nativeSchedule(); toast(+b.dataset.m ? `✓ תזכורת ${leadText(+b.dataset.m)} לפני כל אירוע` : 'בלי תזכורת לאירועים'); renderPfCal(); };
+  if($('cr-perm')) $('cr-perm').onclick = async () => { if(store(EVK) == null) await NPhone.calendars().catch(() => {}); renderPfCal(); };
+}
 /** ערוץ ההתראות לפי הצליל שנבחר (reminders / reminders_snd_chime). */
 const remCh = base => D.config.notifSound ? `${base}_${D.config.notifSound}` : base;
 async function ensureSoundChannels(){
@@ -6501,8 +6591,7 @@ async function renderNativePrefs(){
     <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}</div></div>
     ${LOCAL && NPhone?.calendars ? `<div class="sec"><h2>📅 יומן <span id="pf-cal" class="note" style="margin:0"></span></h2>
       <div class="btns"><button class="btn" type="button" id="pf-cal-pick">בחירת יומן</button></div><div id="pf-cal-ev" class="more-list" style="margin-top:8px"></div></div>` : ''}
-    ${NPhone?.homeStatus ? `<div class="sec"><h2>🚪 יציאה מהבית <span id="pf-home" class="note" style="margin:0"></span></h2>
-      <div class="btns" id="pf-home-btns"><button class="btn" type="button" id="pf-home-set">🏠 הבית כאן</button></div></div>` : ''}
+    ${NPhone?.homeStatus ? `<div class="sec"><h2>📍 בית ועבודה</h2><div class="btns"><button class="btn" type="button" id="pf-go-places">להגדרות המקומות ‹</button></div></div>` : ''}
     ${st.listener === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
       <div class="btns">${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות</button><button class="btn" type="button" id="pf-app">חסום? הגדרות מוגבלות</button>'}</div></div>`}`;
   $('pf-t1').onclick = async () => {
@@ -6526,16 +6615,8 @@ async function renderNativePrefs(){
       : '<div class="note">עוד לא נכנס שום אירוע ליומן. מסמנים 📅 כשמוסיפים משימה עם תאריך.</div>';
     $('pf-cal-ev').onclick = e => { const l = e.target.closest('[data-link]'); if(l) return window.open(l.dataset.link, '_blank'); const b = e.target.closest('[data-eid]'); if(b) NPhone.openEvent({eid: +b.dataset.eid}).catch(err => toast('האירוע לא נמצא ביומן: ' + (err.message || err), {err: true})); };
   }
-  if($('pf-home')){
-    const hs = await NPhone.homeStatus().catch(() => ({}));
-    $('pf-home').textContent = hs.home ? (hs.always ? '✓ פועל' : '✗ חסר מיקום "כל הזמן"') : '';
-    if(hs.home && !hs.always) $('pf-home-btns').insertAdjacentHTML('afterbegin', '<button class="btn primary" type="button" id="pf-home-always">אישור מיקום</button>');
-    if(hs.home && hs.always) $('pf-home-btns').insertAdjacentHTML('beforeend', '<button class="btn" type="button" id="pf-home-test">בדיקה</button>');
-    $('pf-home-set').onclick = async () => { try{ const r = await NPhone.setHome(); toast(r.always ? '✓ הבית נשמר. ביציאה תגיע התראה' : '✓ הבית נשמר. עכשיו מאשרים מיקום "כל הזמן"', {ms: 4000}); if(!r.always) await NPhone.alwaysLocation().catch(() => {}); }
-      catch(e){ toast(e.message || String(e), {err: true}); } renderNativePrefs(); };
-    if($('pf-home-test')) $('pf-home-test').onclick = async () => { dailySoon(); setTimeout(() => NPhone.testLeave().then(() => toast('נשלחה התראת בדיקה (אם יש מה לקחת היום)')).catch(e => toast(e.message, {err: true})), 1800); };
-    if($('pf-home-always')) $('pf-home-always').onclick = () => NPhone.alwaysLocation().then(renderNativePrefs).catch(e => toast(e.message || String(e), {err: true}));
-  }
+  if($('pf-go-places')) $('pf-go-places').onclick = () => pfGo('places');
+
   if($('pf-usage')) $('pf-usage').onclick = () => NAlarm.openSettings({what: 'usage'}).catch(e => toast(e.message, {err: true}));
   if($('pf-lis')) $('pf-lis').onclick = () => NAlarm.openSettings({what: 'listener'}).catch(e => toast(e.message, {err: true}));
   if($('pf-app')) $('pf-app').onclick = e => { e.preventDefault(); NAlarm.openSettings({what: 'app'}).catch(err => toast(err.message, {err: true})); };
