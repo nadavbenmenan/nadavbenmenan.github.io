@@ -312,6 +312,16 @@
   .kc-sug{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .kc-sug button{display:flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:14px;padding:10px 12px;text-align:right;color:inherit}
   .kc-sug button .n{flex:1}
+  .kc-srow{display:flex;gap:6px}
+  .kc-srow>[data-f]{flex:1;min-width:0}
+  .kc-sug .kc-star,.kc-sug .kc-plus{flex:0 0 46px;justify-content:center;padding:0;font-size:20px;color:var(--muted)}
+  .kc-sug .kc-star.on{color:#f5a524}
+  .kc-sug .kc-plus{color:var(--accent);font-size:24px;font-weight:600}
+  .kc-sug .kc-plus.in{background:color-mix(in srgb,var(--accent) 18%,var(--card))}
+  .kc-multi{background:color-mix(in srgb,var(--accent) 10%,var(--card));border-radius:16px;padding:10px 12px;margin-top:10px}
+  .kc-multi .h{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:6px}
+  .kc-multi .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .kc-multi .chips button{border:0;border-radius:999px;background:var(--card);color:inherit;min-height:36px;padding:4px 12px;font-size:14px}
   /* מחשבון: ממלא את כל המסך שבין הכותרת לסרגל התחתון. הגדלים קבועים, כדי שלא יקפוץ בזמן החישוב */
   #scr-calc:not([hidden]){display:flex;flex-direction:column;height:100vh;height:100dvh;padding-bottom:calc(var(--sb) + 76px);overflow:hidden}
   .calc{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0;width:100%;max-width:520px;margin:0 auto}
@@ -565,6 +575,7 @@
   .sel-bar span{flex:1;font-weight:700;padding:0 6px} .sel-bar .btn{min-height:42px;padding:0 10px}
   .nap-sug{display:flex;align-items:center;gap:8px;margin-top:6px} .nap-sug span{flex:1;font-weight:600} .nap-sug .btn{min-height:40px;padding:0 14px}
   .more-row .b{flex:1;min-width:0}
+  .more-row .b>.t,.more-row .b>.s{display:block}
   .more-row .t{font-weight:600;font-size:16px}
   .more-row .s{font-size:13px;color:var(--muted);margin-top:2px}
   .up-row{flex-wrap:wrap}
@@ -737,7 +748,7 @@
 </main>
 
 <main class="screen" id="scr-kcal" hidden>
-  <div class="kc-top"><h1 class="hello">בריאות</h1><button class="icon-btn" id="kc-set" type="button" aria-label="הגדרות קלוריות"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+  <div class="kc-top"><h1 class="hello">בריאות</h1></div>
   <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="sleep">😴 שעות שינה</button><button type="button" data-h="weight">⚖️ משקל</button></div>
   <div class="kc-date" id="kc-date"><button type="button" id="kc-prev" aria-label="יום קודם">‹</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-next" aria-label="יום הבא">›</button></div>
   <div id="h-kcal">
@@ -762,7 +773,6 @@
 <main class="screen meds" id="scr-meds" hidden>
   <div class="ראש-מסך"><h1 class="hello">תרופות</h1><button class="icon-btn" id="ת-כפתור-תפריט" type="button" aria-label="תפריט תרופות"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div>
   <div class="תפריט" id="ת-תפריט" hidden>
-    <button id="ת-תפריט-כללי">⚙ הגדרות כלליות</button>
     <button id="ת-תפריט-הוספה">＋ הוספת תרופה</button>
     <button id="ת-תפריט-חיבור">☁ סנכרון לגיטהאב</button>
   </div>
@@ -1131,12 +1141,14 @@
   <div class="dlg">
     <div class="opts kc-meals-pick" id="kf-meal"></div>
     <input type="search" id="kf-q" placeholder="מה אכלת?" aria-label="חיפוש מאכל" autocomplete="off" style="margin-top:10px">
+    <div class="kc-multi" id="kf-multi" hidden></div>
     <div class="kc-sug" id="kf-sug"></div>
     <div id="kf-sel" hidden>
       <div class="kc-sel-name" id="kf-name"></div>
       <span class="lbl">כמות</span><div class="opts" id="kf-qtys"></div>
       <div class="row" style="margin-top:8px"><input type="number" inputmode="decimal" id="kf-qty" aria-label="כמות" step="any"><select id="kf-unit" aria-label="יחידה"></select></div>
       <div class="kc-kcal"><span>קלוריות</span><input type="number" inputmode="numeric" id="kf-kcal" aria-label="קלוריות"><span class="note" id="kf-calc"></span></div>
+      <button class="btn primary" id="kf-more" type="button" style="width:100%;margin-top:12px">＋ ועוד מאכל לאותה ארוחה</button>
       <div class="btns"><button class="btn" id="kf-fav" type="button">☆ למועדפים</button><button class="btn" id="kf-fix" type="button">✏️ עריכת המאכל</button><button class="btn" id="kf-del" type="button" style="color:var(--red)">מחיקה</button></div>
     </div>
     <div class="btns" id="kf-newrow"><button class="btn" id="kf-new" type="button">＋ מאכל חדש</button><button class="btn" id="kf-newrec" type="button">🧾 מנה חדשה ממרכיבים</button><button class="btn" id="kf-photo" type="button">📷 זיהוי מתמונה</button></div>
@@ -1782,7 +1794,7 @@ function renderHistory(){
 
 /* ---------- ניווט ---------- */
 let screen = 'today';
-// לכל מסך: הכותרת (והכפתורים שלידה) עוברת לפס קבוע למעלה, עם ⚙️ להגדרות
+// לכל מסך: הכותרת (והכפתורים שלידה) עוברת לפס קבוע למעלה. ההגדרות רק בלשונית ההגדרות
 const GEAR_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function buildBars(){
   for(const m of document.querySelectorAll('main.screen')){
@@ -1794,8 +1806,6 @@ function buildBars(){
     const back = m.querySelector(':scope > .back-more, :scope > .pf-back'); if(back) bar.appendChild(back);
     bar.appendChild(row); row.appendChild(head);
     const menu = m.querySelector(':scope > .תפריט'); if(menu) bar.appendChild(menu);
-    if(m.id !== 'scr-prefs'){ const g = document.createElement('button'); g.type = 'button'; g.className = 'icon-btn gear'; g.setAttribute('aria-label', 'הגדרות'); g.innerHTML = GEAR_SVG;
-      g.onclick = () => { pfPage = null; show('prefs'); }; row.appendChild(g); }
     m.classList.add('has-bar');
   }
 }
@@ -2389,7 +2399,7 @@ $('h-tabs').onclick = e => { const b = e.target.closest('[data-h]'); if(b){ hTab
 function renderKcal(){
   document.querySelectorAll('#h-tabs button').forEach(b => b.classList.toggle('on', b.dataset.h === hTab));
   for(const k of ['kcal', 'fit', 'sleep', 'weight']) $('h-' + k).hidden = k !== hTab;
-  $('kc-date').hidden = hTab === 'sleep' || hTab === 'weight'; $('kc-set').hidden = hTab !== 'kcal';
+  $('kc-date').hidden = hTab === 'sleep' || hTab === 'weight';
   if(hTab === 'sleep') return renderSleep();
   if(hTab === 'weight') return renderWeight();
   loadFoodDb();
@@ -2768,9 +2778,10 @@ function entryMenu(id){
 // --- הוספה ועריכה של מאכל ---
 let kf = null;   // {meal, food, edit, onPick (למתכון)}
 function openKFood(o){
-  kf = {meal: o.meal || o.edit?.meal || 'breakfast', edit: o.edit || null, food: null, onPick: o.onPick || null};
-  $('kf-title').textContent = o.onPick ? 'מרכיב למתכון' : o.edit ? 'עריכה' : 'הוספה';
-  $('kf-meal').hidden = !!o.onPick;
+  kf = {meal: o.meal || o.edit?.meal || 'breakfast', edit: o.edit || null, food: null, onPick: o.onPick || null, multi: [], favPick: !!o.favPick};
+  $('kf-title').textContent = o.favPick ? '⭐ מועדפים' : o.onPick ? 'מרכיב למתכון' : o.edit ? 'עריכה' : 'הוספה';
+  $('kf-meal').hidden = !!o.onPick || kf.favPick;
+  $('kf-q').placeholder = kf.favPick ? 'חיפוש מאכל, ואז ☆' : 'מה אכלת?';
   $('kf-q').value = '';
   if(kf.edit){ kf.food = ל.calFoods(KF()).find(f => f.id === kf.edit.foodId) || {id: kf.edit.foodId, name: kf.edit.name, kcal100: kf.edit.grams ? kf.edit.kcal / kf.edit.grams * 100 : 0, units: []}; }
   renderKFood();
@@ -2783,12 +2794,18 @@ function renderKFood(){
   const q = $('kf-q').value, favs = favIds();
   let sug = kf.food && !q ? [] : ל.foodSuggest(KF(), q, q ? 15 : 8);
   if(!q && !kf.food){ const all = ל.calFoods(KF()), fv = all.filter(f => favs.has(f.id)); sug = [...fv, ...sug.filter(f => !favs.has(f.id))].slice(0, 12); }
-  const favMeals = !q && !kf.food && !kf.onPick && !kf.edit ? live(KF().meals) : [];
+  const favMeals = !q && !kf.food && !kf.onPick && !kf.edit && !kf.favPick ? live(KF().meals) : [];
   $('kf-sug').innerHTML = (favMeals.length ? `<div class="kc-favs"><span class="h">⭐ מנות קבועות</span>${favMeals.map(m => `<button type="button" data-fm="${esc(m.id)}">${esc(m.name)} · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))}</button>`).join('')}</div>` : '')
-    + sug.map(f => { const u = f.units?.[0]; return `<button type="button" data-f="${esc(f.id)}"><span class="n">${favs.has(f.id) ? '★ ' : ''}${esc(f.name)}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`; }).join('')
+    + sug.map(f => { const u = f.units?.[0], inB = kf.multi.find(x => x.food.id === f.id), multi = !kf.edit && !kf.onPick;
+      if(kf.favPick) return `<div class="kc-srow"><button type="button" data-f="${esc(f.id)}"><span class="n">${esc(f.name)}</span></button><button type="button" class="kc-star${favs.has(f.id) ? ' on' : ''}" data-star="${esc(f.id)}" aria-label="מועדף">${favs.has(f.id) ? '★' : '☆'}</button></div>`;
+      return `<div class="kc-srow"><button type="button" data-f="${esc(f.id)}"><span class="n">${esc(f.name)}</span><small>${u ? `${u.name}: ${kNum(ל.foodKcal(f, 1, u.name))}` : `100 גרם: ${kNum(f.kcal100)}`}</small></button>`
+        + `<button type="button" class="kc-star${favs.has(f.id) ? ' on' : ''}" data-star="${esc(f.id)}" aria-label="${favs.has(f.id) ? 'הסרה מהמועדפים' : 'הוספה למועדפים'}">${favs.has(f.id) ? '★' : '☆'}</button>`
+        + (multi ? `<button type="button" class="kc-plus${inB ? ' in' : ''}" data-plus="${esc(f.id)}" aria-label="הוספה לארוחה">${inB ? '✓' : '+'}</button>` : '') + '</div>'; }).join('')
     + ($('kf-q').value && !sug.length ? `<button type="button" class="btn primary" id="kf-add-missing" style="width:100%;margin-top:10px">＋ להוסיף "${esc($('kf-q').value)}" (קלוריות וחלבון)</button>` : '');
   $('kf-sel').hidden = !kf.food;
-  $('kf-newrow').hidden = !!kf.food || !!kf.onPick;
+  $('kf-more').hidden = !!kf.edit || !!kf.onPick || kf.favPick;
+  renderKMulti();
+  $('kf-newrow').hidden = !!kf.food || !!kf.onPick || kf.favPick;
   if(kf.food) $('kf-fav').textContent = favs.has(kf.food.id) ? '★ במועדפים' : '☆ למועדפים';
   $('kf-del').hidden = !kf.edit;
 }
@@ -2813,13 +2830,61 @@ $('kf-q').addEventListener('input', () => { kf.food = null; renderKFood(); });
 $('kf-sug').onclick = e => {
   const fm = e.target.closest('[data-fm]');
   if(fm){ const m = live(KF().meals).find(x => x.id === fm.dataset.fm); if(m){ addMealItems(m.items, kf.meal, m.name); $('dlg-kfood').close(); } return; }
-  const b = e.target.closest('[data-f]'); if(!b) return; kf.food = ל.calFoods(KF()).find(f => f.id === b.dataset.f); $('kf-q').value = ''; renderKFood(); fillKSel(); };
+  const st = e.target.closest('[data-star]');
+  if(st){ const f = ל.calFoods(KF()).find(x => x.id === st.dataset.star); if(f){ toggleFav(f); renderKFood(); } return; }
+  const pl = e.target.closest('[data-plus]');
+  if(pl){ const f = ל.calFoods(KF()).find(x => x.id === pl.dataset.plus); if(f){ kMultiAdd(f); navigator.vibrate?.(8); renderKFood(); } return; }
+  const b = e.target.closest('[data-f]'); if(!b) return;
+  if(kf.favPick){ const f = ל.calFoods(KF()).find(x => x.id === b.dataset.f); if(f){ toggleFav(f); renderKFood(); } return; }
+  kf.food = ל.calFoods(KF()).find(f => f.id === b.dataset.f); $('kf-q').value = ''; renderKFood(); fillKSel(); };
+/* כמה מאכלים יחד לאותה ארוחה: ＋ ליד מאכל מוסיף אותו לסל (מנה אחת, או 100 גרם), ו"ועוד מאכל" מוסיף את הנבחר עם הכמות שלו.
+   "שמירה" מוסיפה את כולם. לחיצה על מאכל בסל: שינוי כמות או הסרה */
+function kDefQty(f){ const u = f.units?.[0]; return u ? [1, u.name] : [100, 'גרם']; }
+function kMultiAdd(f, qty, unit, kcal){
+  const cur = kf.multi.find(x => x.food.id === f.id);
+  if(cur && qty == null){ const [dq] = kDefQty(f); cur.qty += dq; cur.kcal = null; return; }
+  const [dq, du] = kDefQty(f);
+  if(cur) Object.assign(cur, {qty: qty ?? dq, unit: unit || du, kcal: kcal ?? null});
+  else kf.multi.push({food: f, qty: qty ?? dq, unit: unit || du, kcal: kcal ?? null});
+}
+const kMultiKcal = x => x.kcal ?? ל.foodKcal(x.food, x.qty, x.unit);
+const kQtyTxt = (q, u) => `${q === 0.5 ? '½' : q === 1.5 ? '1½' : kNum(q)} ${u}`;
+function renderKMulti(){
+  const m = kf.multi, el = $('kf-multi');
+  el.hidden = !m.length;
+  if(kf.favPick){ $('kf-ok').textContent = 'סיום'; el.hidden = true; return; }
+  $('kf-ok').textContent = m.length + (kf.food ? 1 : 0) > 1 ? `הוספה (${m.length + (kf.food && !m.some(x => x.food.id === kf.food.id) ? 1 : 0)})` : kf.edit ? 'שמירה' : kf.onPick ? 'שמירה' : 'הוספה';
+  if(el.hidden) return;
+  el.innerHTML = `<div class="h"><span>🧺 ${m.length === 1 ? 'מאכל אחד' : m.length + ' מאכלים'} לארוחה</span><span>${kNum(m.reduce((s, x) => s + kMultiKcal(x), 0))} קלוריות</span></div>
+    <div class="chips">${m.map((x, i) => `<button type="button" data-mi="${i}">${esc(x.food.name)} · ${esc(kQtyTxt(x.qty, x.unit))}</button>`).join('')}</div>`;
+}
+$('kf-multi').onclick = e => {
+  const b = e.target.closest('[data-mi]'); if(!b) return; const x = kf.multi[+b.dataset.mi]; if(!x) return;
+  const qs = x.unit === 'גרם' ? [50, 100, 150, 200, 250, 300] : [0.5, 1, 1.5, 2, 3, 4];
+  sheet(`${x.food.name} · ${kQtyTxt(x.qty, x.unit)}`, [
+    ...qs.map(q => [`${q === x.qty ? '✓ ' : ''}${kQtyTxt(q, x.unit)} · ${kNum(ל.foodKcal(x.food, q, x.unit))} קלוריות`, () => { x.qty = q; x.kcal = null; renderKFood(); }]),
+    ['✏️ כמות אחרת / יחידה אחרת', () => { kf.multi = kf.multi.filter(y => y !== x); kf.food = x.food; renderKFood(); fillKSel(x.qty, x.unit); }],
+    ['🗑 הסרה מהארוחה', () => { kf.multi = kf.multi.filter(y => y !== x); renderKFood(); }]]);
+};
+$('kf-more').onclick = () => {
+  if(!kf.food) return;
+  const qty = +$('kf-qty').value; if(!(qty > 0)) return toast('צריך כמות', {err: true});
+  kMultiAdd(kf.food, qty, $('kf-unit').value, $('kf-kcal').dataset.manual ? +$('kf-kcal').value : null);
+  kf.food = null; $('kf-q').value = ''; renderKFood(); $('kf-q').focus();
+};
 $('kf-qtys').onclick = e => { const b = e.target.closest('[data-q]'); if(b){ $('kf-qty').value = b.dataset.q; $('kf-kcal').dataset.manual = ''; calcKSel(); } };
 $('kf-qty').addEventListener('input', () => { $('kf-kcal').dataset.manual = ''; calcKSel(); });
 $('kf-unit').onchange = () => { $('kf-qty').value = $('kf-unit').value === 'גרם' ? 100 : 1; $('kf-kcal').dataset.manual = ''; calcKSel(); };
 $('kf-kcal').addEventListener('input', () => { $('kf-kcal').dataset.manual = '1'; });
 $('kf-close').onclick = () => $('dlg-kfood').close();
 $('kf-ok').onclick = () => {
+  if(kf.favPick){ $('dlg-kfood').close(); if(screen === 'prefs') renderPfLists(); return; }
+  if(kf.multi.length && !kf.edit && !kf.onPick){
+    if(kf.food){ const qty = +$('kf-qty').value; if(!(qty > 0)) return toast('צריך כמות', {err: true}); kMultiAdd(kf.food, qty, $('kf-unit').value, $('kf-kcal').dataset.manual ? +$('kf-kcal').value : null); }
+    const t = nowIso(), es = kf.multi.map((x, n) => ל.calEntry(x.food, {date: kcDate, meal: kf.meal, qty: x.qty, unit: x.unit, kcal: x.kcal, addedAt: t}, t));
+    saveK('entries', es); $('dlg-kfood').close();
+    return toast(`נוספו ${es.length} מאכלים ל${ל.MEALS.find(m => m[0] === kf.meal)[1]}, ${kNum(es.reduce((s, e) => s + e.kcal, 0))} קלוריות`);
+  }
   if(!kf.food) return toast('בוחרים מאכל מהרשימה', {err: true});
   const qty = +$('kf-qty').value, unit = $('kf-unit').value, kcal = $('kf-kcal').dataset.manual ? +$('kf-kcal').value : null;
   if(!(qty > 0)) return toast('צריך כמות', {err: true});
@@ -3120,19 +3185,6 @@ $('kc-hist').onclick = () => {
   const h = ל.calHistory(KF(), 60);
   sheet('היסטוריה', h.map(d => [`${kDayLabel(d.date)} · ${kNum(d.eaten)} / ${kNum(d.goal)} · 💪 ${kNum(d.protein)}/${kNum(d.protGoal)} ג׳${d.burned ? ` · 🔥 ${kNum(d.burned)}` : ''}`, () => { kcDate = d.date; renderKcal(); scrollTo(0, 0); }]),
     h.length ? '' : 'עוד אין היסטוריה');
-};
-$('kc-set').onclick = () => {
-  const st = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
-  sheet('הגדרות קלוריות', [
-    [`🎯 יעד יומי: ${kNum(st.goal)} קלוריות`, editGoal],
-    [`💪 יעד חלבון: ${kNum(Math.round(+st.protGoal || 1.6 * w))} גרם`, editProtGoal],
-    [`⚖️ עדכון משקל (עכשיו: ${w} ק״ג)`, async () => {
-      const [v] = await ask('עדכון משקל', [{label: 'משקל נוכחי בק״ג', value: w, num: true, req: true}]) || []; if(v == null || !(+v > 30 && +v < 300)) return;
-      saveK('weights', {id: 'w' + today(), date: today(), kg: +(+v).toFixed(1), updatedAt: nowIso(), deleted: false});
-      toast(`✓ משקל עודכן: ${(+v).toFixed(1)} ק״ג. החישובים מהיום לפי המשקל החדש`);
-    }],
-    [`📏 גובה: ${st.height} ס״מ`, async () => { const [v] = await ask('גובה', [{label: 'גובה בס״מ', value: st.height, num: true, req: true}]) || []; if(v && +v > 100 && +v < 230) saveK('settings', Object.assign({}, st, {id: 'settings', height: +v, updatedAt: nowIso()})); }],
-  ]);
 };
 
 // --- מתכון אישי (כמה מרכיבים, מחולק למנות) ---
@@ -5421,7 +5473,6 @@ $('כרטיסים').addEventListener('click', e => {
 /* ---------- תפריט והגדרות כלליות ---------- */
 $('כפתור-תפריט').addEventListener('click', e => { e.stopPropagation(); $('תפריט').hidden = !$('תפריט').hidden; });
 document.addEventListener('click', e => { if(!e.target.closest('#ת-תפריט')) $('תפריט').hidden = true; });
-$('תפריט-כללי').addEventListener('click', () => { $('תפריט').hidden = true; פתח_כללי(); });
 $('תפריט-הוספה').addEventListener('click', () => { $('תפריט').hidden = true; פתח_עורך(null); });
 
 function צייר_כללי_תרופות(){
@@ -5435,6 +5486,7 @@ $('כ-תרופות').addEventListener('click', e => {
   const b = e.target.closest('[data-ערוך]');
   if(b) פתח_עורך(b.dataset.ערוך);
 });
+window.medsSettings = () => פתח_כללי();   // הגדרות ← 💊 תרופות
 async function פתח_כללי(){
   $('כ-התחלה').value = תצורה.כללי.תאריך_התחלה;
   $('כ-תחילת-יום').value = תצורה.כללי.תחילת_יום || '05:00';
@@ -6477,7 +6529,7 @@ function renderPrefs(){
   $('pf-behav').innerHTML = PF_TOGGLES.map(([k, t, sub, def]) => `<label><span>${t}<small>${sub}</small></span><input type="checkbox" data-tg="${k}"${(D.config[k] ?? def) ? ' checked' : ''}></label>`).join('');
   const kst = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
   $('pf-goals').innerHTML = [['kcal', '🔥', 'יעד קלוריות', `${kNum(kst.goal)} ביום`], ['prot', '💪', 'יעד חלבון', `${kNum(Math.round(+kst.protGoal || 1.6 * w))} גרם ביום`],
-    ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`], ['weight', '⚖️', 'יעד משקל', kst.weightGoal ? `${kg1(+kst.weightGoal)} ק״ג` : 'בלי יעד']].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
+    ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`], ['weight', '⚖️', 'יעד משקל', kst.weightGoal ? `${kg1(+kst.weightGoal)} ק״ג` : 'בלי יעד'], ['now', '🏋️', 'משקל עכשיו', `${kg1(+w)} ק״ג`], ['height', '📏', 'גובה', `${kst.height} ס״מ`]].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
   $('pf-about').innerHTML = `<div class="sec"><h2>ניהול שיגרה</h2><div class="rows">
       <div><span class="k">גרסה</span><span class="v">1.3${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
       <div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>
@@ -6513,7 +6565,8 @@ function pfPages(){
     ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
     ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === nSnd()) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === tSnd()) || SND_TIMER[0])[1]}`],
     ['ai', '📷', 'זיהוי אוכל מתמונה', store(AIK) ? '✓ Gemini מחובר' : 'לא מחובר · צריך מפתח Gemini (חינם)'],
-    ['health', '💪', 'יעדי בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())}`],
+    ['health', '💪', 'בריאות', `${kNum(kst.goal)} קלוריות · שינה ${durText(sleepGoal())} · משקל וגובה`],
+    ['meds', '💊', 'תרופות', 'תאריך התחלה, תחילת היום, סיווגים, רשימת התרופות'],
     NATIVE && ['places', '📍', 'בית ועבודה', 'הגעה: מה לעשות שם · יציאה מהבית: מה לקחת'],
     NATIVE && ['cal', '📅', 'יומן', c.calRead === false ? 'לא קורא את היומן' : `אירועים בסיכום · תזכורת ${c.eventLead === 0 ? 'כבויה' : leadText(c.eventLead ?? 30) + ' לפני'}`],
     NATIVE && ['phone', '📱', 'טלפון והרשאות', 'בדיקת התראות, יומן, יציאה מהבית'],
@@ -6529,13 +6582,19 @@ function pfShow(){
   document.querySelectorAll('#scr-prefs .pf-pg').forEach(el => el.hidden = !pfPage || !el.dataset.pg.split(' ').includes(pfPage));
 }
 function pfGo(k){ pfPage = k; pfShow(); scrollTo(0, 0); renderPrefs(); }
-$('pf-menu').onclick = e => { const b = e.target.closest('[data-pg]'); if(b) pfGo(b.dataset.pg); };
+$('pf-menu').onclick = e => { const b = e.target.closest('[data-pg]'); if(!b) return; if(b.dataset.pg === 'meds') return window.medsSettings?.(); pfGo(b.dataset.pg); };
 $('pf-back').onclick = () => pfGo(null);
 $('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ saveConfig({fontSize: b.dataset.fs}); applyTheme(); renderPrefs(); } };
 $('s-accent').onchange = () => { saveConfig({accent: $('s-accent').value}); applyTheme(); toast('✓ נשמר'); };
 $('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); } };
 $('pf-goals').onclick = async e => { const b = e.target.closest('[data-goal]'); if(!b) return;
-  await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal, weight: editWeightGoal}[b.dataset.goal])(); renderPrefs(); };
+  await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal, weight: editWeightGoal, now: () => addWeight(today()), height: editHeight}[b.dataset.goal])(); renderPrefs(); };
+async function editHeight(){
+  const st = ל.calSettings(KF());
+  const [v] = await ask('גובה', [{label: 'גובה בס״מ', value: st.height, num: true, req: true}]) || [];
+  if(v == null) return; if(!(+v > 100 && +v < 230)) return toast('גובה לא תקין', {err: true});
+  saveK('settings', Object.assign({}, st, {id: 'settings', height: +v, updatedAt: nowIso()}));
+}
 // רטט קצר (לחיצות) כבוי בהגדרות; רטט של שעון מעורר/טיימר נשאר
 if(navigator.vibrate){ const vib = navigator.vibrate.bind(navigator); navigator.vibrate = p => (typeof p === 'number' && p > 0 && p <= 30 && D.config.haptics === false) ? false : vib(p); }
 $('pf-nav').onclick = e => {
@@ -6555,9 +6614,11 @@ const PF_LISTS = [['shop', '🛒 מוצרים'], ['recipes', '🍳 מתכוני�
 function pfListRows(){
   const q = ל.shopKey($('pf-l-q').value || ''), has = (...x) => !q || ל.shopKey(x.join(' ')).includes(q), byName = (a, b) => (a.t || '').localeCompare(b.t || '', 'he');
   if(pfList === 'recipes') return recipeList().filter(r => has(r.title)).map(r => ({k: r.id, i: recipeEmoji(r), t: r.title, s: ל.recipeCat(r)})).sort(byName);
-  return [...live(KF().foods).map(f => ({k: 'f:' + f.id, i: FOOD_ICON(f), t: f.name, s: `${kNum(f.perUnitKcal ?? f.kcal100)} קלוריות ל${f.perUnitKcal != null ? f.units[0].name : '־100 גרם'}`})),
+  const fv = favIds(), favRows = ל.calFoods(KF()).filter(f => fv.has(f.id) && has(f.name)).map(f => ({k: 'f:' + f.id, i: '⭐', t: f.name, fav: true,
+    s: `${kNum(f.perUnitKcal ?? (f.units?.[0] ? ל.foodKcal(f, 1, f.units[0].name) : f.kcal100))} קלוריות ל${f.units?.[0] ? f.units[0].name : '־100 גרם'}`})).sort(byName);
+  return [...favRows, ...[...live(KF().foods).filter(f => !fv.has(f.id)).map(f => ({k: 'f:' + f.id, i: FOOD_ICON(f), t: f.name, s: `${kNum(f.perUnitKcal ?? f.kcal100)} קלוריות ל${f.perUnitKcal != null ? f.units[0].name : '־100 גרם'}`})),
     ...live(KF().recipes).map(r => ({k: 'r:' + r.id, i: '🧾', t: r.name, s: `מנה ממרכיבים · ${kNum(ל.recipeFood(r).perServing)} למנה`})),
-    ...live(KF().meals).map(m => ({k: 'm:' + m.id, i: '⭐', t: m.name, s: `ארוחה קבועה · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))} קלוריות`}))].filter(x => has(x.t)).sort(byName);
+    ...live(KF().meals).map(m => ({k: 'm:' + m.id, i: '🍱', t: m.name, s: `ארוחה קבועה · ${kNum(m.items.reduce((x, i) => x + i.kcal, 0))} קלוריות`}))].filter(x => has(x.t)).sort(byName)];
 }
 function renderPfLists(){
   $('pf-l-tabs').innerHTML = PF_LISTS.map(([k, n]) => `<button type="button" data-l="${k}" class="${pfList === k ? 'on' : ''}">${n}</button>`).join('');
@@ -6565,9 +6626,11 @@ function renderPfLists(){
   renderSelBar();
   const rows = pfListRows(), add = {shop: '＋ מוצר חדש', recipes: '＋ מתכון חדש', foods: '＋ מאכל חדש'}[pfList];
   $('pf-l-note').textContent = {shop: 'כל המוצרים שהוספת אי פעם (מהם ההצעות בקניות). לוחצים על מוצר: שם, מחלקה או מחיקה.', recipes: 'לוחצים על מתכון: עריכה, קטגוריה, תמונה או מחיקה.',
-    foods: 'מאכלים שהוספת, מנות ממרכיבים וארוחות קבועות (מחישוב הקלוריות).'}[pfList] + ` (${rows.length})`;
+    foods: 'מאכלים מועדפים, מאכלים שהוספת, מנות ממרכיבים וארוחות קבועות (מחישוב הקלוריות).'}[pfList] + ` (${rows.length})`;
   $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">${add.slice(2)}</span></span></button>` +
-    (rows.length ? rows.map(x => `<button type="button" class="more-row" data-k="${esc(x.k)}"><span class="i">${x.i}</span><span class="b"><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span><span class="side">✏️</span></button>`).join('')
+    (pfList === 'foods' ? `<button type="button" class="more-row" data-k="*"><span class="i">⭐</span><span class="b"><span class="t">הוספת מאכלים למועדפים</span><span class="s">מחפשים ולוחצים ☆</span></span></button>` : '') +
+    (rows.length ? rows.map((x, n) => (pfList === 'foods' && x.fav && !n ? '<h3 class="pf-l-h">⭐ מאכלים מועדפים</h3>' : '') + (pfList === 'foods' && !x.fav && n && rows[n - 1].fav ? '<h3 class="pf-l-h">כל המאכלים שלי</h3>' : '')
+      + `<button type="button" class="more-row" data-k="${esc(x.k)}"><span class="i">${x.i}</span><span class="b"><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span><span class="side">✏️</span></button>`).join('')
       : `<div class="empty">${$('pf-l-q').value ? 'לא נמצא' : 'הרשימה ריקה'}</div>`);
 }
 /* מוצרים: כל המוצרים (גם מהרשימה המובנית). לחיצה ארוכה מסמנת ופותחת חלון; כשיש מסומנים, לחיצה מסמנת עוד,
@@ -6645,8 +6708,10 @@ $('pf-l-list').onclick = async e => {
   }
   if(pfList === 'recipes'){ if(k === '+') return openRecipeEditor(null); const r = recipeById(k); return r && recipeMenu(r); }
   if(k === '+') return sheet('מאכל חדש', [['🍽️ מאכל עם קלוריות', () => openKMy(null)], ['🧾 מנה ממרכיבים', () => openKRec(null)]]);
+  if(k === '*') return openKFood({favPick: true});
   const [t, id] = [k.slice(0, 1), k.slice(2)];
-  if(t === 'f') return openKMy(ל.calFoods(KF()).find(x => x.id === id));
+  if(t === 'f'){ const f = ל.calFoods(KF()).find(x => x.id === id); if(!f) return; const on = favIds().has(f.id);
+    return sheet(f.name, [[on ? '★ הסרה מהמועדפים' : '☆ הוספה למועדפים', () => { toggleFav(f); renderPfLists(); }], ['✏️ עריכת המאכל (שם, קלוריות)', () => openKMy(f)]]); }
   if(t === 'r'){ const r = live(KF().recipes).find(x => x.id === id); return r && openKRec(r); }
   const m = live(KF().meals).find(x => x.id === id); if(m) favMealMenu(m);
 };
