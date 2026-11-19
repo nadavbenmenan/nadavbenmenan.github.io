@@ -207,6 +207,15 @@
   .native dialog.full .dlg-head{padding-top:calc(var(--st) + 6px)}
   .native dialog.full>.dlg:first-child{padding-top:calc(var(--st) + 16px)}
   .native .screen{padding-top:calc(var(--st) + 12px)}
+  /* כותרת קבועה: שם המסך + ⚙️ נשארים למעלה בגלילה, עם רקע מלא מתחת לשורת השעה והסוללה */
+  .screen.has-bar,.native .screen.has-bar{padding-top:0}
+  .scr-bar{position:sticky;top:0;z-index:3;background:var(--bg);margin:0 -16px 10px;padding:calc(var(--st) + 12px) 16px 8px;transition:box-shadow .2s}
+  html.scrolled .scr-bar{box-shadow:0 1px 0 var(--line, rgba(0,0,0,.08)), 0 6px 14px rgba(0,0,0,.06)}
+  .scr-bar-row{display:flex;align-items:center;gap:6px}
+  .scr-bar-row>:first-child{flex:1;min-width:0}
+  .scr-bar .hello{font-size:28px;margin-top:0}
+  .scr-bar .gear{color:var(--muted)}
+  .meds .scr-bar .תפריט{top:calc(100% - 6px)}
   .dlg{padding:18px 16px calc(var(--sb) + 22px)}
   .dlg h2{font-size:20px;font-weight:700;margin-bottom:12px}
   .dlg-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);
@@ -1741,6 +1750,25 @@ function renderHistory(){
 
 /* ---------- ניווט ---------- */
 let screen = 'today';
+// לכל מסך: הכותרת (והכפתורים שלידה) עוברת לפס קבוע למעלה, עם ⚙️ להגדרות
+const GEAR_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+function buildBars(){
+  for(const m of document.querySelectorAll('main.screen')){
+    const h = m.querySelector('h1.hello'); if(!h || m.querySelector('.scr-bar')) continue;
+    let head = h; while(head.parentElement !== m) head = head.parentElement;
+    const bar = document.createElement('div'), row = document.createElement('div');
+    bar.className = 'scr-bar'; row.className = 'scr-bar-row';
+    m.insertBefore(bar, m.firstChild);
+    const back = m.querySelector(':scope > .back-more, :scope > .pf-back'); if(back) bar.appendChild(back);
+    bar.appendChild(row); row.appendChild(head);
+    const menu = m.querySelector(':scope > .תפריט'); if(menu) bar.appendChild(menu);
+    if(m.id !== 'scr-prefs'){ const g = document.createElement('button'); g.type = 'button'; g.className = 'icon-btn gear'; g.setAttribute('aria-label', 'הגדרות'); g.innerHTML = GEAR_SVG;
+      g.onclick = () => { pfPage = null; show('prefs'); }; row.appendChild(g); }
+    m.classList.add('has-bar');
+  }
+}
+buildBars();
+addEventListener('scroll', () => document.documentElement.classList.toggle('scrolled', scrollY > 4), {passive: true});
 function show(s){
   // מסכים שעברו (17.11.2026): ימים מיוחדים בלוח השנה, תחומים בהיסטוריה
   if(s === 'birthdays') s = 'calendar';
