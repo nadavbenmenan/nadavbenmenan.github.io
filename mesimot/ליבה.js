@@ -950,7 +950,8 @@ function stepIngredients(step, ingredients, f){
 /**
  * events: [{t, k: 'on' | 'off' | 'unlock'}] מהטלפון. שימוש = מפתיחת הטלפון (או הדלקת מסך, אם אין נעילה) ועד שהמסך כבה.
  * שינה = ההפסקה הארוכה ביותר בכל לילה (מתחילה בין 19:00 ל-6:00, לפחות 3 שעות). הצצה קצרה באמצע הלילה (עד 5 דקות,
- * עם שעה לפחות לפני ואחרי) לא קוטעת את השינה ונספרת כהתעוררות. מחזיר [{date, sleep, wake, mins, wakeups}], החדש קודם.
+ * עם שעה לפחות לפני ואחרי) לא קוטעת את השינה ונספרת כהתעוררות. מחזיר [{date, sleep, wake, mins, wakeups, wakes}], החדש קודם.
+ * wakes: [[מתי התעורר, מתי חזר לישון], ...] לכל התעוררות.
  */
 function sleepNights(events, nowMs){
   const ev = (events || []).filter(e => e && +e.t).slice().sort((a, b) => a.t - b.t);
@@ -968,8 +969,8 @@ function sleepNights(events, nowMs){
   for(let i = 0; i + 1 < keep.length; i++){
     const from = keep[i].b, to = keep[i + 1].a, h = +localTime(from).slice(0, 2);
     if(to - from < 3 * 36e5 || !(h >= 19 || h < 6)) continue;
-    const date = localDate(from - 12 * 36e5), wakeups = S.filter((x, j) => brief.has(j) && x.a > from && x.b < to).length;
-    if(!nights[date] || to - from > nights[date].wake - nights[date].sleep) nights[date] = {date, sleep: from, wake: to, mins: Math.round((to - from) / 6e4), wakeups};
+    const date = localDate(from - 12 * 36e5), wakes = S.filter((x, j) => brief.has(j) && x.a > from && x.b < to).map(x => [x.a, x.b]);
+    if(!nights[date] || to - from > nights[date].wake - nights[date].sleep) nights[date] = {date, sleep: from, wake: to, mins: Math.round((to - from) / 6e4), wakeups: wakes.length, wakes};
   }
   return Object.values(nights).sort((a, b) => b.date.localeCompare(a.date));
 }
