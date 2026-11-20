@@ -1972,7 +1972,20 @@ const picUrl = r => safeImg(r.image) || safeImg(rcImgs[r.id]);
 // ברשימה: תמונה קטנה (13KB במקום 230KB)
 const picStyle = (r, small) => { const u = picUrl(r); return u ? ` style="background-image:url('${esc(small ? u.replace(/\/medium$/, '/small') : u)}')"` : ''; };
 let rcCat = '';
+// אלפי שמות מנות ← תמונה מדויקת (תמונות-מתכונים.js, מוויקיפדיה). נטען ברקע, ואז התמונות מתעדכנות
+let photosDb = null;
+function loadPhotos(){
+  return photosDb || (photosDb = new Promise(res => {
+    const sc = document.createElement('script'); sc.src = 'תמונות-מתכונים.js';
+    sc.onload = () => { ל.addRecipePhotos(self.RECIPE_PHOTOS || ''); res(true);
+      if(screen === 'recipes') renderRecipes(); if($('dlg-recipe').open) renderRecipe(); };
+    sc.onerror = () => { photosDb = null; res(false); };
+    document.head.appendChild(sc);
+  }));
+}
+setTimeout(loadPhotos, 2500);
 function renderRecipes(){
+  loadPhotos();
   const q = ל.shopKey($('rc-q').value), all = recipeList();
   rcImgs = ל.recipeImages(all);
   const used = ל.RECIPE_CATS.filter(c => all.some(r => ל.recipeCat(r) === c));
@@ -2102,14 +2115,18 @@ function renderRecipe(){
   if($('r-scale')) $('r-scale').onclick = e => { const b = e.target.closest('[data-f]'); if(b){ rcScale = +b.dataset.f; renderRecipe(); } };
   $('r-wa').onclick = () => { const url = 'https://wa.me/?text=' + encodeURIComponent(ל.recipeText(Object.assign({}, r, {ingredients: ing}), picUrl(r))); if(!window.open(url, '_blank')) location.href = url; };
   if($('r-cook')) $('r-cook').onclick = () => openCooking(r);
+  if($('dlg-cook').open && ckState.id === r.id) openCooking(r);   // המתכון נערך בזמן הבישול: השלבים מתעדכנים במקום
   $('r-del').onclick = async () => {
     if(!await sure(`למחוק את "${r.title}"?`)) return;
     saveRecipe(Object.assign({}, r, {deleted: true})); $('dlg-recipe').close();
     toast('המתכון נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))});
   };
 }
-/** מצב בישול: כל שלב במסך משלו, עם המצרכים של השלב והכמות שלהם. מחליקים למעלה/למטה (או ▲ ▼). המסך לא נכבה. */
-function openCooking(r){
+/** מצב בישול: כל שלב במסך משלו, עם המצרכים של השלב והכמות שלהם. מחליקים למעלה/למטה (או ▲ ▼). המסך לא נכבה.
+ *  תמיד מהגרסה השמורה של המתכון (אחרי עריכה). יציאה וחזרה: ממשיכים מאותו שלב, ובלי לבנות מחדש אם לא השתנה כלום. */
+const ckState = {id: null, sig: '', at: {}};
+function openCooking(r0){
+  const fresh = r0 && recipeById(r0.id), r = fresh ? Object.assign({}, r0, ל.cleanRecipe(fresh)) : r0;
   const ing = r.ingredients || [], steps = (r.steps || []).filter(x => !/[:：]\s*$/.test(x)), f = rcScale;
   $('ck-title').textContent = r.title;
   const cards = [];
@@ -2122,22 +2139,31 @@ function openCooking(r){
       ${tm.length ? `<div class="rc-timers" style="margin-top:16px">${tm.map(t => `<button type="button" data-min="${t.minutes}" data-label="${esc(t.label)}" data-step="${i + 1}">⏱ ${esc(t.label)}</button>`).join('')}</div>` : ''}
       ${i === steps.length - 1 ? '<div class="ck-hint">🎉 זה השלב האחרון. בתיאבון!</div>' : ''}</section>`);
   });
-  $('ck-wrap').innerHTML = cards.join('');
-  $('ck-wrap').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
-  $('ck-wrap').scrollTop = 0;
-  $('dlg-cook').showModal();
+  const sig = r.id + '|' + cards.join(''), wasOpen = $('dlg-cook').open;
+  if(sig !== ckState.sig){
+    $('ck-wrap').innerHTML = cards.join('');
+    $('ck-wrap').querySelectorAll('[data-min]').forEach(b => b.onclick = () => recipeTimer(r, +b.dataset.min, b.dataset.label, b.dataset.step));
+    ckState.sig = sig;
+  }
+  ckState.id = r.id;
+  if(!wasOpen) $('dlg-cook').showModal();
+  // ממשיכים מהשלב שהיינו בו (בלי גלילה מונפשת מההתחלה)
+  const i = Math.min(ckState.at[r.id] || 0, $('ck-wrap').children.length - 1), w = $('ck-wrap');
+  w.style.scrollBehavior = 'auto'; w.scrollTop = Math.max(0, i) * w.clientHeight; w.style.scrollBehavior = '';
   ckPos();
+  if(wasOpen) return;
   if('wakeLock' in navigator && D.config.cookAwake !== false) navigator.wakeLock.request('screen').then(w => { wake = w; }).catch(() => {});
 }
 const ckIdx = () => Math.round($('ck-wrap').scrollTop / Math.max(1, $('ck-wrap').clientHeight));
 function ckPos(){ const n = $('ck-wrap').children.length, i = ckIdx(); $('ck-pos').textContent = n ? `${i + 1}/${n}` : '';
   $('ck-prev').disabled = i <= 0; $('ck-next').textContent = i >= n - 1 ? '✓ סיום' : '▼ הבא'; }
-$('ck-wrap').addEventListener('scroll', () => requestAnimationFrame(ckPos), {passive: true});
+$('ck-wrap').addEventListener('scroll', () => requestAnimationFrame(() => { ckPos(); if($('dlg-cook').open && ckState.id && $('ck-wrap').clientHeight) ckState.at[ckState.id] = ckIdx(); }), {passive: true});
 const ckGo = d => $('ck-wrap').scrollTo({top: (ckIdx() + d) * $('ck-wrap').clientHeight, behavior: 'smooth'});
 $('ck-prev').onclick = () => ckGo(-1);
-$('ck-next').onclick = () => { if(ckIdx() >= $('ck-wrap').children.length - 1) $('dlg-cook').close(); else ckGo(1); };
+$('ck-next').onclick = () => { if(ckIdx() >= $('ck-wrap').children.length - 1){ ckState.at[ckState.id] = 0; $('dlg-cook').close(); } else ckGo(1); };   // סיום: בפעם הבאה מההתחלה
 $('ck-close').onclick = () => $('dlg-cook').close();
-$('dlg-cook').addEventListener('close', () => { if(wake){ wake.release().catch(() => {}); wake = null; } });
+$('dlg-cook').addEventListener('close', () => {
+  if(wake){ wake.release().catch(() => {}); wake = null; } });
 $('r-close').onclick = () => $('dlg-recipe').close();
 $('r-edit').onclick = () => { const r = recipeById(rcOpen); if(r) openRecipeEditor(r); };
 /**
@@ -3038,28 +3064,53 @@ function exportTasks(){
   rows.sort((a, b) => (b[0] + b[2]).localeCompare(a[0] + a[2]));
   return saveExport(xlName('משימות שבוצעו'), ל.makeXlsx([{name: 'בוצעו', rows: [['תאריך', 'יום', 'שעה', 'משימה', 'תחום', 'הערה'], ...rows]}]), XLSX_MIME);
 }
-/** ספר מתכונים: עמוד HTML מסודר לפי קטגוריות, וממנו PDF (בטלפון: הדפסה ← שמירה כ-PDF). */
+/** ספר מתכונים (PDF): כל מתכון מתחיל בעמוד חדש, בלי תמונות. המצרכים בעמודה צרה בצד והשלבים לידה,
+ *  בגופן קומפקטי, כך שרוב המתכונים נכנסים לעמוד אחד. מתכון ארוך ממשיך לעמוד שני. בהתחלה: תוכן עניינים לפי קטגוריות. */
 function recipesHtml(){
-  const list = recipeList().slice().sort((a, b) => a.title.localeCompare(b.title, 'he')), cats = {};
+  const list = recipeList().map(r => Object.assign({}, r, ל.cleanRecipe(r))).sort((a, b) => a.title.localeCompare(b.title, 'he')), cats = {};
   for(const r of list) (cats[ל.recipeCat(r)] = cats[ל.recipeCat(r)] || []).push(r);
-  const order = ל.RECIPE_CATS.filter(c => cats[c]);
-  const one = r => { const pic = picUrl(r), meta = [r.prep && 'הכנה: ' + r.prep, r.cook && 'בישול/אפייה: ' + r.cook, r.total && 'סה״כ: ' + r.total, r.servings && 'מנות: ' + r.servings, r.level].filter(Boolean);
-    return `<article>${pic ? `<img src="${esc(pic)}" alt="">` : ''}<h2>${esc(r.title)}</h2>${r.desc ? `<p class="d">${esc(r.desc)}</p>` : ''}${meta.length ? `<p class="m">${meta.map(esc).join(' · ')}</p>` : ''}
-      ${(r.ingredients || []).length ? `<h3>מצרכים</h3><ul>${r.ingredients.map(x => /:\s*$/.test(x) ? `<li class="h">${esc(x)}</li>` : `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-      ${(r.steps || []).length ? `<h3>אופן ההכנה</h3><ol>${r.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
-      ${r.notes ? `<h3>הערות</h3><p>${esc(r.notes).replace(/\n/g, '<br>')}</p>` : ''}</article>`; };
+  const order = ל.RECIPE_CATS.filter(c => cats[c]).concat(Object.keys(cats).filter(c => !ל.RECIPE_CATS.includes(c)));
+  let n = 0; const num = new Map(); for(const c of order) for(const r of cats[c]) num.set(r, ++n);
+  const sub = x => /[:：]\s*$/.test(x);
+  const one = (r, c) => { const meta = [r.prep && '⏱ הכנה: ' + r.prep, r.cook && '🔥 בישול/אפייה: ' + r.cook, r.total && '⌛ סה״כ: ' + r.total, r.servings && '👥 מנות: ' + r.servings, r.level && '📊 ' + r.level].filter(Boolean);
+    const ing = r.ingredients || [], steps = r.steps || [], long = ing.length > 22;
+    let k = 0;
+    return `<article><header><span class="no">${num.get(r)}</span><div><div class="cat">${esc(c)}</div><h2>${esc(r.title)}</h2></div></header>
+      ${r.desc ? `<p class="d">${esc(r.desc)}</p>` : ''}${meta.length ? `<p class="m">${meta.map(esc).join('<span>·</span>')}</p>` : ''}
+      <div class="body${long || !steps.length || !ing.length ? ' wide' : ''}">
+        ${ing.length ? `<section class="ing"><h3>מצרכים</h3><ul>${ing.map(x => sub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+        ${steps.length ? `<section class="st"><h3>אופן ההכנה</h3><ol>${steps.map(x => sub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li><b>${++k}</b><span>${esc(x)}</span></li>`).join('')}</ol></section>` : ''}
+      </div>
+      ${r.notes ? `<div class="nt"><h3>💡 הערות</h3><p>${esc(r.notes).replace(/\n/g, '<br>')}</p></div>` : ''}</article>`; };
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>ספר המתכונים</title><style>
-    body{font-family:Rubik,Arial,sans-serif;color:#1d1d35;margin:0;padding:24px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    h1{color:#5B5BF7;font-size:30px;margin:0 0 4px}.sub{color:#777;margin:0 0 18px}
-    .toc{columns:2;font-size:14px;margin-bottom:10px}.toc b{display:block;color:#5B5BF7;margin-top:8px}
-    .cat{page-break-before:always;color:#fff;background:#5B5BF7;border-radius:12px;padding:10px 16px;font-size:24px;margin:0 0 14px}
-    article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0 16px;overflow:hidden}
-    article img{float:left;width:150px;height:110px;object-fit:cover;border-radius:10px;margin:0 14px 8px 0}
-    h2{font-size:20px;margin:0 0 4px}h3{font-size:15px;color:#5B5BF7;margin:10px 0 4px}.d{margin:0;color:#444}.m{margin:2px 0;color:#777;font-size:13px}
-    ul,ol{margin:0;padding-inline-start:22px}li.h{list-style:none;font-weight:700;margin-inline-start:-18px;margin-top:4px}
-  </style></head><body><h1>📖 ספר המתכונים</h1><p class="sub">${list.length} מתכונים · ${esc(ל.shortDate(today()))}</p>
-  <div class="toc">${order.map(c => `<b>${esc(c)}</b>${cats[c].map(r => esc(r.title)).join('<br>')}`).join('')}</div>
-  ${order.map(c => `<div class="cat">${esc(c)}</div>${cats[c].map(one).join('')}`).join('')}</body></html>`;
+    @page{size:A4;margin:14mm 13mm}
+    *{box-sizing:border-box}
+    body{font-family:Rubik,Arial,sans-serif;color:#1d1d35;margin:0;font-size:12.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .cover h1{color:#5B5BF7;font-size:30px;margin:0 0 2px}.cover .sub{color:#777;margin:0 0 16px}
+    .toc{columns:2;column-gap:28px;font-size:12.5px}.toc .c{break-inside:avoid;margin-bottom:10px}
+    .toc b{display:block;color:#5B5BF7;font-size:14px;border-bottom:1.5px solid #5B5BF7;margin-bottom:3px}
+    .toc div{display:flex;gap:6px}.toc i{font-style:normal;color:#999;min-width:22px}
+    article{break-before:page;page-break-before:always}
+    header{display:flex;align-items:center;gap:12px;border-bottom:2.5px solid #5B5BF7;padding-bottom:6px;margin-bottom:8px}
+    header .no{background:#5B5BF7;color:#fff;border-radius:10px;min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+    header .cat{color:#5B5BF7;font-size:11px;font-weight:600}
+    h2{font-size:21px;margin:0;line-height:1.2}
+    .d{margin:0 0 4px;color:#444}.m{margin:0 0 8px;color:#555;font-size:12px}.m span{color:#bbb;margin:0 6px}
+    .body{display:grid;grid-template-columns:34% 1fr;gap:18px;align-items:start}
+    .body.wide{grid-template-columns:1fr}
+    .body.wide .ing ul{columns:2;column-gap:24px}
+    h3{font-size:13.5px;color:#5B5BF7;margin:0 0 5px}
+    .ing{background:#f3f3fe;border-radius:10px;padding:10px 12px}
+    .ing ul{margin:0;padding:0;list-style:none}.ing li{padding:2px 0 2px;border-bottom:1px dotted #d6d6ef;break-inside:avoid}
+    .ing li:before{content:"▫️ ";font-size:10px}
+    li.h{font-weight:700;color:#5B5BF7;border:0;margin-top:5px}.ing li.h:before{content:""}
+    .st ol{margin:0;padding:0;list-style:none}.st li{display:flex;gap:8px;margin-bottom:6px;break-inside:avoid}
+    .st li b{background:#5B5BF7;color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+    .st li.h{display:block;margin:8px 0 4px}
+    .nt{margin-top:10px;background:#fff8e6;border-radius:10px;padding:8px 12px;break-inside:avoid}.nt p{margin:0}
+  </style></head><body><div class="cover"><h1>📖 ספר המתכונים</h1><p class="sub">${list.length} מתכונים · ${esc(ל.shortDate(today()))}</p>
+  <div class="toc">${order.map(c => `<div class="c"><b>${esc(c)}</b>${cats[c].map(r => `<div><i>${num.get(r)}</i>${esc(r.title)}</div>`).join('')}</div>`).join('')}</div></div>
+  ${order.map(c => cats[c].map(r => one(r, c)).join('')).join('')}</body></html>`;
 }
 async function exportRecipes(){
   if(!recipeList().length) return toast('אין עדיין מתכונים');
@@ -5704,12 +5755,15 @@ async function nativeScheduleNow(){
     .catch(e => toast('השעון המעורר לא נקבע: ' + (e.message || e), {err: true, ms: 8000}));
   store('משימות.שעונים', JSON.stringify(want.map(t => t.id)));
   // תזכורות: משימות (מהחישוב של ליבה) ותרופות (מקובץ הטיימרים)
-  const list = ל.planNotifications(data(), now).map(n => ({id: intId('n:' + n.id), k: 'n:' + n.id, kind: 'task', title: n.title, body: n.message || '', at: n.at,
+  // 14 יום קדימה: גם אם לא פותחים את האפליקציה כמה ימים, תזכורת שלא בוצעה ממשיכה לחזור כל יום עד "בוצע"
+  const list = ל.planNotifications(data(), now, {horizonH: 14 * 24}).map(n => ({id: intId('n:' + n.id), k: 'n:' + n.id, kind: 'task', title: n.title, body: n.message || '', at: n.at,
       channelId: remCh('reminders'), extra: {u: n.click || ''}}))
     .concat(morningNotifs(now))
     .concat(timers.filter(t => t.kind === 'med' && !t.deleted && t.at > now + 15e3).map(t => ({id: intId('m:' + t.id), k: 'm:' + t.id, kind: 'med', title: t.title, body: t.body || '',
       at: t.at, channelId: remCh('meds'), extra: {u: '#meds'}})))
     .concat(safeList(() => extraNotifs(now)).map(n => ({id: intId(n.k), k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, channelId: remCh(n.kind === 'medstock' ? 'meds' : 'reminders'), extra: {u: n.u || '#notif'}})));
+  // אנדרואיד מגביל כמה התראות מתוזמנות יש לאפליקציה: הקרובות קודם
+  list.sort((a, b) => a.at - b.at); list.splice(300);
   notifPlan(list);
   const sig = JSON.stringify(list);
   if(sig === store('משימות.מקומי')) return;
@@ -6064,7 +6118,7 @@ function dailyInfo(){
 /* ---------- מסך "התראות": סיכום שבועי, השבוע הקרוב, מה מתוזמן, ומה נשלח ---------- */
 // מה שנקבע בטלפון נשמר ברשימה (מתוכננות). כשהזמן שלו עובר הוא עובר ליומן (נשלחו), 60 יום אחורה.
 const NLOG = 'משימות.התראות-נשלחו', NPLAN = 'משימות.התראות-מתוכננות', NSEEN = 'משימות.התראות-נראה';
-const NICON = {event: '📅', task: '✅', med: '💊', morning: '☀️', weight: '⚖️', medstock: '💊', bill: '💳', week: '📊', calweek: '📅'};
+const NICON = {todo: '📝', event: '📅', task: '✅', med: '💊', morning: '☀️', weight: '⚖️', medstock: '💊', bill: '💳', week: '📊', calweek: '📅'};
 const safeList = f => { try{ return f() || []; }catch(e){ return []; } };
 function notifLog(){
   const now = Date.now(), plan = storeJson(NPLAN, []), log = storeJson(NLOG, []);
@@ -6153,6 +6207,16 @@ function extraNotifs(now){
     for(const ch of (tc.charges || []).filter(x => !x.deleted && !x.paid && x.date)){
       const at = nextAt(ל.addDays(ch.date, 7), '10:00', now, 7);
       out.push({k: 'charge:' + ch.id + ':' + ל.localDate(at), kind: 'bill', title: '⏳ חשבון לדייר עוד לא שולם', body: `${chargeTitle(ch)} · נשלח ${ל.shortDate(ch.date)}`, at, u: '#bills'});
+    }
+  }
+  // משימות מהרשימה (📝) עם תאריך: תזכורת ביום (בשעה שנקבעה, או 09:00), ואם לא בוצעה, שוב כל יום באותה שעה עד שמסמנים
+  if(c.todoRemind !== false) for(const x of todoItems().filter(x => !x.done && !x.removed && x.due)){
+    const tm = x.time || '09:00';
+    for(let i = 0; i < 14; i++){
+      const d = x.due >= t0 ? ל.addDays(x.due, i) : ל.addDays(t0, i), at = ל.at(d, tm), late = ל.diffDays ? ל.diffDays(d, x.due) : Math.round((ל.at(d, '12:00') - ל.at(x.due, '12:00')) / 864e5);
+      if(at <= now + 15e3) continue;
+      out.push({k: 'td:' + x.id + ':' + d, kind: 'todo', title: late > 0 ? `📝 ${late === 1 ? 'מאתמול' : `באיחור של ${late} ימים`}: ${x.title}` : `📝 ${x.title}`,
+        body: late > 0 ? 'עוד לא בוצע. מסמנים ✓ ברשימת המשימות, והתזכורת תפסיק' : (x.cat || 'רשימת המשימות'), at, u: '#todo'});
     }
   }
   const lead = c.eventLead ?? 30;
@@ -6565,6 +6629,7 @@ const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר
   ['weighRemind', 'תזכורת שקילה', 'אם עבר שבוע בלי משקל: תזכורת ב-08:00', true],
   ['weekSum', 'סיכום שבועי', 'מוצאי שבת 20:00: איך היה השבוע. ראשון בבוקר: מה מחכה השבוע', true],
   ['medWeek', 'תרופה נגמרת בעוד שבוע', 'התראה שבוע לפני שהמלאי של תרופה נגמר', true],
+  ['todoRemind', 'תזכורות לרשימת המשימות', 'משימה עם תאריך: תזכורת ביום, ושוב כל יום עד שמסמנים בוצע', true],
   ['billRemind', 'תזכורות תשלום', 'יום לפני מועד של חוב, וחשבון לדייר שלא שולם שבוע', true],
   ['bedRemind', 'הגיע הזמן לישון', 'כשנשארו פחות מ-6 שעות עד השעון המעורר בבוקר: התראה שמציעה ללכת לישון', true]];
 function pfPages(){
@@ -6641,6 +6706,7 @@ function renderPfLists(){
   $('pf-l-note').textContent = {shop: 'כל המוצרים שהוספת אי פעם (מהם ההצעות בקניות). לוחצים על מוצר: שם, מחלקה או מחיקה.', recipes: 'לוחצים על מתכון: עריכה, קטגוריה, תמונה או מחיקה.',
     foods: 'מאכלים מועדפים, מאכלים שהוספת, מנות ממרכיבים וארוחות קבועות (מחישוב הקלוריות).'}[pfList] + ` (${rows.length})`;
   $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">${add.slice(2)}</span></span></button>` +
+    (pfList === 'recipes' ? `<button type="button" class="more-row" data-k="pdf"><span class="i">📖</span><span class="b"><span class="t">ספר המתכונים ב-PDF</span><span class="s">כל מתכון בעמוד משלו, מסודר לפי קטגוריות</span></span></button>` : '') +
     (pfList === 'foods' ? `<button type="button" class="more-row" data-k="*"><span class="i">⭐</span><span class="b"><span class="t">הוספת מאכלים למועדפים</span><span class="s">מחפשים ולוחצים ☆</span></span></button>` : '') +
     (rows.length ? rows.map((x, n) => (pfList === 'foods' && x.fav && !n ? '<h3 class="pf-l-h">⭐ מאכלים מועדפים</h3>' : '') + (pfList === 'foods' && !x.fav && n && rows[n - 1].fav ? '<h3 class="pf-l-h">כל המאכלים שלי</h3>' : '')
       + `<button type="button" class="more-row" data-k="${esc(x.k)}"><span class="i">${x.i}</span><span class="b"><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span><span class="side">✏️</span></button>`).join('')
@@ -6719,7 +6785,7 @@ $('pf-l-list').onclick = async e => {
     if(pfSel.size){ pfSel.has(k) ? pfSel.delete(k) : pfSel.add(k); return renderPfLists(); }
     return shopItemMenu(x);
   }
-  if(pfList === 'recipes'){ if(k === '+') return openRecipeEditor(null); const r = recipeById(k); return r && recipeMenu(r); }
+  if(pfList === 'recipes'){ if(k === '+') return openRecipeEditor(null); if(k === 'pdf') return exportRecipes(); const r = recipeById(k); return r && recipeMenu(r); }
   if(k === '+') return sheet('מאכל חדש', [['🍽️ מאכל עם קלוריות', () => openKMy(null)], ['🧾 מנה ממרכיבים', () => openKRec(null)]]);
   if(k === '*') return openKFood({favPick: true});
   const [t, id] = [k.slice(0, 1), k.slice(2)];
@@ -7093,7 +7159,7 @@ function handleHash(){
     history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'sleep'; renderKcal();
   }else if(h === '#weight'){
     history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'weight'; renderKcal(); addWeight();
-  }else if(h === '#bills' || h === '#notif'){
+  }else if(h === '#bills' || h === '#notif' || h === '#todo'){
     history.replaceState(null, '', location.pathname); show(h.slice(1));
   }else if(h === '#new'){
     history.replaceState(null, '', location.pathname);
