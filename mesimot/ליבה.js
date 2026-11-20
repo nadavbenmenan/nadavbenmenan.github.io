@@ -967,9 +967,20 @@ function sleepNights(events, nowMs){
     if(S[i].b - S[i].a <= 5 * 6e4 && S[i].a - S[i - 1].b >= 36e5 && S[i + 1].a - S[i].b >= 36e5) brief.add(i);
   const keep = S.filter((x, i) => !brief.has(i)), nights = {};
   for(let i = 0; i + 1 < keep.length; i++){
-    const from = keep[i].b, to = keep[i + 1].a, h = +localTime(from).slice(0, 2);
+    const from = keep[i].b, h = +localTime(from).slice(0, 2);
+    let to = keep[i + 1].a;
     if(to - from < 3 * 36e5 || !(h >= 19 || h < 6)) continue;
-    const date = localDate(from - 12 * 36e5), wakes = S.filter((x, j) => brief.has(j) && x.a > from && x.b < to).map(x => [x.a, x.b]);
+    // קמים לשירותים לפנות בוקר, קצת בטלפון, וחוזרים לישון עד השעון: עד 45 דקות ער (בין 02:00 ל-09:59),
+    // ואחריו חצי שעה עד שעתיים בלי הטלפון, וקמים לפני 10:00 ← עדיין אותו לילה, וזו התעוררות
+    for(let j = i + 1; j < keep.length;){
+      let k = j; while(k + 1 < keep.length && keep[k + 1].a - keep[k].b < 10 * 6e4) k++;
+      const wh = +localTime(keep[j].a).slice(0, 2);
+      const back = k + 1 < keep.length ? keep[k + 1].a - keep[k].b : 0, nh = k + 1 < keep.length ? +localTime(keep[k + 1].a).slice(0, 2) : 99;
+      if(k + 1 >= keep.length || keep[k].b - keep[j].a > 45 * 6e4 || back < 30 * 6e4 || back > 2 * 36e5 || wh < 2 || wh >= 10 || nh >= 10 || keep[k + 1].a - from > 11 * 36e5) break;
+      to = keep[k + 1].a; j = k + 1;
+    }
+    const date = localDate(from - 12 * 36e5), wakes = [];
+    for(const x of S.filter(x => x.a > from && x.b < to)){ const l = wakes[wakes.length - 1]; if(l && x.a - l[1] < 10 * 6e4) l[1] = x.b; else wakes.push([x.a, x.b]); }
     if(!nights[date] || to - from > nights[date].wake - nights[date].sleep) nights[date] = {date, sleep: from, wake: to, mins: Math.round((to - from) / 6e4), wakeups: wakes.length, wakes};
   }
   return Object.values(nights).sort((a, b) => b.date.localeCompare(a.date));
