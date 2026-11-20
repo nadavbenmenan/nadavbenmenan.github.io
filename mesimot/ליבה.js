@@ -697,7 +697,8 @@ function parseRecipeText(text){
   const isSub = l => /[:：]$/.test(l) && key(l).length <= 25 && !/\d/.test(l);
   // טבלה (| מצרך | כמות |): כל שורה = "כמות מצרך". שורה עם כמה פרטים ("זמן הכנה: 20 דקות | מנות: 4"): כל אחד בנפרד
   const lines = [];
-  for(let l of String(text || '').split(/\r?\n/)){
+  // Markdown מצ'אט: "1\." ו-"\*" הם תווים מוגנים. מורידים את הלוכסן לפני הכול
+  for(let l of String(text || '').replace(/\\([.\-*_#()\[\]!>+`~|{}])/g, '$1').split(/\r?\n/)){
     l = l.replace(/\*\*|__/g, '').trim();
     if(/^\|.*\|$/.test(l)){
       const cells = l.slice(1, -1).split('|').map(x => x.trim());
@@ -1097,7 +1098,8 @@ function imageOptions(r, recipes, current){
     const l = RECIPE_IMAGES[k] || [];
     for(const f of [...l.filter(f => !used.has(f)), ...l.filter(f => used.has(f))]) if(!seen.has(f)){ seen.add(f); order.push(f); }
   }
-  return [current, ...order.map(imgUrl)].filter(Boolean);
+  const ph = photoFor(r.title);
+  return [...new Set([current, ph, ...order.map(imgUrl)])].filter(Boolean);
 }
 /* ---------- ייצוא לאקסל: קובץ xlsx אמיתי, בלי ספרייה (zip בלי דחיסה) ---------- */
 const CRC_T = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -1165,11 +1167,50 @@ const GROUP_EMOJI = {pizza: '🍕', salmon: '🍣', fish: '🐟', shrimp: '🦐'
   potato: '🥔', veg: '🥕', breakfast: '🥞', side: '🍽️'};
 /** האמוג'י של המתכון: לפי התמונה שנבחרה, ואם אין, לפי שם המנה. */
 const recipeEmojiOf = (r, img) => GROUP_EMOJI[imageGroupOf(img) || recipeImageGroup(r)] || '🍽️';
-/** {id: קישור לתמונה} לכל המתכונים: תמונה שהוזנה, ואם אין, אחת מהקבוצה המתאימה. שני מתכונים באותה קבוצה: תמונות שונות. */
+/* ---------- תמונה מדויקת לפי שם המנה (תמונות-מתכונים.js): אלפי שמות של מנות ← תמונה של בדיוק המנה הזו ----------
+ * מקור: ויקיפדיה העברית (ערכים על מאכלים, עם השמות החלופיים), ושילובים נפוצים ("עוגת תפוזים", "מרק דלעת") מוויקיפדיה האנגלית
+ * ומוויקישיתוף. ההתאמה מתחילת השם: "עוגת התפוזים של נתנאלה" ← "עוגת תפוזים". מילה כללית לבד ("סלט", "עוף") לא נחשבת התאמה,
+ * ואז נשארות התמונות לפי סוג המנה (TheMealDB). */
+const PHOTOS = new Map();
+const GENERIC_WORDS = new Set(('סלט מרק עוגה עוגת עוגות עוגיות עוגייה פשטידה פשטידת מאפה מאפים לחם לחמניות פסטה אורז בשר עוף דג דגים כדורי ירקות ירק פירות '
+  + 'מנה מתכון אוכל ארוחה תבשיל ממתק קינוח רוטב ממרח מטבל סוכר קמח שמן ביצה ביצים חלב גבינה בצל שום עגבנייה עגבניות תפוח תפוחים לימון תפוז תפוזים בננה גזר '
+  + 'חציל חצילים קישוא קישואים פלפל פלפלים תרד כרוב כרובית ברוקולי פטריות תירס אפונה שעועית עדשים טונה סלמון הודו כבש בקר חזה פרגיות כנפיים '
+  + 'שוקולד קרם תה קפה מיץ').split(' '));
+function photoKeyWords(s){
+  const w = String(s || '').replace(/[\u0591-\u05C7]/g, '').replace(/[׳'`’]/g, '׳').replace(/[״"“”]/g, '').replace(/\(.*?\)/g, ' ')
+    .replace(/[^\u05D0-\u05EA׳a-zA-Z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  const cut = w.indexOf('של'); if(cut > 0) w.length = cut;   // "של סבתא", "של נתנאלה"
+  return w.map((x, i) => i && x.length > 3 && /^ה/.test(x) ? x.slice(1) : x);   // "עוגת התפוזים" = "עוגת תפוזים"
+}
+const photoKey = s => photoKeyWords(s).join(' ');
+/** טעינה: טקסט "קישור\tשם|שם חלופי" בכל שורה. P: = commons/thumb, H: = he/thumb, ו-~ = קובץ: 500px-<שם הקובץ>. */
+function addRecipePhotos(text){
+  if(text === null){ PHOTOS.clear(); return 0; }   // לבדיקות: מנקה
+  const pre = {P: 'https://upload.wikimedia.org/wikipedia/commons/thumb/', H: 'https://upload.wikimedia.org/wikipedia/he/thumb/', E: 'https://upload.wikimedia.org/wikipedia/en/thumb/'};
+  for(const line of String(text || '').split('\n')){
+    const [u0, names] = line.split('\t'); if(!u0 || !names) continue;
+    let u = /^[PHE]:/.test(u0) ? pre[u0[0]] + u0.slice(2) : u0;
+    if(u.endsWith('~')){ u = u.slice(0, -1); u += '/500px-' + u.split('/').pop(); }
+    for(const n of names.split('|')){ const k = photoKey(n); if(k && !PHOTOS.has(k)) PHOTOS.set(k, u); }
+  }
+  return PHOTOS.size;
+}
+/** התמונה המדויקת לשם מתכון, או ''. הצירוף הארוך ביותר מתחילת השם שיש לו תמונה. */
+function photoFor(title){
+  const w = photoKeyWords(title);
+  for(let n = Math.min(w.length, 6); n >= 1; n--){
+    const k = w.slice(0, n).join(' '), u = PHOTOS.get(k);
+    if(u && !(n === 1 && GENERIC_WORDS.has(k))) return u;
+  }
+  return '';
+}
+/** {id: קישור לתמונה} לכל המתכונים: תמונה שהוזנה; אם אין, תמונה מדויקת לפי שם המנה; ואם אין, אחת מהקבוצה המתאימה.
+ *  שני מתכונים באותה קבוצה: תמונות שונות. */
 function recipeImages(recipes){
   const out = {}, byGroup = {}, taken = new Set((recipes || []).map(r => imgFile(r.image)).filter(Boolean));
   for(const r of recipes || []){
     if(r.image){ out[r.id] = r.image; continue; }
+    const ph = photoFor(r.title); if(ph){ out[r.id] = ph; continue; }
     const g = recipeImageGroup(r);
     (byGroup[g] = byGroup[g] || []).push(r);
   }
@@ -1223,7 +1264,9 @@ const dropEmptySubs = list => (list || []).map(x => String(x).trim()).filter(x =
 function cleanRecipe(r){
   const out = Object.assign({}, r);
   for(const k of ['desc', 'notes', 'prep', 'cook', 'total', 'level', 'servings', 'source']) out[k] = blank(r[k]) ? '' : String(r[k]).trim();
-  out.ingredients = dropEmptySubs(r.ingredients); out.steps = dropEmptySubs(r.steps);
+  // מתכונים שנשמרו לפני התיקון עם "9\." מצ'אט: מורידים את המספור והלוכסן
+  const unesc = x => String(x).replace(/^\s*\d+\s*\\[.)]\s*/, '').replace(/^\s*\\[*\-]\s*/, '');
+  out.ingredients = dropEmptySubs((r.ingredients || []).map(unesc)); out.steps = dropEmptySubs((r.steps || []).map(unesc));
   return out;
 }
 /** המתכון כהודעה (וואטסאפ): אמוג'י לפי התמונה שנבחרה, וליד כל מצרך האמוג'י שלו מרשימת הסופר. */
@@ -2468,6 +2511,7 @@ function initialData(today){
 
 return {
   TZ, APP, DAY, DEFAULT_CONFIG, PRIORITY, PRIORITY_NAME, DAY_NAMES, MONTH_NAMES, DOMAINS,
+  addRecipePhotos, photoFor, photoKey,
   pad, parseD, fmtD, addDays, diffDays, weekday, daysInMonth, compact, fromCompact,
   parts, at, localDate, localTime, toMs, offsetByRule, usesIntl: !!fmtr,
   config, normTask, isActiveTask, matchRule, ruleDates, indexOcc, periodOf, quotaInfo, afterDoneInfo,
