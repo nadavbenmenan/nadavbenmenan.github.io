@@ -7,8 +7,8 @@
 // לחיצה על כפתור כותבת ישר למאגר (פעמים.json), בלי לפתוח את האפליקציה, עם האסימון שהאפליקציה שמרה
 // ב-IndexedDB. אם אין רשת, הפקודה נשמרת, והאפליקציה משלימה אותה כשהיא נפתחת.
 importScripts('ליבה.js');
-const מטמון = 'mesimot-v37';
-const קבצים = ['./', 'index.html', 'ליבה.js', 'מאכלים.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
+const מטמון = 'mesimot-v38';
+const קבצים = ['./', 'index.html', 'ליבה.js', 'מאכלים.js', 'תמונות-מתכונים.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 const גופנים = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 const REPO_API = 'https://api.github.com/repos/nadavbenmenan/cv/contents/';
 const PATHS = {tasks: 'משימות/משימות.json', occ: 'משימות/פעמים.json', config: 'משימות/תצורה.json'};
@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   // תמונות של מצרכים ומתכונים: מהמטמון קודם, כדי שיופיעו גם בסופר בלי קליטה
-  if(u.origin === 'https://www.themealdb.com'){
+  if(u.origin === 'https://www.themealdb.com' || u.origin === 'https://upload.wikimedia.org'){
     e.respondWith(caches.open('mesimot-img').then(c => c.match(e.request).then(ת => ת || fetch(e.request).then(ר => { c.put(e.request, ר.clone()); return ר; }))));
     return;
   }
