@@ -519,6 +519,7 @@
   .sl-row .top{display:flex;justify-content:space-between;gap:8px;font-weight:600}
   .sl-row .top span:last-child{color:var(--accent);font-variant-numeric:tabular-nums}
   .sl-row .s{color:var(--muted);font-size:14px}
+  .sl-wk{color:var(--accent);font-weight:600;padding:6px 0}
   .sl-bar{height:8px;border-radius:999px;background:var(--soft);margin-top:6px;position:relative;overflow:hidden}
   .sl-bar i{position:absolute;top:0;bottom:0;border-radius:999px;background:var(--accent)}
   .dp{display:grid;grid-template-columns:1fr;justify-items:center;gap:6px;margin:4px 0 8px}
@@ -2469,7 +2470,7 @@ async function sleepSync(){
     const r = await NAlarm.screenEvents({from: Date.now() - 10 * 864e5});
     screenEv = r.events || [];
     const have = new Map((KF().sleep || []).map(x => [x.date, x]));   // גם מה שנמחק או תוקן ביד: לא דורסים
-    const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && o.src !== 'health' && (o.sleep !== n.sleep || o.wake !== n.wake)); })
+    const recs = ל.sleepNights(r.events || [], Date.now()).filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && o.src !== 'health' && (o.sleep !== n.sleep || o.wake !== n.wake || (n.wakeups && !o.wakes))); })
       .map(n => Object.assign({id: 'sl' + n.date, src: 'phone', updatedAt: nowIso(), deleted: false}, n));
     if(recs.length) saveK('sleep', recs);
   }catch(e){ sleepState = 'err'; }
@@ -2498,7 +2499,7 @@ async function renderSleep(){
     <div class="sec"><h2 class="bl-h">לילות <span><button class="txt-btn" type="button" id="sl-nap">😴 ＋ שנצ</button> <button class="txt-btn" type="button" id="sl-add">＋ ידני</button></span></h2>
     ${nights.length ? nights.map(n => { const [h1, m1] = hm(n.sleep).split(':').map(Number), x0 = (((h1 + 12) % 24) * 60 + m1 - 9 * 60) / (14 * 60);
       return `<button type="button" class="sl-row" data-sl="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date) === 'אתמול' ? 'אתמול בלילה' : 'ליל ' + kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
-        <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · ${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'}` : ''}${n.manual ? ' · עודכן ביד' : n.src === 'health' ? ' · Samsung Health' : ''}</div>
+        <div class="s">${hm(n.sleep)} ← ${hm(n.wake)}${n.wakeups ? ` · <span class="sl-wk" data-wk="${esc(n.id)}">${n.wakeups === 1 ? 'התעוררות אחת' : n.wakeups + ' התעוררויות'} ›</span>` : ''}${n.manual ? ' · עודכן ביד' : n.src === 'health' ? ' · Samsung Health' : ''}</div>
         <div class="sl-bar"><i style="right:${Math.max(0, Math.min(100, x0 * 100)).toFixed(1)}%;width:${Math.min(100, n.mins / (14 * 60) * 100).toFixed(1)}%"></i></div></button>`; }).join('')
       : '<div class="empty">עוד אין לילות. אחרי הלילה הראשון זה יופיע כאן</div>'}</div>
     ${naps.length ? `<div class="sec"><h2>😴 שנצים</h2>${naps.map(n => `<button type="button" class="sl-row" data-nap="${esc(n.id)}"><div class="top"><span>${esc(kDayLabel(n.date))}</span><span>${durText(n.mins)}</span></div>
@@ -2538,11 +2539,13 @@ async function healthSync(force){
       const date = ל.localDate(a - 12 * 36e5), n = nights[date] || (nights[date] = {date, sleep: a, wake: b, mins: 0});
       n.sleep = Math.min(n.sleep, a); n.wake = Math.max(n.wake, b);
       if(x.sleepState !== 'awake' && x.sleepState !== 'inBed') n.mins += Math.round(+x.value || (b - a) / 6e4);
+      else if(x.sleepState === 'awake') (n.awake || (n.awake = [])).push([a, b]);
     }
     const have = new Map((KF().sleep || []).map(x => [x.date, x]));
-    const recs = Object.values(nights).filter(n => n.mins > 60).map(n => Object.assign(n, {mins: Math.min(n.mins, Math.round((n.wake - n.sleep) / 6e4))}))
-      .filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && (o.src !== 'health' || o.sleep !== n.sleep || o.wake !== n.wake || o.mins !== n.mins)); })
-      .map(n => Object.assign({id: 'sl' + n.date, wakeups: 0, src: 'health', updatedAt: now, deleted: false}, n));
+    const recs = Object.values(nights).filter(n => n.mins > 60).map(n => { const wakes = (n.awake || []).filter(([a, b]) => a > n.sleep && b < n.wake).sort((x, y) => x[0] - y[0]); delete n.awake;
+        return Object.assign(n, {mins: Math.min(n.mins, Math.round((n.wake - n.sleep) / 6e4)), wakeups: wakes.length, wakes}); })
+      .filter(n => { const o = have.get(n.date); return !o || (!o.manual && !o.deleted && (o.src !== 'health' || o.sleep !== n.sleep || o.wake !== n.wake || o.mins !== n.mins || (o.wakes || []).length !== n.wakes.length)); })
+      .map(n => Object.assign({id: 'sl' + n.date, src: 'health', updatedAt: now, deleted: false}, n));
     if(recs.length) saveK('sleep', recs);
   }catch(e){}
   try{   // אימונים
@@ -2636,8 +2639,15 @@ async function editSleep(n){
   saveK('sleep', Object.assign({}, n || {id: 'sl' + d0, date: d0, wakeups: 0}, {sleep, wake, mins: Math.round((wake - sleep) / 6e4), manual: true, updatedAt: nowIso(), deleted: false}));
   renderSleep();
 }
+/** שעות ההתעוררות בלילה: מתי התעורר וכמה זמן היה ער */
+function wakesSheet(n){
+  const w = n.wakes || [], m = ([a, b]) => Math.max(1, Math.round((b - a) / 6e4));
+  sheet(`התעוררויות · ליל ${kDayLabel(n.date)}`, w.map(x => [`⏰ ${hm(x[0])} · ${m(x) === 1 ? 'דקה' : m(x) + ' דקות'} ער`, () => {}]),
+    w.length ? `נרדם ${hm(n.sleep)} · קם ${hm(n.wake)}` : 'השעות של הלילה הזה לא נשמרו (נמדד לפני העדכון). מהלילה הבא הן יופיעו כאן.');
+}
 $('h-sleep').addEventListener('click', e => { const b = e.target.closest('[data-sl]'); if(!b) return; const n = live(KF().sleep).find(x => x.id === b.dataset.sl); if(!n) return;
-  sheet(`ליל ${kDayLabel(n.date)} · ${durText(n.mins)}`, [['✏️ תיקון השעות', () => editSleep(n)],
+  if(e.target.closest('[data-wk]')) return wakesSheet(n);
+  sheet(`ליל ${kDayLabel(n.date)} · ${durText(n.mins)}`, [...(n.wakeups ? [[`⏰ שעות ההתעוררות (${n.wakeups})`, () => wakesSheet(n)]] : []), ['✏️ תיקון השעות', () => editSleep(n)],
     ['🗑 מחיקה', () => { saveK('sleep', Object.assign({}, n, {deleted: true, manual: true, updatedAt: nowIso()})); renderSleep(); }]]); });
 const qtyText = e => e.unit === 'גרם' ? `${kNum(e.qty)} גרם` : `${+e.qty === 0.5 ? 'חצי' : String(+e.qty).replace(/\.5$/, '½').replace(/^0½$/, '½')} ${e.unit}`;
 function actText(a){
@@ -6555,7 +6565,8 @@ const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר
   ['weighRemind', 'תזכורת שקילה', 'אם עבר שבוע בלי משקל: תזכורת ב-08:00', true],
   ['weekSum', 'סיכום שבועי', 'מוצאי שבת 20:00: איך היה השבוע. ראשון בבוקר: מה מחכה השבוע', true],
   ['medWeek', 'תרופה נגמרת בעוד שבוע', 'התראה שבוע לפני שהמלאי של תרופה נגמר', true],
-  ['billRemind', 'תזכורות תשלום', 'יום לפני מועד של חוב, וחשבון לדייר שלא שולם שבוע', true]];
+  ['billRemind', 'תזכורות תשלום', 'יום לפני מועד של חוב, וחשבון לדייר שלא שולם שבוע', true],
+  ['bedRemind', 'הגיע הזמן לישון', 'כשנשארו פחות מ-6 שעות עד השעון המעורר בבוקר: התראה שמציעה ללכת לישון', true]];
 function pfPages(){
   const c = D.config, kst = ל.calSettings(KF()), doms = D.domains.filter(x => !x.deleted).length;
   return [['look', '🎨', 'תצוגה ולשוניות', `${{system: 'לפי הטלפון', light: 'בהיר', dark: 'כהה'}[c.theme || 'system']} · טקסט ${{s: 'קטן', m: 'רגיל', l: 'גדול', xl: 'גדול מאוד'}[c.fontSize || 'm']} · סדר הלשוניות`],
@@ -6586,7 +6597,9 @@ $('pf-menu').onclick = e => { const b = e.target.closest('[data-pg]'); if(!b) re
 $('pf-back').onclick = () => pfGo(null);
 $('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ saveConfig({fontSize: b.dataset.fs}); applyTheme(); renderPrefs(); } };
 $('s-accent').onchange = () => { saveConfig({accent: $('s-accent').value}); applyTheme(); toast('✓ נשמר'); };
-$('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); } };
+$('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); if(x.dataset.tg === 'bedRemind') bedtimeArm(); } };
+/** "כדאי ללכת לישון": הטלפון עצמו עוקב אחרי השעון המעורר (Bedtime.java). כאן רק מדליקים/מכבים, ובכל פתיחה נקבע מחדש. */
+function bedtimeArm(){ if(NATIVE && typeof NAlarm?.bedtime === 'function') Promise.resolve().then(() => NAlarm.bedtime({on: D.config.bedRemind !== false})).catch(() => {}); }
 $('pf-goals').onclick = async e => { const b = e.target.closest('[data-goal]'); if(!b) return;
   await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal, weight: editWeightGoal, now: () => addWeight(today()), height: editHeight}[b.dataset.goal])(); renderPrefs(); };
 async function editHeight(){
@@ -7076,6 +7089,8 @@ function handleHash(){
     history.replaceState(null, '', location.pathname); show('today');
   }else if(h === '#meds'){
     history.replaceState(null, '', location.pathname); show('meds');
+  }else if(h === '#sleep'){
+    history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'sleep'; renderKcal();
   }else if(h === '#weight'){
     history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'weight'; renderKcal(); addWeight();
   }else if(h === '#bills' || h === '#notif'){
@@ -7086,6 +7101,7 @@ function handleHash(){
   }
 }
 addEventListener('hashchange', () => { if(location.hash !== '#t') handleHash(); });
+if(NATIVE){ setTimeout(bedtimeArm, 4000); document.addEventListener('visibilitychange', () => { if(!document.hidden) bedtimeArm(); }); }
 
 /* ---------- אתחול ---------- */
 if('serviceWorker' in navigator && !LOCAL) navigator.serviceWorker.register('sw.js').catch(() => {});
