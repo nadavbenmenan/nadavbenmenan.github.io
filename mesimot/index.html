@@ -621,7 +621,10 @@
   #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
-  .img-pick .big{height:170px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+  .img-pick .big{height:150px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+  .img-pick .tp-chips{flex-wrap:wrap;gap:6px}
+  .img-pick .tp-chips button{flex:none;font-size:14px;min-height:36px;padding:5px 11px}
+  #im-title{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55vw}
   .img-pick .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
   .img-pick .tp{position:relative;padding:0;border:2px solid transparent;border-radius:12px;overflow:hidden;background:var(--soft);display:flex;flex-direction:column;font:inherit;color:inherit}
   .img-pick .tp i{display:block;aspect-ratio:4/3;background:var(--soft) center/cover no-repeat}
@@ -942,10 +945,12 @@
 </main>
 <main class="screen" id="scr-notif" hidden>
   <h1 class="hello">התראות</h1>
-  <div id="nt-week"></div>
-  <div id="nt-ahead"></div>
-  <div class="sec"><h2>⏰ בקרוב</h2><div id="nt-soon" class="more-list"></div></div>
-  <div class="sec"><h2>📬 נשלחו</h2><div id="nt-log"></div></div>
+  <div class="subtabs" id="nt-tabs"></div>
+  <div id="nt-p-notif"><div class="sec"><h2>⏰ בקרוב</h2><div id="nt-soon" class="more-list"></div></div>
+    <div class="sec"><h2>📬 נשלחו</h2><div id="nt-log"></div></div></div>
+  <div id="nt-p-events" hidden><div id="nt-events"></div></div>
+  <div id="nt-p-week" hidden><div id="nt-week"></div><div id="nt-ahead"></div></div>
+  <div id="nt-p-days" hidden><div id="nt-days"></div></div>
 </main>
 <main class="screen" id="scr-bills" hidden>
   <h1 class="hello">חשבונות</h1>
@@ -1270,11 +1275,11 @@
     <button class="txt-btn" id="ph-close">סגירה</button><h2 id="ph-title">תמונה</h2><button class="txt-btn" id="ph-del" style="color:var(--red)">מחיקה</button></div>
   <div class="ph-view"><img id="ph-img" alt=""></div>
 </dialog>
-<dialog id="dlg-img" aria-label="בחירת תמונה"><div class="dlg">
-  <h2 id="im-title">בחירת תמונה</h2>
-  <div class="img-pick" id="im-pick"></div>
-  <div class="btns"><button class="btn" id="im-auto" type="button">אוטומטי</button><button class="btn" id="im-cancel" type="button">ביטול</button><button class="btn primary" id="im-ok" type="button">שמירה</button></div>
-</div></dialog>
+<dialog id="dlg-img" class="full" aria-label="בחירת תמונה"><div class="dlg-head">
+    <button class="txt-btn" id="im-cancel" type="button">ביטול</button><h2 id="im-title">בחירת תמונה</h2><button class="txt-btn" id="im-ok" type="button" style="font-weight:700">שמירה</button></div>
+  <div class="dlg"><div class="img-pick" id="im-pick"></div>
+  <div class="btns"><button class="btn" id="im-auto" type="button">↺ תמונה אוטומטית</button></div></div>
+</dialog>
 <dialog id="dlg-timer" aria-label="טיימר"><div class="dlg" style="text-align:center">
   <div id="tmr-title" style="font-weight:600;font-size:17px"></div>
   <div id="tmr-left" class="tmr-left">0:00</div>
@@ -1820,6 +1825,7 @@ function show(s){
   // כניסה לבריאות: תמיד הסיכום היומי של היום, והארוחה של השעה הזו
   if(s === 'kcal' && screen !== 'kcal'){ hTab = 'kcal'; kcDate = today(); kcMeal = mealNow(); }
   if(s === 'prefs' && screen !== 'prefs') pfPage = null;
+  if(s === 'notif' && screen !== 'notif') ntTab = 'notif';
   screen = s;
   for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history', 'calc']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills', 'notif', 'calc'].includes(s);
@@ -2035,29 +2041,35 @@ onLongPress($('r-body'), '.rc-hero', el => el.dataset.img);
 // בחירת תמונה: למעלה התמונה שנבחרה. מתחת קודם נושאים (סלטים, עוף, קינוחים...), ורק אחרי בחירת נושא, התמונות שלו
 let imgPick = null;
 function renderPicker(box, st){
-  st.n = st.n || 30;
+  // מסך אחד: התמונה שנבחרה למעלה, כל הנושאים ככפתורים (רואים מיד שיש עוד), ומתחת כל התמונות של הנושא.
+  // גוללים למטה: עוד תמונות נטענות לבד. ברירת המחדל: "⭐ מתאים" (התמונה המדויקת לפי השם, ואז הקרובות).
+  st.n = st.n || 30; st.topic = st.topic || '*';
   const small = u => u.replace(/\/medium$/, '/small');
-  const big = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>`;
-  if(!st.topic){
-    const tops = ל.imageTopics(st.r, st.sel);
-    box.innerHTML = big + `<div class="note" style="margin:10px 2px 0">בוחרים נושא:</div><div class="topics">${tops.map(t =>
-      `<button type="button" class="tp${t.fit ? ' fit' : ''}" data-topic="${t.g}"><i style="background-image:url('${esc(small(t.cover))}')"></i><span>${t.emoji} ${esc(t.name)}</span>${t.fit ? '<em>מתאים</em>' : ''}</button>`).join('')}</div>`;
-  } else {
-    const opts = ל.topicImages(st.topic, st.r, recipeList()), name = (ל.imageTopics(st.r, '').find(t => t.g === st.topic) || {}).name || '';
-    box.innerHTML = big + `<div class="tp-head"><button type="button" class="txt-btn" data-tp-back="1">→ כל הנושאים</button><b>${esc(name)}</b></div>
-      <div class="gal">${opts.slice(0, st.n).map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" aria-label="תמונה"><img loading="lazy" alt="" src="${esc(small(u))}"></button>`).join('')}</div>
-      ${opts.length > st.n ? `<button type="button" class="btn" data-more="1" style="width:100%;margin-top:10px">עוד תמונות (${opts.length - st.n})</button>` : ''}`;
-  }
+  const tops = ל.imageTopics(st.r, st.sel);
+  const opts = st.topic === '*' ? ל.imageOptions(st.r, recipeList(), st.sel) : ל.topicImages(st.topic, st.r, recipeList());
+  const name = st.topic === '*' ? 'מתאים למתכון' : (tops.find(t => t.g === st.topic) || {}).name || '';
+  const chip = (g, t) => `<button type="button" data-topic="${g}" class="${g === st.topic ? 'on' : ''}">${t}</button>`;
+  box.innerHTML = `<div class="big" style="background-image:url('${esc(st.sel)}')" role="img" aria-label="התמונה שנבחרה"></div>
+    <div class="note" style="margin:10px 2px 6px">נושא (${tops.length + 1}):</div>
+    <div class="opts tp-chips">${chip('*', '⭐ מתאים')}${tops.map(t => chip(t.g, `${t.emoji} ${esc(t.name)}${t.fit ? ' ✓' : ''}`)).join('')}</div>
+    <div class="tp-head"><b>${esc(name)}</b><span class="note" style="margin:0">${opts.length} תמונות${opts.length > st.n ? ' · גוללים לעוד' : ''}</span></div>
+    <div class="gal">${opts.slice(0, st.n).map(u => `<button type="button" class="sm${u === st.sel ? ' on' : ''}" data-u="${esc(u)}" aria-label="תמונה"><img loading="lazy" alt="" src="${esc(small(u))}"></button>`).join('')}</div>
+    ${opts.length > st.n ? `<button type="button" class="btn" data-more="1" style="width:100%;margin-top:10px">עוד תמונות (${opts.length - st.n})</button>` : ''}`;
   const dlg = box.closest('dialog'), keep = f => { const y = dlg?.scrollTop; f(); renderPicker(box, st); if(y != null) dlg.scrollTop = y; };
   box.onclick = e => {
     const tp = e.target.closest('[data-topic]');
-    if(tp){ st.topic = tp.dataset.topic; st.n = 30; renderPicker(box, st); return; }
-    if(e.target.closest("[data-tp-back]")){ st.topic = null; renderPicker(box, st); return; }
+    if(tp){ st.topic = tp.dataset.topic; st.n = 30; keep(() => {}); const g = box.querySelector('.tp-head'); if(g && dlg) dlg.scrollTop = Math.max(0, g.offsetTop - 200); return; }
     const b = e.target.closest('[data-u]');
     if(b){ st.sel = b.dataset.u; st.onPick && st.onPick(st.sel); box.querySelector('.big').style.backgroundImage = `url('${st.sel}')`;
       box.querySelectorAll('.gal .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); return; }
     if(e.target.closest('[data-more]')) keep(() => { st.n += 30; });
   };
+  // טעינה אוטומטית כשמגיעים לסוף
+  const more = box.querySelector('[data-more]');
+  if(more && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver(es => { if(es.some(x => x.isIntersecting) && box.contains(more)){ io.disconnect(); keep(() => { st.n += 30; }); } });
+    io.observe(more);
+  }
 }
 function openImagePicker(r){
   const cur = picUrl(r) || ל.recipeImages([...recipeList().filter(x => x.id !== r.id), r])[r.id];
@@ -3066,55 +3078,124 @@ function exportTasks(){
 }
 /** ספר מתכונים (PDF): כל מתכון מתחיל בעמוד חדש, בלי תמונות. המצרכים בעמודה צרה בצד והשלבים לידה,
  *  בגופן קומפקטי, כך שרוב המתכונים נכנסים לעמוד אחד. מתכון ארוך ממשיך לעמוד שני. בהתחלה: תוכן עניינים לפי קטגוריות. */
-function recipesHtml(){
+/* ---------- ספר מתכונים להדפסה ----------
+   שחור-לבן (בלי צבע שנעלם בהדפסה), כל מתכון בדף משלו.
+   לכל מתכון "גודל": קצר / בינוני / ארוך / ארוך מאוד, ולכל גודל עיצוב משלו:
+   קצר: מצרכים בשתי עמודות למעלה, שלבים מתחת, באותיות גדולות, ומה שנשאר בדף: שורות ל"הערות שלי".
+   בינוני/ארוך: מצרכים בטור צד, שלבים לידם.  ארוך מאוד: מצרכים ב-3 עמודות, שלבים ב-2 עמודות.
+   גודל האות נמדד לכל מתכון (בחלון נסתר) כך שהדף יתמלא יפה. מה שלא נכנס גם באות קטנה: שני דפים. */
+const BOOK_W = 688, BOOK_H = 1010;   // A4 פחות שוליים (14 מ"מ), בפיקסלים
+const bookSub = x => /[:：]\s*$/.test(x);
+function bookSize(r){
+  const ing = r.ingredients || [], st = r.steps || [];
+  const n = ing.length + st.reduce((x, s) => x + Math.ceil(String(s).length / 70), 0) + (r.notes ? Math.ceil(r.notes.length / 90) : 0);
+  return n <= 16 ? 'short' : n <= 30 ? 'mid' : n <= 46 ? 'long' : 'xl';
+}
+const BOOK_SIZE_NAME = {short: 'קצר', mid: 'בינוני', long: 'ארוך', xl: 'ארוך מאוד'};
+function bookArticle(r, c, no, lay, fs, pages, lines){
+  const meta = [r.prep && ['הכנה', r.prep], r.cook && ['בישול/אפייה', r.cook], r.total && ['סה״כ', r.total], r.servings && ['מנות', r.servings], r.level && ['רמה', r.level]].filter(Boolean);
+  const ing = r.ingredients || [], steps = r.steps || [];
+  let k = 0;
+  return `<article class="${lay}${pages > 1 ? ' two' : ''}" style="font-size:${fs}px">
+    <header><div class="kick"><span>${no}</span>${esc(c)}</div><h2>${esc(r.title)}</h2>
+      ${r.desc ? `<p class="d">${esc(r.desc)}</p>` : ''}${meta.length ? `<div class="m">${meta.map(([a, b]) => `<span><i>${a}</i> ${esc(b)}</span>`).join('')}</div>` : ''}</header>
+    <div class="body">
+      ${ing.length ? `<section class="ing"><h3>מצרכים</h3><ul>${ing.map(x => bookSub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+      ${steps.length ? `<section class="st"><h3>אופן ההכנה</h3><ol>${steps.map(x => bookSub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li><b>${++k}</b><span>${esc(x)}</span></li>`).join('')}</ol></section>` : ''}
+    </div>
+    ${r.notes ? `<div class="nt"><h3>הערות</h3><p>${esc(r.notes).replace(/\n/g, '<br>')}</p></div>` : ''}
+    ${lines ? `<div class="mine"><h3>הערות שלי</h3>${'<i></i>'.repeat(lines)}</div>` : ''}</article>`;
+}
+const BOOK_CSS = `
+  @page{size:A4;margin:14mm 14mm 16mm}
+  @page{@bottom-center{content:counter(page);font:9pt Rubik,Arial,sans-serif;color:#555}}
+  *{box-sizing:border-box}
+  body{font-family:Rubik,Arial,sans-serif;color:#111;margin:0;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cover{padding-top:40px}
+  .cover h1{font-size:40px;margin:0;letter-spacing:-.5px;border-bottom:3px solid #111;padding-bottom:10px}
+  .cover .sub{color:#444;margin:8px 0 26px;font-size:14px}
+  .toc{columns:2;column-gap:34px;font-size:13px}
+  .toc .grp{break-inside:avoid;margin-bottom:14px}
+  .toc .grp>b{display:block;font-size:14px;border-bottom:1.5px solid #111;padding-bottom:2px;margin-bottom:4px}
+  .toc .it{display:flex;align-items:baseline;gap:6px;padding:1px 0}
+  .toc .it .t{flex:none;max-width:78%}
+  .toc .it .dots{flex:1;border-bottom:1px dotted #888;transform:translateY(-3px)}
+  .toc .it .p{flex:none;font-weight:600;min-width:18px;text-align:left}
+  article{break-before:page;page-break-before:always;width:${BOOK_W}px}
+  header{border-bottom:2.5px solid #111;padding-bottom:.5em;margin-bottom:.9em}
+  .kick{font-size:.78em;letter-spacing:.3px;color:#444;display:flex;align-items:center;gap:.6em;text-transform:uppercase}
+  .kick span{border:1.5px solid #111;border-radius:999px;min-width:2.1em;padding:0 .5em;text-align:center;font-weight:700;color:#111}
+  h2{font-size:2em;margin:.15em 0 0;line-height:1.15}
+  .d{margin:.35em 0 0;color:#333;font-style:italic}
+  .m{display:flex;flex-wrap:wrap;gap:.3em 1.4em;margin-top:.5em;font-size:.88em}
+  .m i{font-style:normal;color:#555}
+  h3{font-size:1.02em;margin:0 0 .45em;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #111;padding-bottom:.15em;display:inline-block}
+  ul,ol{margin:0;padding:0;list-style:none}
+  .ing li{padding:.18em 0;border-bottom:1px dotted #aaa;break-inside:avoid;padding-right:1em;position:relative}
+  .ing li:before{content:"";position:absolute;right:.1em;top:.72em;width:.38em;height:.38em;border:1.2px solid #111;border-radius:50%}
+  li.h{font-weight:700;border:0 !important;margin-top:.5em;padding-right:0 !important}.ing li.h:before{display:none}
+  .st li{display:flex;gap:.65em;margin-bottom:.55em;break-inside:avoid}
+  .st li b{flex:none;border:1.5px solid #111;border-radius:50%;width:1.65em;height:1.65em;font-size:.85em;display:flex;align-items:center;justify-content:center;margin-top:.1em}
+  .st li.h{display:block;margin:.7em 0 .35em}
+  .ing{border:1.5px solid #111;border-radius:8px;padding:.7em .9em}
+  .stack .ing ul{columns:2;column-gap:2em}
+  .stack .st{margin-top:1.1em}
+  .side .body{display:grid;grid-template-columns:36% 1fr;gap:1.4em;align-items:start}
+  .xl .ing ul{columns:3;column-gap:1.6em}
+  .xl .st{margin-top:.9em}.xl .st ol{columns:2;column-gap:1.8em}
+  .nt{margin-top:1em;border-right:4px solid #111;padding:.2em .9em;break-inside:avoid}.nt p{margin:0}.nt h3{border:0}
+  .mine{margin-top:1.4em;break-inside:avoid}.mine h3{color:#555;border-color:#999}
+  .mine i{display:block;height:2.1em;border-bottom:1px solid #bbb}`;
+/** ממדים: לכל מתכון, העיצוב וגודל האות הגדולים ביותר שנכנסים לדף אחד (או לשניים). */
+async function bookFit(items){
+  const fr = document.createElement('iframe');
+  fr.style.cssText = `position:fixed;left:-99999px;top:0;width:${BOOK_W + 40}px;height:2000px;border:0;visibility:hidden`;
+  document.body.appendChild(fr);
+  await new Promise(res => { fr.onload = res; fr.srcdoc = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><style>${BOOK_CSS}</style></head><body></body></html>`; });
+  const doc = fr.contentDocument, out = [];
+  const height = (r, c, lay, fs, lines) => { doc.body.innerHTML = bookArticle(r, c, 0, lay, fs, 1, lines); return doc.body.firstElementChild.getBoundingClientRect().height; };
+  const SIZES = [20, 19, 18, 17, 16, 15, 14.5, 14, 13.5, 13, 12.5, 12, 11.5, 11, 10.5], MAXF = {short: 20, mid: 17, long: 15, xl: 14};
+  for(const {r, c} of items){
+    const size = bookSize(r), lays = {short: ['stack', 'side'], mid: ['side', 'stack'], long: ['side', 'xl'], xl: ['xl', 'side']}[size];
+    if(!(r.ingredients || []).length || !(r.steps || []).length) lays.unshift('stack');
+    let pick = null;
+    for(const lay of lays){
+      const min = lay === 'xl' ? 10.5 : 12;
+      for(const fs of SIZES) if(fs >= min && fs <= MAXF[size] && height(r, c, lay, fs, 0) <= BOOK_H * .96){ pick = {lay, fs, pages: 1}; break; }
+      if(pick) break;
+    }
+    if(!pick){   // ארוך מאוד: שני דפים, באות שממלאת אותם
+      const fs = SIZES.find(f => f <= 14 && height(r, c, 'side', f, 0) <= BOOK_H * 1.9) || 11;
+      pick = {lay: 'side', fs, pages: 2};
+    }
+    // מה שנשאר בדף אחד: שורות ל"הערות שלי" (אם יש לפחות 4)
+    pick.lines = 0;
+    if(pick.pages === 1){ const left = BOOK_H * .95 - height(r, c, pick.lay, pick.fs, 0), row = pick.fs * 2.1;
+      if(left > row * 5) pick.lines = Math.min(18, Math.floor((left - pick.fs * 3.5) / row)); }
+    out.push(Object.assign({r, c, size}, pick));
+  }
+  fr.remove();
+  return out;
+}
+async function recipesHtml(){
   const list = recipeList().map(r => Object.assign({}, r, ל.cleanRecipe(r))).sort((a, b) => a.title.localeCompare(b.title, 'he')), cats = {};
   for(const r of list) (cats[ל.recipeCat(r)] = cats[ל.recipeCat(r)] || []).push(r);
   const order = ל.RECIPE_CATS.filter(c => cats[c]).concat(Object.keys(cats).filter(c => !ל.RECIPE_CATS.includes(c)));
-  let n = 0; const num = new Map(); for(const c of order) for(const r of cats[c]) num.set(r, ++n);
-  const sub = x => /[:：]\s*$/.test(x);
-  const one = (r, c) => { const meta = [r.prep && '⏱ הכנה: ' + r.prep, r.cook && '🔥 בישול/אפייה: ' + r.cook, r.total && '⌛ סה״כ: ' + r.total, r.servings && '👥 מנות: ' + r.servings, r.level && '📊 ' + r.level].filter(Boolean);
-    const ing = r.ingredients || [], steps = r.steps || [], long = ing.length > 22;
-    let k = 0;
-    return `<article><header><span class="no">${num.get(r)}</span><div><div class="cat">${esc(c)}</div><h2>${esc(r.title)}</h2></div></header>
-      ${r.desc ? `<p class="d">${esc(r.desc)}</p>` : ''}${meta.length ? `<p class="m">${meta.map(esc).join('<span>·</span>')}</p>` : ''}
-      <div class="body${long || !steps.length || !ing.length ? ' wide' : ''}">
-        ${ing.length ? `<section class="ing"><h3>מצרכים</h3><ul>${ing.map(x => sub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
-        ${steps.length ? `<section class="st"><h3>אופן ההכנה</h3><ol>${steps.map(x => sub(x) ? `<li class="h">${esc(x.replace(/[:：]\s*$/, ''))}</li>` : `<li><b>${++k}</b><span>${esc(x)}</span></li>`).join('')}</ol></section>` : ''}
-      </div>
-      ${r.notes ? `<div class="nt"><h3>💡 הערות</h3><p>${esc(r.notes).replace(/\n/g, '<br>')}</p></div>` : ''}</article>`; };
-  return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>ספר המתכונים</title><style>
-    @page{size:A4;margin:14mm 13mm}
-    *{box-sizing:border-box}
-    body{font-family:Rubik,Arial,sans-serif;color:#1d1d35;margin:0;font-size:12.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .cover h1{color:#5B5BF7;font-size:30px;margin:0 0 2px}.cover .sub{color:#777;margin:0 0 16px}
-    .toc{columns:2;column-gap:28px;font-size:12.5px}.toc .c{break-inside:avoid;margin-bottom:10px}
-    .toc b{display:block;color:#5B5BF7;font-size:14px;border-bottom:1.5px solid #5B5BF7;margin-bottom:3px}
-    .toc div{display:flex;gap:6px}.toc i{font-style:normal;color:#999;min-width:22px}
-    article{break-before:page;page-break-before:always}
-    header{display:flex;align-items:center;gap:12px;border-bottom:2.5px solid #5B5BF7;padding-bottom:6px;margin-bottom:8px}
-    header .no{background:#5B5BF7;color:#fff;border-radius:10px;min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
-    header .cat{color:#5B5BF7;font-size:11px;font-weight:600}
-    h2{font-size:21px;margin:0;line-height:1.2}
-    .d{margin:0 0 4px;color:#444}.m{margin:0 0 8px;color:#555;font-size:12px}.m span{color:#bbb;margin:0 6px}
-    .body{display:grid;grid-template-columns:34% 1fr;gap:18px;align-items:start}
-    .body.wide{grid-template-columns:1fr}
-    .body.wide .ing ul{columns:2;column-gap:24px}
-    h3{font-size:13.5px;color:#5B5BF7;margin:0 0 5px}
-    .ing{background:#f3f3fe;border-radius:10px;padding:10px 12px}
-    .ing ul{margin:0;padding:0;list-style:none}.ing li{padding:2px 0 2px;border-bottom:1px dotted #d6d6ef;break-inside:avoid}
-    .ing li:before{content:"▫️ ";font-size:10px}
-    li.h{font-weight:700;color:#5B5BF7;border:0;margin-top:5px}.ing li.h:before{content:""}
-    .st ol{margin:0;padding:0;list-style:none}.st li{display:flex;gap:8px;margin-bottom:6px;break-inside:avoid}
-    .st li b{background:#5B5BF7;color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
-    .st li.h{display:block;margin:8px 0 4px}
-    .nt{margin-top:10px;background:#fff8e6;border-radius:10px;padding:8px 12px;break-inside:avoid}.nt p{margin:0}
-  </style></head><body><div class="cover"><h1>📖 ספר המתכונים</h1><p class="sub">${list.length} מתכונים · ${esc(ל.shortDate(today()))}</p>
-  <div class="toc">${order.map(c => `<div class="c"><b>${esc(c)}</b>${cats[c].map(r => `<div><i>${num.get(r)}</i>${esc(r.title)}</div>`).join('')}</div>`).join('')}</div></div>
-  ${order.map(c => cats[c].map(r => one(r, c)).join('')).join('')}</body></html>`;
+  const items = []; for(const c of order) for(const r of cats[c]) items.push({r, c});
+  const fit = await bookFit(items);
+  // מספרי עמודים: תוכן העניינים בדף 1 (עוד דף לכל 70 מתכונים), ואז מתכון אחרי מתכון
+  let page = 1 + Math.max(1, Math.ceil(list.length / 70));
+  for(const f of fit){ f.page = page; page += f.pages; }
+  window.__bookFit = fit.map(f => ({title: f.r.title, size: f.size, lay: f.lay, fs: f.fs, pages: f.pages, lines: f.lines}));
+  return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>ספר המתכונים</title><style>${BOOK_CSS}</style></head><body>
+  <div class="cover"><h1>ספר המתכונים</h1><p class="sub">${list.length} מתכונים · ${esc(ל.shortDate(today()))}</p>
+  <div class="toc">${order.map(c => `<div class="grp"><b>${esc(c)}</b>${fit.filter(f => f.c === c).map(f => `<div class="it"><span class="t">${esc(f.r.title)}</span><span class="dots"></span><span class="p">${f.page}</span></div>`).join('')}</div>`).join('')}</div></div>
+  ${fit.map((f, i) => bookArticle(f.r, f.c, i + 1, f.lay, f.fs, f.pages, f.lines)).join('')}</body></html>`;
 }
 async function exportRecipes(){
   if(!recipeList().length) return toast('אין עדיין מתכונים');
-  return printDoc(recipesHtml(), 'ספר מתכונים');
+  toast('מסדר את הספר…');
+  return printDoc(await recipesHtml(), 'ספר מתכונים');
 }
 async function exportDoctor(){ return printDoc(doctorHtml(), 'דוח לרופא'); }
 /** דוח לרופא: 30 הימים האחרונים. תרופות (כמה פעמים, ובתרופה יומית כמה ימים נלקחה), שינה, משקל. */
@@ -6134,8 +6215,7 @@ function notifPlan(list){
 }
 function notifBadge(){
   const b = $('nb-notif'); if(!b) return;
-  const seen = +store(NSEEN) || 0, n = notifLog().filter(x => x.at > seen).length;
-  b.hidden = !n || screen === 'notif'; b.textContent = n ? (n > 9 ? '9+' : n) : '';
+  b.hidden = true; b.textContent = '';   // בלי מספר על הכפתור (ביקשת שלא יסומן)
 }
 /** הפעם הבאה של שעה ביום, מתאריך מסוים והלאה (לא בעבר). */
 function nextAt(date, time, now, step){
@@ -6234,9 +6314,32 @@ function extraNotifs(now){
   }
   return out;
 }
+var ntTab = 'notif';
+$('nt-tabs').onclick = e => { const b = e.target.closest('[data-nt]'); if(b){ ntTab = b.dataset.nt; renderNotif(); scrollTo(0, 0); } };
+/** ימים מיוחדים ב-30 הימים הקרובים. */
+function daysAhead(){ return safeList(() => ל.birthdaysView(D.tasks, today())).filter(b => b.inDays >= 0 && b.inDays <= 30).sort((a, b) => a.inDays - b.inDays); }
+/** אירועים מהיומן מהיום והלאה (מה שנקרא מהטלפון, 8 ימים). */
+function eventsAhead(){
+  if(D.config.calRead === false) return [];
+  const t0 = today(), now = Date.now();
+  return storeJson(EVK, []).filter(e => e.allDay ? new Date(e.begin).toISOString().slice(0, 10) >= t0 : (e.end || e.begin) > now)
+    .map(e => Object.assign({d: e.allDay ? new Date(e.begin).toISOString().slice(0, 10) : ל.localDate(e.begin)}, e))
+    .sort((a, b) => a.d.localeCompare(b.d) || +b.allDay - +a.allDay || a.begin - b.begin);
+}
 function renderNotif(){
-  const now = Date.now(), log = notifLog(), st = weekStats(), wk = weekAhead();
+  const now = Date.now(), log = notifLog(), st = weekStats(), wk = weekAhead(), evs = eventsAhead(), bd = daysAhead();
   store(NSEEN, String(now)); notifBadge();
+  const tabs = [['notif', '🔔 התראות'], ['events', `📅 אירועים${evs.length ? ' ' + evs.length : ''}`], ['week', '📊 השבוע']].concat(bd.length ? [['days', '🎂 מיוחדים']] : []);
+  if(!tabs.some(t => t[0] === ntTab)) ntTab = 'notif';
+  $('nt-tabs').innerHTML = tabs.map(([k, t]) => `<button type="button" data-nt="${k}" class="${k === ntTab ? 'on' : ''}">${esc(t)}</button>`).join('');
+  for(const k of ['notif', 'events', 'week', 'days']) $('nt-p-' + k).hidden = k !== ntTab;
+  const dayLbl = d => kDayLabel(d) === 'היום' || kDayLabel(d) === 'מחר' ? kDayLabel(d) : dayName(d) + ' ' + ל.shortDate(d);
+  { let h = '', last = '';
+    for(const e of evs){ if(e.d !== last){ h += `<div class="nt-log-day">${esc(dayLbl(e.d))}</div>`; last = e.d; }
+      h += `<div class="more-row"><span class="i">📅</span><span class="b"><span class="t">${esc(e.title)}</span>${e.where ? `<span class="s">📍 ${esc(e.where)}</span>` : ''}</span><span class="side">${e.allDay ? 'כל היום' : esc(ל.localTime(e.begin) + (e.end > e.begin ? '–' + ל.localTime(e.end) : ''))}</span></div>`; }
+    $('nt-events').innerHTML = h ? `<div class="more-list">${h}</div><div class="note">מהיומן של הטלפון, לשבוע הקרוב</div>`
+      : `<div class="empty">${D.config.calRead === false ? 'קריאת היומן כבויה (הגדרות ← יומן)' : NATIVE ? 'אין אירועים בשבוע הקרוב' : 'האירועים מהיומן מופיעים באפליקציית האנדרואיד'}</div>`; }
+  $('nt-days').innerHTML = `<div class="more-list">${bd.map(b => `<div class="more-row"><span class="i">${b.emoji}</span><span class="b"><span class="t">${esc(((b.task.person || '') + ' ' + b.label).trim())}</span></span><span class="side">${b.inDays === 0 ? 'היום' : b.inDays === 1 ? 'מחר' : 'בעוד ' + b.inDays + ' ימים'}</span></div>`).join('')}</div>`;
   $('nt-week').innerHTML = `<div class="nt-card nt-hero"><h2>📊 השבוע שלך</h2><div class="note" style="margin:-6px 0 10px">7 הימים האחרונים</div>
     <div class="nt-grid">${st.map(x => `<div><b>${x.i} ${esc(String(x.v))}</b><span>${esc(x.t)}</span></div>`).join('')}</div></div>`;
   $('nt-ahead').innerHTML = `<div class="nt-card"><h2>📅 השבוע הקרוב</h2>${wk.filter(d => d.items.length).map(d => `<div class="nt-day"><b>${esc(kDayLabel(d.d) === 'היום' ? 'היום' : dayName(d.d) + ' ' + ל.shortDate(d.d))}</b>${d.items.slice(0, 6).map(x => `<div>${esc(x)}</div>`).join('')}${d.items.length > 6 ? `<div class="note" style="margin:0">ועוד ${d.items.length - 6}</div>` : ''}</div>`).join('') || '<div class="note">שבוע פנוי 🎉</div>'}</div>`;
