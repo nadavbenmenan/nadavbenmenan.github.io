@@ -1383,6 +1383,7 @@ const FOOD_DB = `לחם לבן|265|פרוסה:30
 נודלס מבושלים|138|מנה:200,כוס:160
 מג׳דרה|150|מנה:250,כוס:200
 תפוח אדמה מבושל|87|יחידה:150
+תפוחי אדמה בתנור|140|מנה:200,יחידה:150
 פירה|106|כוס:210,כף:30
 צ׳יפס|312|מנה:120
 בטטה אפויה|90|יחידה:150
@@ -1543,17 +1544,94 @@ function calFoods(file){
   for(const r of live(file?.recipes)) out.push(Object.assign({rank: 900}, recipeFood(r)));   // מתכונים אישיים = מאכלים
   return out;
 }
-const KCAL_SEED = {foods: [], meals: []};   // הארוחות הקבועות האישיות נשמרות בנתונים של המשתמש, לא בקוד
+
+/* ---------- תוכנית אימונים הדרגתית (חזרה לאימוני כוח אחרי הפסקה ארוכה או החלמה) ----------
+   לא לפי לוח זמנים: סופרים אימונים שבוצעו. עולים דרגה כשעברו מספיק אימונים בדרגה, האחרונים לא היו "קשה", ולא היה כאב.
+   בלי כפיפות בטן / הרמות רגליים בשכיבה ובלי עצירת נשימה (לחץ על דופן הבטן). כל תרגיל: שם|סטים|חזרות|הסבר קצר. */
+const WK = (id, name, sets, reps, how) => ({id, name, sets, reps, how});
+const WORKOUT_LEVELS = [
+  {n: 1, name: 'חזרה עדינה', need: 6, goal: 'להעיר את השרירים, נשימה נכונה, בלי לחץ על הבטן', ex: [
+    WK('breath', 'נשימה סרעפתית בשכיבה', 1, '10 נשימות', 'שוכבים על הגב, ברכיים כפופות. שואפים לבטן, נושפים לאט מהפה.'),
+    WK('tilt', 'הטיית אגן + כיווץ בטן עמוק', 2, '8 (החזקה 3 שנ׳)', 'מצמידים בעדינות את הגב התחתון לרצפה ומכווצים קלות את הבטן התחתונה. ממשיכים לנשום.'),
+    WK('bridge', 'גשר ישבן', 2, '10', 'מרימים את האגן עד קו ישר כתפיים-ברכיים, נושפים בעלייה.'),
+    WK('heel', 'החלקת עקב בשכיבה', 2, '8 לכל רגל', 'מיישרים רגל לאט על הרצפה ומחזירים, האגן לא זז.'),
+    WK('sitstand', 'קימה מכיסא', 2, '8', 'קמים ויושבים לאט, בלי ידיים אם אפשר. נושפים בקימה.'),
+    WK('wallpush', 'שכיבות סמיכה על הקיר', 2, '10', 'ידיים על הקיר בגובה הכתפיים, גוף ישר.'),
+    WK('walk', 'הליכה', 1, '15–20 דק׳', 'קצב נוח שאפשר לדבר בו.')]},
+  {n: 2, name: 'בסיס', need: 6, goal: 'יציבות לגו, רגליים וגב, עדיין בלי משקלים', ex: [
+    WK('bridge', 'גשר ישבן', 3, '12', 'החזקה של שנייה למעלה.'),
+    WK('deadbug1', 'דד-באג מקוצר (הורדת עקב)', 2, '6 לכל צד', 'שוכבים, ברכיים ב-90°. מורידים עקב אחד לרצפה ומחזירים, הגב צמוד.'),
+    WK('birddog', 'ציפור-כלב (שש)', 2, '6 לכל צד', 'על ארבע: יד ורגל נגדיות מתיישרות לאט, הגב לא זז.'),
+    WK('boxsquat', 'סקוואט לכיסא', 3, '10', 'יורדים עד מגע בכיסא וקמים. ברכיים בכיוון האצבעות.'),
+    WK('inclinepush', 'שכיבות סמיכה בשיפוע (שולחן/משטח)', 3, '8', 'ככל שהמשטח נמוך יותר, קשה יותר.'),
+    WK('bandrow', 'חתירה עם גומייה / בקבוקי מים', 3, '10', 'מושכים את המרפקים לאחור ומקרבים שכמות.'),
+    WK('sidelegs', 'הרמת רגל בשכיבה על הצד', 2, '10 לכל צד', 'רגל עליונה ישרה, עולה לאט.'),
+    WK('walk', 'הליכה', 1, '20–25 דק׳', 'אפשר קצת יותר מהר.')]},
+  {n: 3, name: 'חיזוק', need: 8, goal: 'משקל גוף מלא ומשקולות קלות', ex: [
+    WK('squat', 'סקוואט משקל גוף', 3, '12', 'יורדים עד שהירכיים כמעט מקבילות לרצפה.'),
+    WK('revlunge', 'מכרע אחורי עם תמיכה', 2, '8 לכל רגל', 'מחזיקים בקיר/כיסא לשיווי משקל.'),
+    WK('kneepush', 'שכיבות סמיכה על הברכיים / שיפוע נמוך', 3, '8', 'גוף ישר מהברכיים לראש.'),
+    WK('dbrow', 'חתירה במשקולת ביד אחת', 3, '10 לכל יד', 'נשענים ביד על ספה, גב ישר. משקל קל.'),
+    WK('rdl', 'דדליפט רומני קל', 3, '10', 'משקולות קלות, דוחפים אגן לאחור, גב ישר. נושפים בעלייה.'),
+    WK('deadbug', 'דד-באג מלא', 3, '6 לכל צד', 'יד ורגל נגדיות מתיישרות, הגב צמוד לרצפה.'),
+    WK('sideplankk', 'פלאנק צד על הברכיים', 2, '15 שנ׳ לכל צד', 'גוף ישר, נושמים כל הזמן.'),
+    WK('ohp', 'לחיצת כתפיים בישיבה', 2, '10', 'משקולות קלות, בלי לקשת את הגב.')]},
+  {n: 4, name: 'בונים כוח', need: 8, goal: 'יותר משקל וסטים, פלאנק קצר', ex: [
+    WK('goblet', 'גובלט סקוואט', 3, '10', 'משקולת צמודה לחזה.'),
+    WK('lunge', 'מכרעים', 3, '8 לכל רגל', 'צעד גדול, ברך אחורית יורדת לכיוון הרצפה.'),
+    WK('pushup', 'שכיבות סמיכה', 3, 'עד 10', 'כמה שיוצא בטכניקה טובה.'),
+    WK('dbrow', 'חתירה במשקולות', 3, '12', 'שליטה בירידה.'),
+    WK('rdl', 'דדליפט רומני', 3, '10', 'משקל בינוני.'),
+    WK('plank', 'פלאנק על האמות', 3, '20 שנ׳', 'ישבן מכווץ, נושמים. מפסיקים אם הבטן "בולטת".'),
+    WK('pallof', 'פאלוף פרס עם גומייה', 2, '10 לכל צד', 'דוחפים את הגומייה קדימה ולא נותנים לגוף להסתובב.'),
+    WK('carry', 'הליכת חקלאי', 3, '30 שנ׳', 'משקולות בצדדים, הליכה זקופה.')]},
+  {n: 5, name: 'שגרה מלאה', need: 0, goal: 'אימון כוח רגיל, מעלים משקל בהדרגה', ex: [
+    WK('goblet', 'גובלט סקוואט', 4, '10', ''), WK('split', 'מכרע בולגרי', 3, '8 לכל רגל', 'רגל אחורית על כיסא.'),
+    WK('pushup', 'שכיבות סמיכה', 4, '10–12', ''), WK('dbrow', 'חתירה במשקולות', 4, '10', ''),
+    WK('rdl', 'דדליפט רומני', 4, '8', ''), WK('ohps', 'לחיצת כתפיים בעמידה', 3, '10', ''),
+    WK('plank', 'פלאנק', 3, '40 שנ׳', ''), WK('invrow', 'חתירה הפוכה / מתח בעזרה', 3, '8', '')]},
+];
+const WORKOUT_SAFETY = ['אחרי ניתוח או פציעה: מתחילים רק באישור רופא.', 'לא עוצרים נשימה: נושפים במאמץ.', 'בלי כפיפות בטן והרמות רגליים בשכיבה בשלב הזה.',
+  'כאב חד, בליטה או לחץ חריג: עוצרים, חוזרים דרגה ומתייעצים עם הרופא.'];
+/** מצב התוכנית: ההגדרות (settings: wplan) והאימונים (acts עם plan). */
+function workoutState(file){
+  const cfg = live(file?.settings).find(x => x.id === 'wplan') || null;
+  const sess = live(file?.acts).filter(a => a.plan).sort((a, b) => (a.plan.at || a.date).localeCompare(b.plan.at || b.date));
+  if(!cfg || !cfg.started) return {started: false, sessions: sess, level: 1, def: WORKOUT_LEVELS[0]};
+  const level = Math.min(WORKOUT_LEVELS.length, Math.max(1, +cfg.level || 1)), def = WORKOUT_LEVELS[level - 1];
+  const custom = (cfg.custom || {})[level];
+  const ex = Array.isArray(custom) ? custom : def.ex;
+  // אימונים בדרגה הנוכחית, מאז שעברו אליה (levelAt), כדי שירידה וחזרה יתחילו ספירה מחדש
+  const atLevel = sess.filter(a => a.plan.level === level && (!cfg.levelAt || (a.plan.at || a.updatedAt || '') >= cfg.levelAt));
+  return Object.assign({started: cfg.started, level, def, ex, custom: Array.isArray(custom), sessions: sess, atLevel: atLevel.length, need: def.need}, workoutAdvice(level, def.need, atLevel));
+}
+/** עצה: לעלות, להישאר, או לרדת. */
+function workoutAdvice(level, need, atLevel){
+  const last = atLevel.slice(-3), last2 = atLevel.slice(-2);
+  if(last.some(a => a.plan.pain)) return {advice: 'down', why: 'היה כאב או לחץ חריג באימון אחרון. כדאי לחזור דרגה, לנוח כמה ימים ולהתייעץ עם הרופא.'};
+  if(level >= WORKOUT_LEVELS.length) return {advice: 'stay', why: 'הדרגה האחרונה: מעלים משקל או חזרות כשזה נהיה קל.'};
+  if(last2.length === 2 && last2.every(a => a.plan.feel === 'hard')) return {advice: 'stay', why: 'שני האימונים האחרונים היו קשים. נשארים בדרגה עד שזה מרגיש בסדר.'};
+  if(atLevel.length >= need && !last2.some(a => a.plan.feel === 'hard')) return {advice: 'up', why: `עברת ${atLevel.length} אימונים בדרגה הזו בלי קושי. אפשר לעלות דרגה.`};
+  if(atLevel.length >= Math.ceil(need / 2) && last2.length === 2 && last2.every(a => a.plan.feel === 'easy')) return {advice: 'up', why: 'שני אימונים אחרונים היו קלים מדי. אפשר לעלות דרגה כבר עכשיו.'};
+  return {advice: 'stay', why: `עוד ${Math.max(0, need - atLevel.length)} אימונים בדרגה הזו, ואז עולים.`};
+}
+const KCAL_SEED = {foods: [], meals: []};
+// גרסה 2 (21.11.2026): שתי ארוחות נפוצות שנוספות פעם אחת לארוחות הקבועות
+const KCAL_SEED2 = [['m-pita-hummus', 'פיתה עם חומוס ופסטרמה', 'lunch', [['פיתה', 1, 'יחידה'], ['חומוס', 3, 'כף'], ['פסטרמה', 4, 'פרוסה']]],
+  ['m-friday', 'ארוחת שישי: חלה, תפו״א, עוף ומרק', 'dinner', [['חלה', 3, 'פרוסה'], ['תפוחי אדמה בתנור', 1, 'מנה'], ['עוף בתנור', 1, 'מנה'], ['מרק עוף', 1, 'קערה']]]];   // הארוחות הקבועות האישיות נשמרות בנתונים של המשתמש, לא בקוד
 /** מה להוסיף לקובץ הקלוריות בפעם הראשונה, או null. */
 function kcalSeed(file, nowIso){
-  if(live(file?.settings).some(x => x.id === 'seedK' && x.v >= 1)) return null;
+  const v = Math.max(0, ...(file?.settings || []).filter(x => x.id === 'seedK').map(x => +x.v || 0));
+  if(v >= 2) return null;
   nowIso = '2026-11-16T00:00:00.000Z';   // חותמת ישנה וקבועה: כל עריכה או מחיקה גוברת, ושום מכשיר לא "מחזיר" מה שנמחק
-  const foods = KCAL_SEED.foods.map(f => Object.assign({}, f, {updatedAt: nowIso, deleted: false}));
+  const foods = v < 1 ? KCAL_SEED.foods.map(f => Object.assign({}, f, {updatedAt: nowIso, deleted: false})) : [];
   const all = calFoods({foods});
-  const meals = KCAL_SEED.meals.map(([id, name, meal, items]) => ({id, name, meal, updatedAt: nowIso, deleted: false,
+  const have = new Set((file?.meals || []).map(m => m.id));
+  const meals = [...(v < 1 ? KCAL_SEED.meals : []), ...(v >= 1 ? KCAL_SEED2 : [])]   // התקנה חדשה: בלי ארוחות מוכנות
+   .filter(([id]) => !have.has(id)).map(([id, name, meal, items]) => ({id, name, meal, updatedAt: nowIso, deleted: false,
     items: items.map(([key, qty, unit]) => { const f = all.find(x => x.id === key || x.name === key);
       return {foodId: f.id, name: f.name, qty, unit, grams: foodGrams(f, qty, unit), kcal: foodKcal(f, qty, unit), manual: false}; })}));
-  return {foods, meals, settings: [{id: 'seedK', v: 1, updatedAt: nowIso, deleted: false}]};
+  return {foods, meals, settings: [{id: 'seedK', v: 2, updatedAt: '2026-11-21T00:00:00.000Z', deleted: false}]};
 }
 /** גרמים לכמות ויחידה. "גרם" תמיד אפשרי. */
 function foodGrams(food, qty, unit){
@@ -2525,6 +2603,7 @@ return {
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
+  WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
 };
 });
