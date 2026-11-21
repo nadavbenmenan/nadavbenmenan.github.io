@@ -622,6 +622,29 @@
   #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
   .img-pick .big{height:150px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+
+  .pl-card{background:var(--card);border-radius:18px;padding:14px 16px;margin-top:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  .pl-lv{display:flex;align-items:center;gap:12px}
+  .pl-lv .n{flex:none;width:52px;height:52px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:22px;line-height:1}
+  .pl-lv .n small{font-size:10px;font-weight:500;margin-top:2px}
+  .pl-lv b{font-size:18px}.pl-lv .g{color:var(--muted);font-size:14px}
+  .pl-steps{display:flex;gap:4px;margin:12px 0 6px}.pl-steps i{flex:1;height:8px;border-radius:4px;background:var(--soft)}.pl-steps i.on{background:var(--accent)}
+  .pl-adv{font-size:15px;margin:8px 0 0;padding:10px 12px;border-radius:12px;background:var(--soft)}
+  .pl-adv.up{background:color-mix(in srgb,var(--green,#2e9d5b) 16%,var(--card))}.pl-adv.down{background:color-mix(in srgb,var(--red) 14%,var(--card))}
+  .pl-go{width:100%;min-height:56px;font-size:18px;margin-top:12px}
+  .pl-lvbtns{display:flex;gap:8px;margin-top:10px}.pl-lvbtns .btn{flex:1}
+  .pl-ex{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:start;border:0;background:transparent;padding:10px 2px;border-bottom:1px solid var(--line,#eee);color:inherit;font:inherit}
+  .pl-ex .t{flex:1}.pl-ex .t b{display:block;font-size:16px}.pl-ex .t span{color:var(--muted);font-size:13px}
+  .pl-ex .r{flex:none;font-weight:700;color:var(--accent);white-space:nowrap}
+  .pl-safe{font-size:13px;color:var(--muted);margin:6px 0 0;padding-inline-start:18px}
+  .wk-ex{border-radius:16px;background:var(--card);padding:12px 14px;margin-bottom:10px;border:2px solid transparent}
+  .wk-ex.done{border-color:var(--accent);opacity:.75}
+  .wk-ex h3{margin:0;font-size:17px;display:flex;justify-content:space-between;gap:8px}.wk-ex h3 span{color:var(--accent);white-space:nowrap}
+  .wk-ex p{margin:4px 0 8px;color:var(--muted);font-size:14px}
+  .wk-sets{display:flex;gap:8px;flex-wrap:wrap}.wk-sets button{width:48px;height:48px;border-radius:50%;border:2px solid var(--accent);background:transparent;font-weight:700;font-size:16px;color:var(--accent)}
+  .wk-sets button.on{background:var(--accent);color:var(--on-accent)}
+  .wk-feel{display:flex;gap:8px;margin:10px 0}.wk-feel button{flex:1;min-height:64px;border-radius:14px;border:2px solid var(--soft);background:var(--card);font:inherit;font-size:15px}
+  .wk-feel button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card))}
   .img-pick .tp-chips{flex-wrap:wrap;gap:6px}
   .img-pick .tp-chips button{flex:none;font-size:14px;min-height:36px;padding:5px 11px}
   #im-title{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55vw}
@@ -753,7 +776,7 @@
 
 <main class="screen" id="scr-kcal" hidden>
   <div class="kc-top"><h1 class="hello">בריאות</h1></div>
-  <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="sleep">😴 שעות שינה</button><button type="button" data-h="weight">⚖️ משקל</button></div>
+  <div class="subtabs" id="h-tabs"><button type="button" data-h="kcal" class="on">🔥 קלוריות</button><button type="button" data-h="fit">🏃 כושר</button><button type="button" data-h="plan">💪 תוכנית</button><button type="button" data-h="sleep">😴 שינה</button><button type="button" data-h="weight">⚖️ משקל</button></div>
   <div class="kc-date" id="kc-date"><button type="button" id="kc-prev" aria-label="יום קודם">‹</button><button type="button" id="kc-day" class="kc-day" aria-label="התאריך (לחיצה: חזרה להיום)"></button><button type="button" id="kc-next" aria-label="יום הבא">›</button></div>
   <div id="h-kcal">
     <div class="kc-dash" id="kc-dash"></div>
@@ -767,6 +790,7 @@
     <div class="sec"><h2 class="kc-h">🏃 אימונים <span id="kc-act-sum"></span><button class="btn" type="button" id="kc-act-add">+ אימון</button></h2><div id="kc-acts" class="kc-list"></div></div>
     <div class="sec"><h2>היסטוריית אימונים</h2><div id="fit-hist"></div></div>
   </div>
+  <div id="h-plan" hidden></div>
   <div id="h-sleep" hidden></div>
   <div id="h-weight" hidden></div>
 </main>
@@ -1274,6 +1298,10 @@
 <dialog id="dlg-photo" class="full" aria-label="תמונה"><div class="dlg-head">
     <button class="txt-btn" id="ph-close">סגירה</button><h2 id="ph-title">תמונה</h2><button class="txt-btn" id="ph-del" style="color:var(--red)">מחיקה</button></div>
   <div class="ph-view"><img id="ph-img" alt=""></div>
+</dialog>
+<dialog id="dlg-wk" class="full" aria-label="אימון"><div class="dlg-head">
+    <button class="txt-btn" id="wk-close" type="button">סגירה</button><h2 id="wk-title">אימון</h2><button class="txt-btn" id="wk-fin" type="button" style="font-weight:700">סיום ✓</button></div>
+  <div class="dlg" id="wk-body"></div>
 </dialog>
 <dialog id="dlg-img" class="full" aria-label="בחירת תמונה"><div class="dlg-head">
     <button class="txt-btn" id="im-cancel" type="button">ביטול</button><h2 id="im-title">בחירת תמונה</h2><button class="txt-btn" id="im-ok" type="button" style="font-weight:700">שמירה</button></div>
@@ -2437,8 +2465,9 @@ var hTab = 'kcal';
 $('h-tabs').onclick = e => { const b = e.target.closest('[data-h]'); if(b){ hTab = b.dataset.h; renderKcal(); scrollTo(0, 0); } };
 function renderKcal(){
   document.querySelectorAll('#h-tabs button').forEach(b => b.classList.toggle('on', b.dataset.h === hTab));
-  for(const k of ['kcal', 'fit', 'sleep', 'weight']) $('h-' + k).hidden = k !== hTab;
-  $('kc-date').hidden = hTab === 'sleep' || hTab === 'weight';
+  for(const k of ['kcal', 'fit', 'plan', 'sleep', 'weight']) $('h-' + k).hidden = k !== hTab;
+  $('kc-date').hidden = hTab === 'sleep' || hTab === 'weight' || hTab === 'plan';
+  if(hTab === 'plan') return renderPlan();
   if(hTab === 'sleep') return renderSleep();
   if(hTab === 'weight') return renderWeight();
   loadFoodDb();
@@ -2488,6 +2517,113 @@ function renderFit(){
     : '<div class="empty">עוד אין אימונים. "+ אימון" מוסיף</div>';
 }
 function renderFitAll(){ renderFit(); renderHealthBox(); }
+/* ---------- 💪 תוכנית אימונים הדרגתית ----------
+   לא לפי לוח זמנים: לוחצים "התחלתי אימון" כשמתחילים, מסמנים סטים, ובסוף איך היה (קל/בסדר/קשה, כאב?).
+   האימון נשמר כפעילות "אימון כוח" (נספר בקלוריות), עם plan: {level, at, feel, pain, done, total}.
+   עולים דרגה כשיש מספיק אימונים בדרגה בלי קושי (ההצעה מופיעה), ואפשר תמיד לעלות/לרדת ביד ולשנות תרגילים. */
+const WK_ACTIVE = 'משימות.אימון-פעיל';
+const planCfg = () => live(KF().settings).find(x => x.id === 'wplan') || {id: 'wplan', custom: {}};
+const savePlanCfg = ch => saveK('settings', Object.assign({}, planCfg(), ch, {id: 'wplan', updatedAt: nowIso(), deleted: false}));
+function renderPlan(){
+  const st = ל.workoutState(KF()), box = $('h-plan'), L = ל.WORKOUT_LEVELS;
+  if(!st.started){
+    box.innerHTML = `<div class="pl-card"><h2 style="margin:0 0 6px">💪 תוכנית אימונים הדרגתית</h2>
+      <p style="margin:0 0 8px">חזרה הדרגתית לאימוני כוח אחרי הפסקה ארוכה או החלמה. ${L.length} דרגות, מנשימה ויציבות ועד אימון כוח מלא.</p>
+      <p style="margin:0 0 8px"><b>לא לפי זמן:</b> לוחצים "התחלתי אימון" כשמתחילים. עולים דרגה אחרי מספיק אימונים שהרגישו בסדר (או מתי שרוצים).</p>
+      <ul class="pl-safe">${ל.WORKOUT_SAFETY.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <button class="btn primary pl-go" type="button" id="pl-start">▶ מתחילים מדרגה 1</button>
+      <div class="opts" style="margin-top:10px;justify-content:center">${L.slice(1, 4).map(l => `<button type="button" data-startlv="${l.n}">או מדרגה ${l.n}</button>`).join('')}</div></div>
+      <div class="sec"><h2>הדרגות</h2>${L.map(l => `<div class="pl-ex" style="cursor:default"><span class="r">${l.n}</span><span class="t"><b>${esc(l.name)}</b><span>${esc(l.goal)}${l.need ? ` · ${l.need} אימונים` : ''}</span></span></div>`).join('')}</div>`;
+    const go = lv => { savePlanCfg({started: today(), level: lv, levelAt: nowIso(), custom: {}}); toast(`💪 התחלנו! דרגה ${lv}`); renderPlan(); };
+    $('pl-start').onclick = () => go(1);
+    box.querySelectorAll('[data-startlv]').forEach(b => b.onclick = () => go(+b.dataset.startlv));
+    return;
+  }
+  const last = st.sessions[st.sessions.length - 1], days = last ? ל.diffDays(today(), last.date) : null;
+  const active = storeJson(WK_ACTIVE, null);
+  box.innerHTML = `<div class="pl-card">
+      <div class="pl-lv"><div class="n">${st.level}<small>מתוך ${L.length}</small></div><div><b>${esc(st.def.name)}</b><div class="g">${esc(st.def.goal)}</div></div></div>
+      ${st.need ? `<div class="pl-steps" aria-label="${st.atLevel} מתוך ${st.need} אימונים">${Array.from({length: st.need}, (_, i) => `<i class="${i < st.atLevel ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="note" style="margin:0">${st.atLevel} / ${st.need} אימונים בדרגה הזו${last ? ` · אחרון: ${days === 0 ? 'היום' : days === 1 ? 'אתמול' : `לפני ${days} ימים`}` : ''}</div>` : ''}
+      <div class="pl-adv ${st.advice}">${st.advice === 'up' ? '⬆ ' : st.advice === 'down' ? '⚠️ ' : ''}${esc(st.why)}</div>
+      <button class="btn primary pl-go" type="button" id="pl-go">${active ? '▶ חזרה לאימון שהתחיל' : '▶ התחלתי אימון'}</button>
+      <div class="pl-lvbtns"><button class="btn" type="button" id="pl-down"${st.level <= 1 ? ' disabled' : ''}>⬇ דרגה ${st.level - 1 || ''}</button><button class="btn${st.advice === 'up' ? ' primary' : ''}" type="button" id="pl-up"${st.level >= L.length ? ' disabled' : ''}>⬆ עולים לדרגה ${st.level < L.length ? st.level + 1 : ''}</button></div>
+      <div class="note" style="margin:8px 0 0">מומלץ 2–3 אימונים בשבוע, עם יום מנוחה ביניהם.</div></div>
+    <div class="sec"><h2 style="display:flex;justify-content:space-between;align-items:center">התרגילים בדרגה ${st.level}${st.custom ? ' <small class="note" style="margin:0">(שונה)</small>' : ''}
+      <button class="txt-btn" type="button" id="pl-add">+ תרגיל</button></h2>
+      <div>${st.ex.map((x, i) => `<button type="button" class="pl-ex" data-ex="${i}"><span class="t"><b>${esc(x.name)}</b>${x.how ? `<span>${esc(x.how)}</span>` : ''}</span><span class="r">${x.sets > 1 ? x.sets + ' × ' : ''}${esc(x.reps)}</span></button>`).join('')}</div>
+      <div class="note">לחיצה על תרגיל: שינוי סטים/חזרות, החלפה או הסרה.</div>
+      ${st.custom ? '<button class="txt-btn" type="button" id="pl-reset">↺ חזרה לתרגילים המקוריים של הדרגה</button>' : ''}</div>
+    <div class="sec"><h2>⚠️ חשוב</h2><ul class="pl-safe">${ל.WORKOUT_SAFETY.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+    ${st.sessions.length ? `<div class="sec"><h2>האימונים שלי</h2><div class="more-list">${st.sessions.slice(-12).reverse().map(a => `<div class="more-row"><span class="i">${a.plan.pain ? '⚠️' : {easy: '😌', ok: '🙂', hard: '😓'}[a.plan.feel] || '💪'}</span><span class="b"><span class="t">דרגה ${a.plan.level} · ${a.plan.done}/${a.plan.total} תרגילים</span><span class="s">${esc(kDayLabel(a.date))} · ${a.minutes} דק׳</span></span></div>`).join('')}</div></div>` : ''}
+    <button class="txt-btn" type="button" id="pl-stop" style="margin-top:14px;color:var(--muted)">הפסקת התוכנית</button>`;
+  const setLevel = lv => { savePlanCfg({level: lv, levelAt: nowIso()}); toast(`💪 דרגה ${lv}: ${L[lv - 1].name}`); renderPlan(); };
+  $('pl-up').onclick = () => setLevel(st.level + 1);
+  $('pl-down').onclick = () => setLevel(st.level - 1);
+  $('pl-go').onclick = () => openWorkout();
+  const setEx = list => { const c = Object.assign({}, planCfg().custom || {}); if(list) c[st.level] = list; else delete c[st.level]; savePlanCfg({custom: c}); renderPlan(); };
+  $('pl-add').onclick = async () => { const v = await ask('תרגיל חדש', [{label: 'שם', req: true}, {label: 'סטים', value: '3', num: true}, {label: 'חזרות / זמן', value: '10'}, {label: 'הסבר (לא חובה)'}]);
+    if(v) setEx([...st.ex, {id: 'c' + uid(), name: v[0], sets: +v[1] || 1, reps: v[2] || '', how: v[3] || ''}]); };
+  if($('pl-reset')) $('pl-reset').onclick = () => setEx(null);
+  $('pl-stop').onclick = async () => { if(await ask('להפסיק את התוכנית?', [], {note: 'האימונים שנרשמו נשארים. אפשר להתחיל שוב מתי שרוצים.', ok: 'הפסקה', danger: true})) { savePlanCfg({started: null}); renderPlan(); } };
+  box.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.ex, x = st.ex[i];
+    // מאיזו דרגה אחרת אפשר להחליף: אותו תרגיל בדרגה הקודמת/הבאה, או תרגיל אחר מהדרגות הסמוכות
+    const near = [...(L[st.level - 2]?.ex || []), ...(L[st.level]?.ex || [])].filter(y => !st.ex.some(z => z.id === y.id || z.name === y.name));
+    sheet(x.name, [
+      ['✏️ סטים, חזרות והסבר', async () => { const v = await ask(x.name, [{label: 'שם', value: x.name, req: true}, {label: 'סטים', value: String(x.sets), num: true}, {label: 'חזרות / זמן', value: x.reps}, {label: 'הסבר', value: x.how || ''}]);
+        if(v) setEx(st.ex.map((y, j) => j === i ? Object.assign({}, y, {name: v[0], sets: +v[1] || 1, reps: v[2], how: v[3]}) : y)); }],
+      ...near.slice(0, 6).map(y => [`🔄 החלפה ב: ${y.name} (${y.sets}×${y.reps})`, () => setEx(st.ex.map((z, j) => j === i ? y : z))]),
+      ['🗑️ הסרה מהדרגה', () => setEx(st.ex.filter((_, j) => j !== i))],
+    ]);
+  });
+}
+/** מסך האימון: כל תרגיל עם עיגולים לסטים. נשמר במכשיר, כך שאפשר לצאת ולחזור באמצע. */
+function openWorkout(){
+  const st = ל.workoutState(KF());
+  let a = storeJson(WK_ACTIVE, null);
+  if(!a || a.level !== st.level) a = {level: st.level, start: Date.now(), sets: {}};
+  store(WK_ACTIVE, JSON.stringify(a));
+  $('wk-title').textContent = `אימון · דרגה ${st.level}`;
+  const draw = () => {
+    $('wk-body').innerHTML = `<div class="note" style="margin:0 0 10px">לוחצים על עיגול אחרי כל סט. לא עוצרים נשימה, נושפים במאמץ.</div>` + st.ex.map((x, i) => {
+      const n = a.sets[x.id] || 0;
+      return `<div class="wk-ex${n >= x.sets ? ' done' : ''}"><h3>${esc(x.name)}<span>${x.sets > 1 ? x.sets + ' × ' : ''}${esc(x.reps)}</span></h3>${x.how ? `<p>${esc(x.how)}</p>` : ''}
+        <div class="wk-sets">${Array.from({length: x.sets}, (_, k) => `<button type="button" data-set="${x.id}" data-k="${k}" class="${k < n ? 'on' : ''}" aria-label="סט ${k + 1}">${k < n ? '✓' : k + 1}</button>`).join('')}</div></div>`;
+    }).join('') + `<button class="btn primary pl-go" type="button" id="wk-fin2">סיום האימון ✓</button>`;
+    $('wk-fin2').onclick = finishWorkout;
+  };
+  $('wk-body').onclick = e => { const b = e.target.closest('[data-set]'); if(!b) return;
+    const id = b.dataset.set, k = +b.dataset.k; a.sets[id] = (a.sets[id] || 0) > k ? k : k + 1; store(WK_ACTIVE, JSON.stringify(a)); draw(); };
+  draw();
+  if(!$('dlg-wk').open) $('dlg-wk').showModal();
+}
+$('wk-close').onclick = () => { $('dlg-wk').close(); if(hTab === 'plan') renderPlan(); };
+$('wk-fin').onclick = () => finishWorkout();
+async function finishWorkout(){
+  const st = ל.workoutState(KF()), a = storeJson(WK_ACTIVE, null);
+  if(!a) return $('dlg-wk').close();
+  const done = st.ex.filter(x => (a.sets[x.id] || 0) > 0).length;
+  let feel = 'ok', pain = false;
+  const ok = await ask('איך היה?', [], {ok: 'שמירה', no: 'חזרה לאימון',
+    html: `<div class="note" style="margin:0">${done} מתוך ${st.ex.length} תרגילים</div>
+      <div class="wk-feel" id="wk-feel"><button type="button" data-f="easy">😌<br>קל מדי</button><button type="button" data-f="ok" class="on">🙂<br>בסדר</button><button type="button" data-f="hard">😓<br>קשה</button></div>
+      <label class="rc-ing" style="border:0"><input type="checkbox" id="wk-pain"><span>הרגשתי כאב חד, לחץ או בליטה חריגים</span></label>`,
+    init: d => { d.querySelector('#wk-feel').onclick = e => { const b = e.target.closest('[data-f]'); if(!b) return; feel = b.dataset.f; d.querySelectorAll('#wk-feel button').forEach(x => x.classList.toggle('on', x === b)); };
+      d.querySelector('#wk-pain').onchange = e => { pain = e.target.checked; }; }});
+  if(!ok) return;
+  const minutes = Math.max(10, Math.min(120, Math.round((Date.now() - a.start) / 6e4)));
+  const rec = {id: 'a' + uid(), date: today(), type: 'strength', name: '', km: null, minutes, level: st.level <= 2 ? 0 : st.level <= 4 ? 1 : 2,
+    plan: {level: st.level, at: nowIso(), feel, pain, done, total: st.ex.length}, manual: false, updatedAt: nowIso(), deleted: false};
+  rec.kcal = ל.activityKcal(rec, ל.weightOn(KF(), today()));
+  saveK('acts', rec);
+  store(WK_ACTIVE, '');
+  $('dlg-wk').close();
+  const after = ל.workoutState(KF());
+  toast(pain ? '⚠️ נרשם. כדאי לנוח ולהתייעץ עם הרופא' : after.advice === 'up' ? '💪 כל הכבוד! אפשר לעלות דרגה' : `💪 נרשם (${after.atLevel}/${after.need || '∞'})`, {ms: 5000});
+  hTab = 'plan'; renderKcal();
+}
+
 $('fit-hist').onclick = e => { const b = e.target.closest('[data-a]'); if(b) openKAct(live(KF().acts).find(x => x.id === b.dataset.a)); };
 
 /* ---------- שעות שינה: מהטלפון (מתי המסך כבה בלילה ומתי נפתח בבוקר) ---------- */
@@ -3311,7 +3447,7 @@ $('ka-ok').onclick = () => {
   const auto = ל.activityKcal(ka, ל.weightOn(KF(), kcDate));
   saveK('acts', {id: ka.id || 'a' + uid(), date: ka.date || kcDate, type: ka.type, name: ka.type === 'other' ? (ka.name || '').trim() : '',
     km: by === 'km' ? +ka.km : null, minutes: by === 'km' ? ל.activityMinutes(ka) : +ka.minutes, level: +ka.level,
-    kcal: ka.manualKcal ?? auto, manual: ka.manualKcal != null && ka.manualKcal !== auto, updatedAt: nowIso(), deleted: false});
+    kcal: ka.manualKcal ?? auto, manual: ka.manualKcal != null && ka.manualKcal !== auto, updatedAt: nowIso(), deleted: false, ...(ka.plan ? {plan: ka.plan} : {})});   // אימון מהתוכנית נשאר שלה
   $('dlg-kact').close();
 };
 $('ka-del').onclick = () => {
@@ -7258,6 +7394,8 @@ function handleHash(){
     history.replaceState(null, '', location.pathname); show('today');
   }else if(h === '#meds'){
     history.replaceState(null, '', location.pathname); show('meds');
+  }else if(h === '#plan'){
+    history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'plan'; renderKcal();
   }else if(h === '#sleep'){
     history.replaceState(null, '', location.pathname); show('kcal'); hTab = 'sleep'; renderKcal();
   }else if(h === '#weight'){
