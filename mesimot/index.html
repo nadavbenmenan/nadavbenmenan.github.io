@@ -7686,7 +7686,9 @@ function renderPrefs(){
       <div><span class="k">הנתונים נשמרים</span><span class="v">${LOCAL ? 'בטלפון (+ גיבוי לדרייב)' : 'בגיטהאב ובמכשיר'}</span></div></div>
     <div class="btns"><button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש / עדכון</button></div>
     <div class="note">ההתקנה מחדש מאותו קישור שומרת את כל הנתונים.</div></div>`;
-  $('pf-upd').onclick = () => window.open('https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3', '_blank');
+  $('pf-upd').onclick = () => { const u = 'https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3';
+    // באפליקציה: בדפדפן של הטלפון (האפליקציה יושבת על אותה כתובת, ובפנים הקובץ לא יורד)
+    if(NATIVE) NPhone.openUrl({url: u}).catch(() => { location.href = u; }); else window.open(u, '_blank'); };
   if(pfPage === 'lists') renderPfLists();
   if(pfPage === 'share') renderPfShare();
   if(pfPage === 'sound') renderPfSound();
