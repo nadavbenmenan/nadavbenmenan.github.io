@@ -729,6 +729,9 @@
   .cal-row .btn{display:inline-flex;align-items:center;gap:8px;flex:none}
   .cal-row .note{flex:1}
   .shop-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .shop-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .cl-btn span{max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cl-btn[data-st=on]{border-color:var(--green,#2e9d5b)} .cl-btn[data-st=error]{border-color:var(--red)} .cl-btn[data-st=connecting]{opacity:.75}
   #shop-wa{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;color:#1a8f4c;font-size:14px}
   #shop-wa[hidden]{display:none}
   .shop-add{display:flex;gap:8px;margin-top:14px}
@@ -794,7 +797,7 @@
 <!-- ===== היסטוריה ===== -->
 <main class="screen" id="scr-shop" hidden>
   <div class="shop-head"><h1 class="hello">קניות</h1>
-    <button class="btn" id="shop-wa" type="button" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>שליחה בוואטסאפ</button></div>
+    <div class="shop-acts"><button class="btn cl-btn" id="shop-cloud" type="button" data-st="off" title="שיתוף עם עוד אנשים">👥 <span>שיתוף</span></button>    <button class="btn" id="shop-wa" type="button" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>שליחה בוואטסאפ</button></div></div>
   <div class="shop-add">
     <input type="text" id="shop-in" placeholder="מה צריך לקנות?" aria-label="מוצר" enterkeyhint="done" autocomplete="off">
     <button class="btn primary" id="shop-add" type="button">הוספה</button>
@@ -806,7 +809,7 @@
 </main>
 
 <main class="screen" id="scr-recipes" hidden>
-  <h1 class="hello">מתכונים</h1>
+  <div class="shop-head"><h1 class="hello">מתכונים</h1><button class="btn cl-btn" id="rc-cloud" type="button" data-st="off" title="שיתוף עם עוד אנשים">👥 <span>שיתוף</span></button></div>
   <div class="shop-add"><input type="search" id="rc-q" placeholder="מה מתחשק לך להכין?" aria-label="חיפוש מתכון" autocomplete="off"></div>
   <div class="opts rc-cats" id="rc-cats"></div>
   <div id="rc-list"></div>
@@ -1609,6 +1612,7 @@ const data = () => ({tasks: D.tasks, occ: D.occ, domains: D.domains, config: D.c
 function persist(name, pending){
   store(FILES[name].cache, JSON.stringify(D.file[name]));
   if(pending) store(FILES[name].pending, '1');
+  try{ if(CL_FILE[name]) clSoon(name); }catch(e){}   // קבוצה משותפת: עולה לענן
 }
 function saveTask(t){
   t = Object.assign({}, t, {updatedAt: nowIso()});
@@ -1638,6 +1642,222 @@ function migrate(){
 }
 let syncTimer = null;
 function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); afterChangeNative(); }
+
+/* ---------- ענן משותף: קניות ומתכונים (Firebase) ---------- */
+// רק הקניות והמתכונים עולים לענן, ורק אחרי שיוצרים קבוצה או מצטרפים אליה. כל השאר נשאר בטלפון.
+// groups/{gid} = {name, owner, members: {uid: true}, names: {uid: 'שם'}, createdAt}
+// groups/{gid}/shop/{id}, groups/{gid}/recipes/{id} = {j: הרשומה כ-JSON, u: updatedAt, by: uid}
+// הקוד של הקבוצה (gid) ארוך ואקראי, ומי שמחזיק אותו יכול להצטרף. חוקי האבטחה בשרת חוסמים כל אחד אחר.
+// כל רשומה נכנסת לפי מי שעודכן אחרון (ליבה.mergeById), כמו בשאר האפליקציה.
+// הגדרות הפרויקט (firebaseConfig) הן מזהה ציבורי ולא סוד. ההגנה היא חוקי האבטחה.
+const CLOUD_CFG = null;
+const CL_KEY = 'משימות.ענן', CL_CFG_KEY = 'משימות.ענן-הגדרות';
+const CL_FILE = {shop: ['shop', 'items'], recipes: ['recipes', 'recipes']};
+const CL = {fb: null, user: null, unsub: [], remote: {shop: new Map(), recipes: new Map()}, ready: {}, status: 'off', err: '', group: null, t: {}};
+const clCfg = () => CLOUD_CFG || storeJson(CL_CFG_KEY, null);
+const clGroup = () => storeJson(CL_KEY, null);
+const clMyName = () => (D.config.userName || '').trim() || 'חבר/ה';
+const clLink = gid => 'https://nadavbenmenan.github.io/mesimot/#join=' + gid;
+function clRandomId(n){
+  const abc = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(n); crypto.getRandomValues(b);
+  return Array.from(b, x => abc[x % abc.length]).join('');
+}
+/** קוד או קישור הזמנה → הקוד. */
+function clParseCode(s){
+  s = String(s || '').trim();
+  const m = /join=([a-z0-9]{12,40})/i.exec(s) || /^([a-z0-9]{12,40})$/i.exec(s.replace(/[\s-]/g, ''));
+  return m ? m[1].toLowerCase() : null;
+}
+/** firebaseConfig שהודבק (קוד JS או JSON) → אובייקט. */
+function clParseCfg(s){
+  const o = {};
+  for(const m of String(s || '').matchAll(/["']?(apiKey|authDomain|projectId|storageBucket|messagingSenderId|appId)["']?\s*:\s*["']([^"']+)["']/g)) o[m[1]] = m[2];
+  return o.apiKey && o.projectId && o.appId ? o : null;
+}
+function clErrText(e){
+  const c = e?.code || '';
+  if(/permission-denied/.test(c)) return 'אין הרשאה. צריך להדביק את חוקי האבטחה ב-Firebase, או שהוצאת מהקבוצה';
+  if(/unavailable|network/.test(c)) return 'אין חיבור לרשת. השינויים יעלו כשיחזור החיבור';
+  if(/admin-restricted|operation-not-allowed/.test(c)) return 'הכניסה האנונימית לא מופעלת ב-Firebase (Authentication ← Anonymous)';
+  if(/api-key|invalid-api/.test(c)) return 'הגדרות Firebase לא תקינות';
+  return e?.message || String(e);
+}
+async function clLoad(){
+  if(CL.fb) return CL.fb;
+  const cfg = clCfg(); if(!cfg) throw new Error('החיבור לענן עוד לא הוגדר');
+  const [a, au, fs] = await Promise.all([import('./fb-app.js'), import('./fb-auth.js'), import('./fb-store.js')]);
+  const app = a.initializeApp(cfg);
+  CL.fb = {au, fs, auth: au.getAuth(app), db: fs.getFirestore(app)};
+  return CL.fb;
+}
+async function clUser(){
+  const f = await clLoad();
+  await f.auth.authStateReady();
+  CL.user = f.auth.currentUser || (await f.au.signInAnonymously(f.auth)).user;
+  return CL.user;
+}
+const clRef = (gid, ...p) => CL.fb.fs.doc(CL.fb.db, 'groups', gid, ...p);
+function clStop(){
+  CL.unsub.forEach(u => { try{ u(); }catch(e){} }); CL.unsub = [];
+  CL.ready = {}; CL.remote.shop.clear(); CL.remote.recipes.clear(); CL.group = null;
+}
+/** מתחברים לקבוצה ששמורה בטלפון ומאזינים לשינויים. גם אחרי התקנה מחדש: מצטרפים שוב עם אותו קוד. */
+async function clStart(){
+  const g = clGroup(); clStop();
+  if(!g || !clCfg()){ CL.status = 'off'; return clUi(); }
+  CL.status = 'connecting'; CL.err = ''; clUi();
+  try{
+    const f = await clLoad(), u = await clUser(), ref = clRef(g.gid);
+    const s = await f.fs.getDoc(ref);
+    if(!s.exists()){ store(CL_KEY, null); CL.status = 'off'; clUi(); return toast('הקבוצה המשותפת נמחקה', {err: true}); }
+    if(!s.data().members?.[u.uid]) await f.fs.updateDoc(ref, {[`members.${u.uid}`]: true, [`names.${u.uid}`]: clMyName()});
+    CL.unsub.push(f.fs.onSnapshot(ref, d => { CL.group = d.data() || null; if(CL.group?.name && CL.group.name !== g.name) store(CL_KEY, JSON.stringify(Object.assign({}, g, {name: CL.group.name}))); clUi(); }, clFail));
+    for(const col of Object.keys(CL_FILE))
+      CL.unsub.push(f.fs.onSnapshot(f.fs.collection(ref, col), snap => clRecv(col, snap), clFail));
+  }catch(e){ clFail(e); }
+}
+function clFail(e){ CL.status = 'error'; CL.err = clErrText(e); clUi(); }
+/** מה שהשתנה בענן נכנס לנתונים בטלפון. בפעם הראשונה: מה שיש רק בטלפון עולה לענן. */
+function clRecv(col, snap){
+  const rm = CL.remote[col], recs = [];
+  for(const ch of snap.docChanges()){
+    if(ch.type === 'removed'){ rm.delete(ch.doc.id); continue; }
+    const d = ch.doc.data(); rm.set(ch.doc.id, d.u || '');
+    if(ch.doc.metadata.hasPendingWrites) continue;   // השינוי שלנו שחזר
+    try{ recs.push(JSON.parse(d.j)); }catch(e){}
+  }
+  const [fk, arr] = CL_FILE[col];
+  if(recs.length){
+    const mine = new Map(D.file[fk][arr].map(r => [r.id, r]));
+    const fixed = recs.map(r => { if(!r.noImg) return r; const o = Object.assign({}, r, {image: mine.get(r.id)?.image || ''}); delete o.noImg; return o; });
+    D.file[fk] = FILES[fk].merge(D.file[fk], {[arr]: fixed});
+    store(FILES[fk].cache, JSON.stringify(D.file[fk]));
+    renderAll();
+    if(fk === 'recipes' && $('dlg-recipe')?.open && typeof renderRecipe === 'function'){ try{ renderRecipe(); }catch(e){} }
+  }
+  CL.status = 'on'; CL.err = '';
+  if(!CL.ready[col]){ CL.ready[col] = true; clPush(col); }
+  else if(recs.length) clSoon(col);   // מה שבטלפון חדש יותר עולה בחזרה
+  clUi();
+}
+function clSoon(col){ if(!CL.ready[col]) return; clearTimeout(CL.t[col]); CL.t[col] = setTimeout(() => clPush(col), 400); }
+function clDoc(r){
+  let j = JSON.stringify(r);
+  if(j.length > 900000 && r.image) j = JSON.stringify(Object.assign({}, r, {image: '', noImg: true}));   // תמונה גדולה מדי: נשארת רק בטלפון
+  return {j, u: r.updatedAt || '', by: CL.user?.uid || ''};
+}
+/** מעלה לענן כל רשומה שבטלפון חדשה יותר ממה שבענן. */
+async function clPush(col){
+  const g = clGroup(); if(!CL.fb || !g || !CL.ready[col]) return;
+  const [fk, arr] = CL_FILE[col], rm = CL.remote[col], fs = CL.fb.fs;
+  const out = D.file[fk][arr].filter(r => r && r.id && !/[\/]/.test(r.id)
+    && (rm.has(r.id) ? (r.updatedAt || '') > rm.get(r.id) : !r.deleted));
+  try{
+    for(let i = 0; i < out.length; i += 400){
+      const b = fs.writeBatch(CL.fb.db);
+      for(const r of out.slice(i, i + 400)){ b.set(clRef(g.gid, col, r.id), clDoc(r)); rm.set(r.id, r.updatedAt || ''); }
+      await b.commit();
+    }
+  }catch(e){ clFail(e); }
+}
+async function clCreate(){
+  const r = await ask('קבוצה משותפת חדשה', [{label: 'שם הקבוצה', value: 'הבית', req: true}, {label: 'השם שלך (יופיע לחברים)', value: D.config.userName || '', req: true}],
+    {note: 'הקניות והמתכונים שלך יעלו לענן, וכל מי שתזמין יראה וישנה אותם. כל השאר נשאר רק בטלפון.', ok: 'יצירה'});
+  if(!r) return;
+  if(r[1] !== D.config.userName) saveConfig({userName: r[1]});
+  try{
+    toast('יוצר קבוצה…');
+    const f = await clLoad(), u = await clUser(), gid = clRandomId(20);
+    await f.fs.setDoc(clRef(gid), {name: r[0], owner: u.uid, members: {[u.uid]: true}, names: {[u.uid]: r[1]}, createdAt: nowIso()});
+    store(CL_KEY, JSON.stringify({gid, name: r[0]}));
+    await clStart(); toast(`👥 נוצרה "${r[0]}". עכשיו שולחים הזמנה`);
+    clInvite();
+  }catch(e){ toast(clErrText(e), {err: true, ms: 6000}); }
+}
+async function clJoin(code){
+  if(!code){
+    const r = await ask('הצטרפות לקבוצה', [{label: 'קוד או קישור הזמנה', req: true}, {label: 'השם שלך (יופיע לחברים)', value: D.config.userName || '', req: true}], {ok: 'הצטרפות'});
+    if(!r) return;
+    code = clParseCode(r[0]);
+    if(!code) return toast('הקוד לא תקין', {err: true});
+    if(r[1] !== D.config.userName) saveConfig({userName: r[1]});
+  }
+  const cur = clGroup();
+  if(cur && cur.gid === code) return toast('כבר בקבוצה הזו');
+  if(cur && !(await ask('מעבר לקבוצה אחרת?', [], {note: `יוצאים מ"${cur.name}". הקניות והמתכונים שכבר בטלפון נשארים.`, ok: 'מעבר'}))) return;
+  try{
+    toast('מצטרף…');
+    const f = await clLoad(), u = await clUser(), ref = clRef(code), s = await f.fs.getDoc(ref);
+    if(!s.exists()) return toast('לא מצאתי קבוצה עם הקוד הזה', {err: true});
+    if(cur) await clLeaveRemote(cur.gid);
+    await f.fs.updateDoc(ref, {[`members.${u.uid}`]: true, [`names.${u.uid}`]: clMyName()});
+    store(CL_KEY, JSON.stringify({gid: code, name: s.data().name || 'קבוצה'}));
+    await clStart(); toast(`👥 הצטרפת ל"${s.data().name || 'קבוצה'}"`);
+  }catch(e){ toast(clErrText(e), {err: true, ms: 6000}); }
+}
+async function clLeaveRemote(gid){
+  const f = CL.fb, u = CL.user; if(!f || !u) return;
+  try{ await f.fs.updateDoc(clRef(gid), {[`members.${u.uid}`]: f.fs.deleteField(), [`names.${u.uid}`]: f.fs.deleteField()}); }catch(e){}
+}
+async function clLeave(){
+  const g = clGroup(); if(!g) return;
+  if(!(await ask(`יציאה מ"${g.name}"?`, [], {note: 'הקניות והמתכונים נשארים בטלפון, אבל לא יתעדכנו יותר מהחברים.', ok: 'יציאה', danger: true}))) return;
+  await clLeaveRemote(g.gid); clStop(); store(CL_KEY, null); CL.status = 'off'; clUi(); toast('יצאת מהקבוצה');
+}
+function clInvite(){
+  const g = clGroup(); if(!g) return;
+  const text = `הצטרפות לרשימת הקניות והמתכונים "${g.name}" באפליקציה "ניהול שיגרה":\n${clLink(g.gid)}\n\nבאפליקציה: קניות ← 👥 ← הצטרפות עם קוד:\n${g.gid}`;
+  sheet('📤 הזמנה לקבוצה', [
+    ['💬 שליחה בוואטסאפ', () => { const url = waLink(text); if(!window.open(url, '_blank')) location.href = url; }],
+    ['📋 העתקת הקוד', async () => { try{ await navigator.clipboard.writeText(g.gid); toast('הקוד הועתק'); }catch(e){ toast('הקוד: ' + g.gid, {ms: 8000}); } }],
+    ['📋 העתקת ההזמנה המלאה', async () => { try{ await navigator.clipboard.writeText(text); toast('ההזמנה הועתקה'); }catch(e){ toast('ההעתקה נכשלה', {err: true}); } }],
+  ], `קוד הקבוצה: ${g.gid}`);
+}
+async function clSetCfg(){
+  const r = await ask('חיבור ל-Firebase', [{label: 'מדביקים כאן את firebaseConfig', ph: 'apiKey: "…", projectId: "…", appId: "…"', req: true}],
+    {note: 'מ-Firebase: Project settings ← Your apps ← firebaseConfig. זה מזהה של הפרויקט, לא סיסמה.', ok: 'שמירה'});
+  if(!r) return;
+  const c = clParseCfg(r[0]);
+  if(!c) return toast('לא מצאתי apiKey, projectId ו-appId במה שהודבק', {err: true, ms: 6000});
+  store(CL_CFG_KEY, JSON.stringify(c)); toast('✓ נשמר. אפשר ליצור קבוצה');
+  openCloud();
+}
+function openCloud(){
+  const g = clGroup();
+  if(!clCfg()) return sheet('👥 קניות ומתכונים משותפים', [['🔌 חיבור ל-Firebase', clSetCfg]],
+    'החיבור לענן עוד לא הוגדר. אחרי החיבור אפשר ליצור קבוצה ולהזמין אליה אנשים, וכל שינוי בקניות ובמתכונים יופיע אצל כולם מיד.');
+  if(!g) return sheet('👥 קניות ומתכונים משותפים', [['➕ קבוצה חדשה', clCreate], ['🔑 הצטרפות עם קוד', () => clJoin()]],
+    'קבוצה משותפת: הקניות והמתכונים מתעדכנים אצל כל החברים מיד. המשימות, הבריאות, התרופות והאימונים נשארים רק בטלפון.');
+  const names = Object.entries(CL.group?.names || {}).map(([u, n]) => u === CL.user?.uid ? `${n} (אני)` : n);
+  const st = {on: '🟢 מחובר. כל שינוי מתעדכן אצל כולם', connecting: '🟡 מתחבר…', error: '🔴 ' + CL.err, off: '⚪ לא מחובר'}[CL.status] || '';
+  sheet(`👥 ${g.name}`, [
+    ['📤 הזמנת חבר/ה', clInvite],
+    ...(CL.status === 'error' ? [['🔄 ניסיון חיבור מחדש', clStart]] : []),
+    ['🔑 מעבר לקבוצה אחרת', () => clJoin()],
+    ['🚪 יציאה מהקבוצה', clLeave],
+  ], `${st}\n${names.length ? 'חברים: ' + names.join(', ') : ''}`);
+}
+/** כפתור 👥 בקניות ובמתכונים: מראה אם מחובר. */
+function clUi(){
+  const g = clGroup();
+  for(const id of ['shop-cloud', 'rc-cloud']){
+    const b = $(id); if(!b) continue;
+    b.dataset.st = g ? CL.status : 'off';
+    b.querySelector('span').textContent = g ? g.name : 'שיתוף';
+    b.title = g ? `משותף עם "${g.name}"` : 'שיתוף עם עוד אנשים';
+  }
+}
+async function clJoinLink(code){
+  if(!clCfg()) return toast('החיבור לענן עוד לא הוגדר כאן. 👥 ← חיבור ל-Firebase', {err: true, ms: 6000});
+  const r = await ask('הצטרפות לקבוצה משותפת', [{label: 'השם שלך (יופיע לחברים)', value: D.config.userName || '', req: true}],
+    {note: 'הקניות והמתכונים יתעדכנו אצלך ואצל כל החברים מיד.', ok: 'הצטרפות'});
+  if(!r) return;
+  if(r[0] !== D.config.userName) saveConfig({userName: r[0]});
+  clJoin(code);
+}
+$('shop-cloud').onclick = $('rc-cloud').onclick = () => openCloud();
+clUi();
+if(clGroup()) setTimeout(clStart, 300);
 
 const taskById = id => D.tasks.find(t => t.id === id);
 const domainOf = t => D.domains.find(d => d.id === t.domain) || {name: 'כללי', color: '#64748B'};
@@ -7782,6 +8002,10 @@ function handleHash(){
     const id = decodeURIComponent(h.slice(4));
     history.replaceState(null, '', location.pathname);
     tmrOpen = id; stopAlarm(true); openTimer(id);
+  }else if(h.startsWith('#join=')){
+    const code = clParseCode(h);
+    history.replaceState(null, '', location.pathname); show('shop');
+    if(code) setTimeout(() => clJoinLink(code), 300);
   }else if(h === '#morning'){
     history.replaceState(null, '', location.pathname); show('today');
   }else if(h === '#meds'){
