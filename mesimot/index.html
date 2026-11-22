@@ -1650,11 +1650,12 @@ function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout
 // הקוד של הקבוצה (gid) ארוך ואקראי, ומי שמחזיק אותו יכול להצטרף. חוקי האבטחה בשרת חוסמים כל אחד אחר.
 // כל רשומה נכנסת לפי מי שעודכן אחרון (ליבה.mergeById), כמו בשאר האפליקציה.
 // הגדרות הפרויקט (firebaseConfig) הן מזהה ציבורי ולא סוד. ההגנה היא חוקי האבטחה.
-const CLOUD_CFG = null;
+const CLOUD_CFG = {apiKey: 'AIzaSyBKxDG3nPgom7-Ejkx3bDVjaw-MQtC6K28', authDomain: 'mesimot-shared.firebaseapp.com', projectId: 'mesimot-shared',
+  storageBucket: 'mesimot-shared.firebasestorage.app', messagingSenderId: '812180315663', appId: '1:812180315663:web:d35b4a2858d019ee8e4d7a'};
 const CL_KEY = 'משימות.ענן', CL_CFG_KEY = 'משימות.ענן-הגדרות';
 const CL_FILE = {shop: ['shop', 'items'], recipes: ['recipes', 'recipes']};
 const CL = {fb: null, user: null, unsub: [], remote: {shop: new Map(), recipes: new Map()}, ready: {}, status: 'off', err: '', group: null, t: {}};
-const clCfg = () => CLOUD_CFG || storeJson(CL_CFG_KEY, null);
+const clCfg = () => storeJson(CL_CFG_KEY, null) || CLOUD_CFG;
 const clGroup = () => storeJson(CL_KEY, null);
 const clMyName = () => (D.config.userName || '').trim() || 'חבר/ה';
 const clLink = gid => 'https://nadavbenmenan.github.io/mesimot/#join=' + gid;
