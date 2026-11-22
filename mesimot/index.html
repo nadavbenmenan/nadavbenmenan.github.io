@@ -809,7 +809,8 @@
   <div id="shop-sug-box"><span class="lbl sug" id="shop-sug-lbl"></span>
   <div class="opts" id="shop-sug" aria-label="הצעות"></div></div>
   <div id="shop-list"></div>
-  <button class="btn" id="shop-clear" type="button" hidden style="width:100%;margin-top:18px;color:var(--red)">🗑 ריקון הסל</button>
+  <button class="btn" id="shop-copy" type="button" hidden style="width:100%;margin-top:18px">📋 העתקת הסל לרשימה אחרת</button>
+  <button class="btn" id="shop-clear" type="button" hidden style="width:100%;margin-top:10px;color:var(--red)">🗑 ריקון הסל</button>
 </main>
 
 <main class="screen" id="scr-recipes" hidden>
@@ -2001,6 +2002,38 @@ async function clRename(gid){
 }
 /** כשנכנסים לקניות או למתכונים: הרשימה המועדפת. */
 function clOpenDefault(col){ const d = clState().def || null; if(clActive(col) !== d) clSwitch(col, d); }
+/* --- העתקה לרשימה אחרת: מתכון אחד, או כל הסל --- */
+/** הרשימות שאפשר להעתיק אליהן (כל מה שלא בלשונית עכשיו). */
+function clTargets(col){
+  const act = clActive(col);
+  return [{gid: null, name: col === 'recipes' ? '📖 שלי' : '🛒 שלי'}, ...clState().lists.map(l => ({gid: l.gid, name: '👥 ' + l.name}))].filter(t => t.gid !== act);
+}
+function clPutTo(col, gid, recs){
+  const arr = CL_ARR[col], f = clFile(gid, col);
+  clStore(gid, col, Object.assign({}, f, {v: 1, [arr]: ל.mergeById(f[arr] || [], recs)}));
+  if(gid) clSoon(gid, col); else store(FILES[col].pending, '1');
+}
+/** אל הרשימה: מוצר שכבר קיים שם חוזר לסל, חדש נוסף. מחזיר כמה נוספו. */
+function clCopyShop(gid, live){
+  const t = nowIso(), items = clFile(gid, 'shop').items || [], recs = [];
+  for(const x of live){
+    const r = ל.shopAdd(items.concat(recs), x.name, t); if(!r) continue;
+    if(!r.cat && x.cat) r.cat = x.cat;
+    recs.push(r);
+  }
+  if(recs.length) clPutTo('shop', gid, recs);
+  return recs.length;
+}
+/** מתכון ברשימה: אותו שם שם מתעדכן, אחרת עותק חדש. */
+function clCopyRecipe(gid, r){
+  const have = (clFile(gid, 'recipes').recipes || []).find(x => !x.deleted && (x.title || '').trim() === (r.title || '').trim());
+  clPutTo('recipes', gid, [Object.assign({}, r, {id: have ? have.id : uid(), updatedAt: nowIso(), deleted: false})]);
+}
+function clCopyMenu(col, what, run){
+  const ts = clTargets(col);
+  sheet('📋 העתקה של ' + what + ' אל', ts.map(t => [t.name, () => { const n = run(t.gid); toast(n === 0 ? 'הכול כבר שם' : '✓ הועתק ל' + t.name.replace(/^\S+ /, '')); }]));
+}
+const clCanCopy = col => clTargets(col).length > 0 && (clState().lists.length > 0);
 
 /* --- הלשוניות בקניות ובמתכונים, הבקשות, והעמוד בהגדרות --- */
 function clTabsHtml(col){
@@ -2407,6 +2440,7 @@ function renderShop(){
   const sug = ל.shopSuggest(items, q, q ? 10 : 16);
   $('shop-wa').hidden = !groups.length;
   $('shop-clear').hidden = !groups.length;
+  $('shop-copy').hidden = !groups.length || !clCanCopy('shop');
   $('shop-sug-lbl').textContent = '';
   // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
   if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
@@ -2427,6 +2461,8 @@ $('shop-clear').onclick = async () => {
   toast('הסל רוקן', {undo: () => { const t2 = nowIso();
     D.file.shop = {v: 1, items: ל.mergeById(D.file.shop.items, live.map(x => Object.assign({}, x, {updatedAt: t2})))}; persist('shop', true); changed(); renderShop(); }});
 };
+// העתקת הסל: כל מה שברשימה עכשיו נכנס לרשימה אחרת (שלי או משותפת). הסל כאן לא משתנה
+$('shop-copy').onclick = () => { const live = ל.shopList(D.file.shop.items); if(live.length) clCopyMenu('shop', 'הסל', g => clCopyShop(g, live)); };
 // שליחה בוואטסאפ: נפתח וואטסאפ עם ההודעה מוכנה, ובוחרים למי לשלוח
 $('shop-wa').onclick = () => {
   const t = ל.shopText(D.file.shop.items);
@@ -2546,6 +2582,7 @@ function recipeMenu(r){
     ['✏️ עריכת המתכון', () => openRecipeEditor(r)],
     ['🖼️ החלפת תמונה', () => openImagePicker(r)],
     [`🗂️ קטגוריה: ${ל.recipeCat(r)}`, () => sheet(`קטגוריה: ${r.title}`, ל.RECIPE_CATS.map(c => [(ל.recipeCat(r) === c ? '✓ ' : '') + c, () => { saveRecipe(Object.assign({}, r, {cat: c})); toast(`✓ ${r.title} → ${c}`); }]))],
+    ...(clCanCopy('recipes') ? [['📋 העתקה לרשימה אחרת', () => clCopyMenu('recipes', 'המתכון', g => { clCopyRecipe(g, r); return 1; })]] : []),
     ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
   ]);
 }
