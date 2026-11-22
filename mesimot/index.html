@@ -671,6 +671,10 @@
   .exi-var{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.exi-var div{background:var(--card);border-radius:14px;padding:10px;font-size:14px}.exi-var b{display:block;margin-bottom:4px}
   .pl-week{display:flex;justify-content:space-between;gap:8px;width:100%;border:0;background:var(--soft);border-radius:14px;padding:10px 12px;margin-top:10px;font:inherit;color:inherit;text-align:start}
   .pl-week b{color:var(--accent)}
+  #ks-body .note{white-space:pre-line}
+  #pl-hist .more-row{width:100%;border:0;background:transparent;font:inherit;color:inherit;text-align:start}
+  #pl-hist .more-row.flash{animation:plFlash 2.4s ease-out}
+  @keyframes plFlash{0%,40%{background:color-mix(in srgb,var(--accent) 22%,transparent)}100%{background:transparent}}
   .wk-ex{border-radius:16px;background:var(--card);padding:12px 14px;margin-bottom:10px;border:2px solid transparent}
   .wk-ex.done{border-color:var(--accent);opacity:.75}
   .wk-ex h3{margin:0;font-size:17px;display:flex;justify-content:space-between;gap:8px}.wk-ex h3 span{color:var(--accent);white-space:nowrap}
@@ -2661,7 +2665,7 @@ const EXFIG = (() => {
   return {svg, has: id => !!P[id], ids: Object.keys(P)};
 })();
 const WK_ACTIVE = 'משימות.אימון-פעיל';
-let planEdit = () => {};
+let planEdit = () => {}, plFlash = {};
 onHold($('h-plan'), '[data-ex]', el => planEdit(+el.dataset.ex));
 /** יעד שבועי ורצף (כמו באפליקציות כושר): כמה אימונים השבוע (מראשון), וכמה שבועות ברצף עמדת ביעד. */
 function planWeek(st){
@@ -2706,7 +2710,7 @@ function renderPlan(){
       <div class="note">לחיצה על תרגיל: הסבר מפורט. לחיצה ארוכה: שינוי סטים/חזרות, החלפה או הסרה.</div>
       ${st.custom ? '<button class="txt-btn" type="button" id="pl-reset">↺ חזרה לתרגילים המקוריים של הדרגה</button>' : ''}</div>
     <div class="sec"><h2>⚠️ חשוב</h2><ul class="pl-safe">${ל.WORKOUT_SAFETY.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
-    ${st.sessions.length ? `<div class="sec"><h2>האימונים שלי <small class="note" style="margin:0">${st.sessions.length} אימונים · ${planWeek(st).mins} דק׳ בסך הכול</small></h2><div class="more-list">${st.sessions.slice(-12).reverse().map(a => `<div class="more-row"><span class="i">${a.plan.pain ? '⚠️' : {easy: '😌', ok: '🙂', hard: '😓'}[a.plan.feel] || '💪'}</span><span class="b"><span class="t">דרגה ${a.plan.level} · ${a.plan.done}/${a.plan.total} תרגילים</span><span class="s">${esc(kDayLabel(a.date))} · ${a.minutes} דק׳</span></span></div>`).join('')}</div></div>` : ''}
+    ${st.sessions.length ? `<div class="sec" id="pl-hist"><h2>האימונים שלי <small class="note" style="margin:0">${st.sessions.length} אימונים · ${planWeek(st).mins} דק׳ בסך הכול</small></h2><div class="more-list">${st.sessions.slice(-12).reverse().map(a => `<button type="button" class="more-row${plFlash.id === a.id && Date.now() < plFlash.until ? ' flash' : ''}" data-pa="${esc(a.id)}"><span class="i">${a.plan.pain ? '⚠️' : {easy: '😌', ok: '🙂', hard: '😓'}[a.plan.feel] || '💪'}</span><span class="b"><span class="t">דרגה ${a.plan.level} · ${a.plan.done}/${a.plan.total} תרגילים</span><span class="s">${esc(kDayLabel(a.date))} · ${a.minutes} דק׳${a.plan.mode === 'timed' ? ' · ⏱ על זמן' : ''}</span></span><span class="go">›</span></button>`).join('')}</div></div>` : ''}
     <button class="txt-btn" type="button" id="pl-stop" style="margin-top:14px;color:var(--muted)">הפסקת התוכנית</button>`;
   const setLevel = lv => { savePlanCfg({level: lv, levelAt: nowIso()}); toast(`💪 דרגה ${lv}: ${L[lv - 1].name}`); renderPlan(); };
   $('pl-up').onclick = () => setLevel(st.level + 1);
@@ -2730,6 +2734,7 @@ function renderPlan(){
   };
   // לחיצה: הסבר מפורט. לחיצה ארוכה: שינוי
   box.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => { const i = +b.dataset.ex; openExInfo(st.ex[i], () => planEdit(i)); });
+  box.querySelectorAll('[data-pa]').forEach(b => b.onclick = () => { const x = st.sessions.find(y => y.id === b.dataset.pa); if(x) openPlanSession(x); });
   if($('pl-goal')) $('pl-goal').onclick = () => sheet('כמה אימונים בשבוע?', [2, 3, 4].map(n => [`${n} אימונים בשבוע${n === 3 ? ' (מומלץ)' : ''}`, () => { savePlanCfg({weekGoal: n}); renderPlan(); }]));
 }
 /* ---------- הסבר מפורט על תרגיל (לחיצה), שינוי (לחיצה ארוכה) ---------- */
@@ -2921,7 +2926,7 @@ function wkTickUpd(){
       if(tl[r.i]) r.end += tl[r.i].secs * 1000;
     }
     wkSave();
-    if(moved){ if(tl[r.i]) wkAnnounce(tl[r.i], tl); else { wkBeep(true); wkSay('סיימנו! כל הכבוד'); } wkDrawTimed(); return; }
+    if(moved){ if(tl[r.i]) wkAnnounce(tl[r.i], tl); else { wkBeep(true); wkSay('סיימנו! כל הכבוד'); } wkDrawTimed(); if(!tl[r.i]) finishWorkout(); return; }
   }
   const g = tl[r.i]; if(!g) return;
   const left = wkLeft(), s = Math.ceil(left);
@@ -2960,8 +2965,9 @@ async function finishWorkout(){
       d.querySelector('#wk-pain').onchange = e => { pain = e.target.checked; }; }});
   if(!ok) return;
   const minutes = Math.max(10, Math.min(120, Math.round((Date.now() - a.start) / 6e4)));
-  const rec = {id: 'a' + uid(), date: today(), type: 'strength', name: '', km: null, minutes, level: st.level <= 2 ? 0 : st.level <= 4 ? 1 : 2,
-    plan: {level: st.level, at: nowIso(), feel, pain, done, total: st.ex.length}, manual: false, updatedAt: nowIso(), deleted: false};
+  const rec = {id: 'a' + uid(), date: today(), type: 'strength', name: `תוכנית אימונים · דרגה ${st.level}`, km: null, minutes, level: st.level <= 2 ? 0 : st.level <= 4 ? 1 : 2,
+    plan: {level: st.level, at: nowIso(), feel, pain, done, total: st.ex.length, mode: a.mode || 'list',
+      ex: st.ex.map(x => [x.name, Math.min(a.sets[x.id] || 0, x.sets), x.sets])}, manual: false, updatedAt: nowIso(), deleted: false};
   rec.kcal = ל.activityKcal(rec, ל.weightOn(KF(), today()));
   saveK('acts', rec);
   store(WK_ACTIVE, ''); wk = null;
@@ -2969,6 +2975,16 @@ async function finishWorkout(){
   const after = ל.workoutState(KF());
   toast(pain ? '⚠️ נרשם. כדאי לנוח ולהתייעץ עם הרופא' : after.advice === 'up' ? '💪 כל הכבוד! אפשר לעלות דרגה' : `💪 נרשם (${after.atLevel}/${after.need || '∞'})`, {ms: 5000});
   hTab = 'plan'; renderKcal();
+  // מראים איפה זה נכנס: "האימונים שלי", עם האימון החדש מסומן
+  plFlash = {id: rec.id, until: Date.now() + 3000}; renderPlan();
+  setTimeout(() => document.querySelector(`#pl-hist [data-pa="${rec.id}"]`)?.scrollIntoView({block: 'center', behavior: 'smooth'}), 350);
+}
+/** אימון מ"האימונים שלי": מה נעשה בו (תרגילים וסטים), ועריכה/מחיקה. */
+function openPlanSession(a){
+  const p = a.plan, feel = {easy: '😌 קל מדי', ok: '🙂 בסדר', hard: '😓 קשה'}[p.feel] || '';
+  sheet(`${kDayLabel(a.date)} · דרגה ${p.level} · ${a.minutes} דק׳`, [['✏️ עריכה (זמן, תאריך) או מחיקה', () => openKAct(a)]],
+    `${feel}${p.pain ? ' · ⚠️ כאב חריג' : ''} · ${p.done}/${p.total} תרגילים${p.mode === 'timed' ? ' · ⏱ על זמן' : ''}` +
+    (p.ex ? '\n' + p.ex.map(([n, d, of]) => `${d >= of ? '✓' : d ? '◐' : '○'} ${n} (${d}/${of})`).join('\n') : ''));
 }
 
 $('fit-hist').onclick = e => { const b = e.target.closest('[data-a]'); if(b) openKAct(live(KF().acts).find(x => x.id === b.dataset.a)); };
