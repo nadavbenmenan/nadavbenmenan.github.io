@@ -730,13 +730,11 @@
   .cal-row .note{flex:1}
   .shop-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .shop-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  .cl-btn span{max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .cl-btn{position:relative} .cl-badge{position:absolute;top:-6px;left:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font:700 12px/20px inherit;font-style:normal;text-align:center;padding:0 5px}
-  .cl-lists{margin:0 0 10px} .cl-cards{display:grid;gap:10px} .cl-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
-  .cl-card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset} .cl-card.req{border-color:var(--accent)} .cl-card .t{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
-  .cl-card .t .s{color:var(--muted);font-size:.85em;flex-basis:100%} .cl-card .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .cl-card .btns .btn{flex:1;min-width:0}
-  .cl-mem{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .cl-mem .x{border:0;background:none;color:var(--red);min-width:28px;min-height:28px;cursor:pointer} .cl-main{display:flex;gap:10px;margin-top:16px} .cl-main .btn{flex:1}
-  .cl-btn[data-st=on]{border-color:var(--green,#2e9d5b)} .cl-btn[data-st=error]{border-color:var(--red)} .cl-btn[data-st=connecting]{opacity:.75}
+  .cl-tabs{overflow-x:auto;scrollbar-width:none;margin:8px 0 12px} .cl-tabs::-webkit-scrollbar{display:none} .cl-tabs button{flex:1 0 auto;padding:0 12px;white-space:nowrap}
+  .cl-tabs .cl-plus{flex:0 0 auto;color:var(--accent)} .cl-tabs button:only-child{flex:1}
+  .cl-reqs{display:grid;gap:8px;margin:0 0 12px} .cl-req{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:8px 12px}
+  .cl-req span{flex:1} .cl-req .btn{min-width:48px;padding:0}
+  .cl-cards{display:grid;gap:8px} .cl-main{display:flex;gap:10px;margin-top:14px} .cl-main .btn.primary{flex:1} .cl-i{min-width:48px}
   #shop-wa{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;color:#1a8f4c;font-size:14px}
   #shop-wa[hidden]{display:none}
   .shop-add{display:flex;gap:8px;margin-top:14px}
@@ -802,8 +800,8 @@
 <!-- ===== היסטוריה ===== -->
 <main class="screen" id="scr-shop" hidden>
   <div class="shop-head"><h1 class="hello">קניות</h1>
-    <div class="shop-acts"><button class="btn cl-btn" id="shop-cloud" type="button" data-st="off" title="שיתוף עם עוד אנשים">👥 <span>שיתוף</span><i class="cl-badge" hidden></i></button>    <button class="btn" id="shop-wa" type="button" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>שליחה בוואטסאפ</button></div></div>
-  <div class="opts cl-lists" id="shop-lists" hidden></div>
+        <button class="btn" id="shop-wa" type="button" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>שליחה בוואטסאפ</button></div>
+  <div class="subtabs cl-tabs" id="shop-tabs"></div><div class="cl-reqs" id="shop-reqs" hidden></div>
   <div class="shop-add">
     <input type="text" id="shop-in" placeholder="מה צריך לקנות?" aria-label="מוצר" enterkeyhint="done" autocomplete="off">
     <button class="btn primary" id="shop-add" type="button">הוספה</button>
@@ -815,7 +813,8 @@
 </main>
 
 <main class="screen" id="scr-recipes" hidden>
-  <div class="shop-head"><h1 class="hello">מתכונים</h1><button class="btn cl-btn" id="rc-cloud" type="button" data-st="off" title="שיתוף עם עוד אנשים">👥 <span>שיתוף</span><i class="cl-badge" hidden></i></button></div>
+  <h1 class="hello">מתכונים</h1>
+  <div class="subtabs cl-tabs" id="rc-tabs"></div><div class="cl-reqs" id="rc-reqs" hidden></div>
   <div class="shop-add"><input type="search" id="rc-q" placeholder="מה מתחשק לך להכין?" aria-label="חיפוש מתכון" autocomplete="off"></div>
   <div class="opts rc-cats" id="rc-cats"></div>
   <div id="rc-list"></div>
@@ -1617,10 +1616,10 @@ const D = {
 let inbox = storeJson(K.inbox, {calendar: [], mail: []});
 const data = () => ({tasks: D.tasks, occ: D.occ, domains: D.domains, config: D.config});
 function persist(name, pending){
-  const sh = name === 'shop' ? clActive() : null;   // רשימה משותפת: קובץ משלה, ועולה לענן (לא לגיטהאב)
-  store(name === 'shop' ? clShopKey(sh) : FILES[name].cache, JSON.stringify(D.file[name]));
+  const sh = name === 'shop' || name === 'recipes' ? clActive(name) : null;   // רשימה משותפת: קובץ משלה, ועולה לענן (לא לגיטהאב)
+  store(sh ? clKey(sh, name) : FILES[name].cache, JSON.stringify(D.file[name]));
   if(pending && !sh) store(FILES[name].pending, '1');
-  try{ if(sh) clSoon(sh, 'shop'); if(name === 'recipes') clSoonAll('recipes'); }catch(e){}
+  try{ if(sh) clSoon(sh, name); }catch(e){}
 }
 function saveTask(t){
   t = Object.assign({}, t, {updatedAt: nowIso()});
@@ -1652,19 +1651,20 @@ let syncTimer = null;
 function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); afterChangeNative(); }
 
 /* ---------- רשימות משותפות: קניות ומתכונים בענן (Firebase) ---------- */
-// רק הקניות והמתכונים עולים לענן, ורק של רשימות משותפות. כל השאר נשאר בטלפון.
-// names/{שם}            = {gid, owner, name}: השם של כל רשימה ייחודי. דרכו מצטרפים.
+// בקניות ובמתכונים יש לשוניות: "שלי" (רק בטלפון), כל רשימה משותפת, ו"＋" (יצירה או התחברות).
+// names/{שם}            = {gid, owner, name}: השם של כל רשימה ייחודי. דרכו מתחברים.
 // groups/{gid}          = {name, key, owner, members: {uid: true}, names: {uid: 'שם'}, createdAt}
-// groups/{gid}/requests/{uid} = {name, status: pending|approved|denied, at}: בקשת הצטרפות. חבר מאשר.
+// groups/{gid}/requests/{uid} = {name, status: pending|approved|denied, at}: בקשת התחברות. חבר מאשר.
 // groups/{gid}/keys/{סוד}     = {uid}: "מפתח חבר" ששמור בטלפון (ובגיבוי). אחרי התקנה מחדש (משתמש חדש) חוזרים איתו בלי אישור,
 //                               רק אם המשתמש הקודם של המפתח עדיין חבר. מי שהוצא לא יכול לחזור איתו.
 // groups/{gid}/shop/{id}, groups/{gid}/recipes/{id} = {j: הרשומה כ-JSON, u: updatedAt, by}
-// לכל רשימה משותפת קובץ קניות משלה בטלפון (משימות.קניות@gid). המסך מראה את הרשימה שנבחרה ("שלי" = הפרטית).
-// המתכונים משותפים לכל הרשימות. כל רשומה נכנסת לפי מי שעודכן אחרון (ליבה.mergeById), כמו בשאר האפליקציה.
+// לכל רשימה קבצים משלה בטלפון (משימות.קניות@gid, משימות.מתכונים@gid). D.file.shop / D.file.recipes = הלשונית שנבחרה,
+// וכך כל שאר הקוד של הקניות והמתכונים עובד בלי שינוי. כל רשומה נכנסת לפי מי שעודכן אחרון (ליבה.mergeById).
 // הגדרות הפרויקט (firebaseConfig) הן מזהה ציבורי ולא סוד. ההגנה היא חוקי האבטחה (חוקי אבטחה Firebase.txt).
 const CLOUD_CFG = {apiKey: 'AIzaSyBKxDG3nPgom7-Ejkx3bDVjaw-MQtC6K28', authDomain: 'mesimot-shared.firebaseapp.com', projectId: 'mesimot-shared',
   storageBucket: 'mesimot-shared.firebasestorage.app', messagingSenderId: '812180315663', appId: '1:812180315663:web:d35b4a2858d019ee8e4d7a'};
 const CL_KEY = 'משימות.ענן', CL_CFG_KEY = 'משימות.ענן-הגדרות', CL_COLS = ['shop', 'recipes'];
+const CL_ARR = {shop: 'items', recipes: 'recipes'}, CL_PTR = {shop: 'active', recipes: 'activeRc'};
 const CL = {fb: null, user: null, g: {}, req: {}, status: 'off', err: '', t: {}};
 const clCfg = () => storeJson(CL_CFG_KEY, null) || CLOUD_CFG;
 const clMyName = () => (D.config.userName || '').trim() || 'חבר/ה';
@@ -1675,36 +1675,38 @@ function clRandomId(n){
   const abc = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(n); crypto.getRandomValues(b);
   return Array.from(b, x => abc[x % abc.length]).join('');
 }
-/** {lists: [{gid, name, key, owner}], active: gid או null (= שלי), pend: [{gid, name, at}], seen: [...]} */
+/** {lists: [{gid, name, key, uid, owner}], active: הלשונית בקניות, activeRc: הלשונית במתכונים (null = שלי), pend: [{gid, name, at}], seen} */
 function clState(){
   let s = storeJson(CL_KEY, null) || {};
   if(s.gid) s = {lists: [{gid: s.gid, name: s.name}], active: s.gid};   // הגרסה הראשונה: קבוצה אחת
   s.lists = s.lists || []; s.pend = s.pend || []; s.seen = s.seen || [];
-  if(s.active && !s.lists.some(l => l.gid === s.active)) s.active = null;
+  for(const p of ['active', 'activeRc']) if(s[p] && !s.lists.some(l => l.gid === s[p])) s[p] = null;
   return s;
 }
 function clSave(s){ s.seen = s.seen.slice(-300); store(CL_KEY, JSON.stringify(s)); clUi(); clNative(); }
-function clActive(){ try{ return clState().active || null; }catch(e){ return null; } }
-function clShopKey(gid){ return gid ? 'משימות.קניות@' + gid : FILES.shop.cache; }
+/** הרשימה שבלשונית (null = שלי). col: shop / recipes. */
+function clActive(col){ try{ return clState()[CL_PTR[col || 'shop']] || null; }catch(e){ return null; } }
+function clKey(gid, col){ return gid ? (col === 'recipes' ? 'משימות.מתכונים@' : 'משימות.קניות@') + gid : FILES[col].cache; }
+function clShopKey(gid){ return clKey(gid, 'shop'); }
 const clList = gid => clState().lists.find(l => l.gid === gid);
-function clShopFile(gid){ return gid === clActive() ? D.file.shop : FILES.shop.merge(storeJson(clShopKey(gid), null) || {items: []}, null); }
-function clShopStore(gid, f){ if(gid === clActive()) D.file.shop = f; store(clShopKey(gid), JSON.stringify(f)); }
-/** מעבר בין הרשימות בקניות: שלי / רשימה משותפת. */
-function clSwitch(gid){
-  const s = clState(); gid = gid || null;
-  if((s.active || null) === gid) return;
-  store(clShopKey(s.active), JSON.stringify(D.file.shop));
-  s.active = gid; store(CL_KEY, JSON.stringify(s));
-  D.file.shop = FILES.shop.merge(storeJson(clShopKey(gid), null) || {items: []}, null);
+const clEmpty = col => ({[CL_ARR[col]]: []});
+function clFile(gid, col){ return gid === clActive(col) ? D.file[col] : FILES[col].merge(storeJson(clKey(gid, col), null) || clEmpty(col), null); }
+function clStore(gid, col, f){ if(gid === clActive(col)) D.file[col] = f; store(clKey(gid, col), JSON.stringify(f)); }
+/** מעבר בין הלשוניות: שלי / רשימה משותפת. */
+function clSwitch(col, gid){
+  const s = clState(), p = CL_PTR[col]; gid = gid || null;
+  if((s[p] || null) === gid) return;
+  store(clKey(s[p], col), JSON.stringify(D.file[col]));
+  s[p] = gid; store(CL_KEY, JSON.stringify(s));
+  D.file[col] = FILES[col].merge(storeJson(clKey(gid, col), null) || clEmpty(col), null);
   renderAll(); clUi();
 }
-if(clActive()) D.file.shop = FILES.shop.merge(storeJson(clShopKey(clActive()), null) || {items: []}, null);
+for(const col of CL_COLS) if(clActive(col)) D.file[col] = FILES[col].merge(storeJson(clKey(clActive(col), col), null) || clEmpty(col), null);
 
 function clErrText(e){
   const c = e?.code || '';
   if(/permission-denied/.test(c)) return 'אין הרשאה';
-  if(/unavailable|network/.test(c)) return 'אין חיבור לרשת. השינויים יעלו כשיחזור החיבור';
-  if(/admin-restricted|operation-not-allowed/.test(c)) return 'הכניסה האנונימית לא מופעלת ב-Firebase';
+  if(/unavailable|network/.test(c)) return 'אין רשת. יעלה כשיחזור החיבור';
   return e?.message || String(e);
 }
 async function clLoad(){
@@ -1727,13 +1729,13 @@ function clG(gid){ return CL.g[gid] || (CL.g[gid] = {unsub: [], remote: {shop: n
 function clStopG(gid){ const g = CL.g[gid]; if(!g) return; g.unsub.forEach(u => { try{ u(); }catch(e){} }); delete CL.g[gid]; }
 function clStopReq(gid){ try{ CL.req[gid]?.(); }catch(e){} delete CL.req[gid]; }
 const clIsOwner = gid => { const g = CL.g[gid], l = clList(gid); return g?.doc ? g.doc.owner === CL.user?.uid : !!l?.owner; };
-const clPendingCount = () => Object.values(CL.g).reduce((n, g) => n + g.reqs.length, 0);
+const clAllReqs = () => clState().lists.flatMap(l => (CL.g[l.gid]?.reqs || []).map(r => ({l, r})));
 
 /** מתחברים לכל הרשימות ששמורות בטלפון, ומאזינים לבקשות שעוד מחכות לאישור. */
 async function clStart(){
   const s = clState();
   if(!s.lists.length && !s.pend.length){ CL.status = 'off'; clUi(); clNative(); return; }
-  if(CL.status !== 'on') CL.status = 'connecting'; clUi();
+  if(CL.status !== 'on') CL.status = 'connecting';
   try{
     await clLoad(); await clUser();
     for(const l of s.lists) if(!CL.g[l.gid]) await clStartG(l).catch(e => clFail(e));
@@ -1746,11 +1748,11 @@ function clFail(e){ CL.status = 'error'; CL.err = clErrText(e); clUi(); }
 async function clStartG(l){
   const f = CL.fb, u = CL.user, ref = clRef(l.gid);
   const snap = await f.fs.getDoc(ref);
-  if(!snap.exists()) return clDropList(l.gid, `הרשימה "${l.name}" נסגרה`);
+  if(!snap.exists()) return clDropList(l.gid, `"${l.name}" נסגרה`);
   const d = snap.data();
   if(!d.members?.[u.uid]){
     // התקנה מחדש (משתמש חדש): חוזרים עם מפתח החבר ששמור בטלפון
-    if(!l.key || !l.uid || !d.members?.[l.uid]) return clDropList(l.gid, `כבר לא חבר/ה ברשימה "${l.name}"`);
+    if(!l.key || !l.uid || !d.members?.[l.uid]) return clDropList(l.gid, `כבר לא ב"${l.name}"`);
     const ch = {[`members.${u.uid}`]: true, [`names.${u.uid}`]: d.names?.[l.uid] || clMyName(), joinKey: l.key};
     if(d.owner === l.uid) ch.owner = u.uid;
     const b = f.fs.writeBatch(f.db);
@@ -1762,8 +1764,8 @@ async function clStartG(l){
   const g = clG(l.gid);
   g.unsub.push(f.fs.onSnapshot(ref, x => {
     g.doc = x.data() || null;
-    if(!g.doc) return clDropList(l.gid, `הרשימה "${l.name}" נסגרה`);
-    if(!g.doc.members?.[CL.user.uid]) return clDropList(l.gid, `הוצאת מהרשימה "${l.name}"`);
+    if(!g.doc) return clDropList(l.gid, `"${l.name}" נסגרה`);
+    if(!g.doc.members?.[CL.user.uid]) return clDropList(l.gid, `הוצאת מ"${l.name}"`);
     const s = clState(), me = s.lists.find(x => x.gid === l.gid), own = g.doc.owner === CL.user.uid;
     if(me && (me.name !== g.doc.name || !!me.owner !== own)){ me.name = g.doc.name; me.owner = own; clSave(s); }
     clUi();
@@ -1771,13 +1773,13 @@ async function clStartG(l){
   for(const col of CL_COLS) g.unsub.push(f.fs.onSnapshot(f.fs.collection(ref, col), sn => clRecv(l.gid, col, sn), e => clFail(e)));
   g.unsub.push(f.fs.onSnapshot(f.fs.query(f.fs.collection(ref, 'requests'), f.fs.where('status', '==', 'pending')), sn => clReqs(l.gid, sn), () => {}));
 }
-/** יצאנו / הוצאנו / הרשימה נסגרה: מפסיקים לסנכרן. הקניות שלה נמחקות מהטלפון (הן היו של הקבוצה). */
+/** יצאנו / הוצאנו / הרשימה נסגרה: מפסיקים לסנכרן, ומוחקים את העותק שלה מהטלפון. "שלי" לא משתנה. */
 function clDropList(gid, msg){
   clStopG(gid);
-  const s = clState(), l = s.lists.find(x => x.gid === gid); if(!l) return;
-  if(s.active === gid) clSwitch(null);
-  const s2 = clState(); s2.lists = s2.lists.filter(x => x.gid !== gid); clSave(s2);
-  store(clShopKey(gid), null);
+  if(!clList(gid)) return;
+  for(const col of CL_COLS) if(clActive(col) === gid) clSwitch(col, null);
+  const s = clState(); s.lists = s.lists.filter(x => x.gid !== gid); clSave(s);
+  for(const col of CL_COLS) store(clKey(gid, col), null);
   if(msg) toast(msg);
   renderAll();
 }
@@ -1792,17 +1794,13 @@ function clRecv(gid, col, snap){
     try{ recs.push(JSON.parse(d.j)); }catch(e){}
   }
   if(recs.length){
-    if(col === 'shop'){
-      clShopStore(gid, FILES.shop.merge(clShopFile(gid), {items: recs}));
-      if(gid === clActive()) renderAll();
-    }else{
-      const mine = new Map(D.file.recipes.recipes.map(r => [r.id, r]));
-      const fixed = recs.map(r => { if(!r.noImg) return r; const o = Object.assign({}, r, {image: mine.get(r.id)?.image || ''}); delete o.noImg; return o; });
-      D.file.recipes = FILES.recipes.merge(D.file.recipes, {recipes: fixed});
-      store(FILES.recipes.cache, JSON.stringify(D.file.recipes));
+    const cur = clFile(gid, col), arr = CL_ARR[col];
+    const mine = new Map(cur[arr].map(r => [r.id, r]));
+    const fixed = recs.map(r => { if(!r.noImg) return r; const o = Object.assign({}, r, {image: mine.get(r.id)?.image || ''}); delete o.noImg; return o; });
+    clStore(gid, col, FILES[col].merge(cur, {[arr]: fixed}));
+    if(gid === clActive(col)){
       renderAll();
-      if($('dlg-recipe')?.open && typeof renderRecipe === 'function'){ try{ renderRecipe(); }catch(e){} }
-      clSoonAll('recipes', gid);   // המתכונים משותפים לכל הרשימות
+      if(col === 'recipes' && $('dlg-recipe')?.open && typeof renderRecipe === 'function'){ try{ renderRecipe(); }catch(e){} }
     }
   }
   if(CL.status !== 'on'){ CL.status = 'on'; CL.err = ''; clUi(); }
@@ -1810,7 +1808,6 @@ function clRecv(gid, col, snap){
   else if(recs.length) clSoon(gid, col);   // מה שבטלפון חדש יותר עולה בחזרה
 }
 function clSoon(gid, col){ const g = CL.g[gid]; if(!g || !g.ready[col]) return; const k = gid + col; clearTimeout(CL.t[k]); CL.t[k] = setTimeout(() => clPush(gid, col), 400); }
-function clSoonAll(col, except){ for(const gid of Object.keys(CL.g)) if(gid !== except) clSoon(gid, col); }
 function clDoc(r){
   let j = JSON.stringify(r);
   if(j.length > 900000 && r.image) j = JSON.stringify(Object.assign({}, r, {image: '', noImg: true}));   // תמונה גדולה מדי: נשארת רק בטלפון
@@ -1820,8 +1817,7 @@ function clDoc(r){
 async function clPush(gid, col){
   const g = CL.g[gid]; if(!CL.fb || !g || !g.ready[col]) return;
   const rm = g.remote[col], fs = CL.fb.fs;
-  const all = col === 'shop' ? clShopFile(gid).items : D.file.recipes.recipes;
-  const out = all.filter(r => r && r.id && !/[\/]/.test(r.id) && (rm.has(r.id) ? (r.updatedAt || '') > rm.get(r.id) : !r.deleted));
+  const out = clFile(gid, col)[CL_ARR[col]].filter(r => r && r.id && !/[\/]/.test(r.id) && (rm.has(r.id) ? (r.updatedAt || '') > rm.get(r.id) : !r.deleted));
   try{
     for(let i = 0; i < out.length; i += 400){
       const b = fs.writeBatch(CL.fb.db);
@@ -1831,7 +1827,7 @@ async function clPush(gid, col){
   }catch(e){ clFail(e); }
 }
 
-/* --- בקשות הצטרפות --- */
+/* --- בקשות התחברות --- */
 /** אצל החברים: הבקשות שמחכות. הבעלים מקבל/ת התראה על כל בקשה חדשה. */
 function clReqs(gid, snap){
   const g = CL.g[gid]; if(!g) return;
@@ -1840,14 +1836,14 @@ function clReqs(gid, snap){
   for(const r of g.reqs){ const k = 'r:' + gid + '/' + r.uid; if(!s.seen.includes(k)){ s.seen.push(k); fresh.push(r); } }
   if(fresh.length){
     clSave(s);
-    if(clIsOwner(gid)) clAlert('👥 בקשה להצטרף', fresh.length === 1 ? `${fresh[0].name || 'מישהו'} מבקש/ת להצטרף ל"${l?.name || ''}"` : `${fresh.length} בקשות להצטרף ל"${l?.name || ''}"`);
+    if(clIsOwner(gid)) clAlert('👥 ' + (l?.name || ''), fresh.length === 1 ? `${fresh[0].name || 'מישהו'} רוצה להתחבר` : `${fresh.length} רוצים להתחבר`);
   }
   clUi();
 }
-/** הודעה: באפליקציה פתוחה, הודעה קטנה עם "פתיחה". ברקע, התראה בטלפון. */
+/** באפליקציה פתוחה: הודעה קטנה. ברקע: התראה בטלפון. */
 function clAlert(title, body){
   if(document.hidden && NATIVE){ try{ window.Capacitor.Plugins.Alarm.cloudNotify({title, body}).catch(() => {}); }catch(e){} }
-  else toast(`${title}: ${body}`, {undo: () => openShare(), btn: 'פתיחה', ms: 9000});
+  else toast(`${title}: ${body}`, {ms: 6000});
 }
 /** אצל מי שביקש: מחכים לתשובה. */
 async function clWatchReq(p){
@@ -1868,12 +1864,12 @@ async function clReqChange(p, d){
     try{ await CL.fb.fs.setDoc(clRef(p.gid, 'keys', key), {uid: CL.user.uid}); }catch(e){}
     if(!s.lists.some(l => l.gid === p.gid)) s.lists.push({gid: p.gid, name: p.name, key, uid: CL.user.uid});
     clSave(s);
-    if(!told) clAlert('✅ אושרת', `הרשימה "${p.name}" משותפת עכשיו. אפשר לערוך ביחד`);
+    if(!told) clAlert('✅ ' + p.name, 'אושרת. אפשר לערוך ביחד');
     try{ await CL.fb.fs.deleteDoc(ref); }catch(e){}
-    await clStart(); clSwitch(p.gid);
+    await clStart(); clSwitch(screen === 'recipes' ? 'recipes' : 'shop', p.gid);
   }else{
     clSave(s);
-    if(!told) clAlert('הבקשה לא אושרה', `הבקשה להצטרף ל"${p.name}" לא אושרה`);
+    if(!told) clAlert(p.name, 'הבקשה לא אושרה');
     try{ await CL.fb.fs.deleteDoc(ref); }catch(e){}
   }
   clUi();
@@ -1884,62 +1880,59 @@ async function clAnswer(gid, r, yes){
     if(yes) b.update(clRef(gid), {[`members.${r.uid}`]: true, [`names.${r.uid}`]: r.name || 'חבר/ה'});
     b.update(clRef(gid, 'requests', r.uid), {status: yes ? 'approved' : 'denied', by: CL.user.uid});
     await b.commit();
-    toast(yes ? `✅ ${r.name || 'החבר/ה'} הצטרף/ה` : 'הבקשה נדחתה');
+    toast(yes ? `✅ ${r.name || ''} התחבר/ה` : 'נדחה');
   }catch(e){ toast(clErrText(e), {err: true}); }
 }
 
-/* --- יצירה, הצטרפות, יציאה --- */
+/* --- יצירה, התחברות, יציאה --- */
+const CL_INFO = 'רשימה משותפת: כמה אנשים רואים ועורכים את אותה רשימת קניות ואותם מתכונים, וכל שינוי מופיע אצל כולם מיד.\n\n'
+  + '✨ יצירה: בוחרים שם פנוי. הוא הדרך להתחבר.\n🔗 התחברות: רושמים את שם הרשימה, ומי שיצר/ה אותה מאשר/ת.\n\n'
+  + '"שלי" נשארת רק בטלפון. משימות, בריאות ותרופות לא משותפים אף פעם.';
+function clInfo(){ ask('❗ רשימות משותפות', [], {note: CL_INFO, ok: 'הבנתי', no: 'סגירה'}); }
+/** "＋": יצירה או התחברות. */
+function clAdd(){ sheet('רשימה משותפת', [['✨ יצירה', clCreate], ['🔗 התחברות', clJoin], ['❗ מה זה?', clInfo]]); }
 async function clAskName(){
   if((D.config.userName || '').trim()) return D.config.userName.trim();
-  const r = await ask('איך לקרוא לך?', [{label: 'השם שלך (יופיע לחברים ברשימה)', req: true}], {ok: 'המשך'});
+  const r = await ask('השם שלך', [{label: 'יופיע לחברים ברשימה', req: true}], {ok: 'המשך'});
   if(!r) return null;
   saveConfig({userName: r[0]}); return r[0];
 }
 async function clCreate(){
-  const r = await ask('רשימה משותפת חדשה', [{label: 'שם הרשימה', ph: 'למשל: הבית של נדב', req: true}],
-    {note: 'השם הוא הדרך להצטרף: מי שירשום אותו ישלח לך בקשה, ורק אחרי שתאשר/י יוכל לראות ולערוך. הקניות והמתכונים של הרשימה מתעדכנים אצל כולם מיד.', ok: 'בדיקה ופתיחה'});
+  const r = await ask('✨ רשימה חדשה', [{label: 'שם', ph: 'למשל: הבית', req: true}], {ok: 'יצירה'});
   if(!r) return;
   const name = clClean(r[0]), key = clNameKey(name);
   if(key.replace(/[\s-]/g, '').length < 2) return toast('שם קצר מדי', {err: true});
   const me = await clAskName(); if(!me) return;
   try{
-    toast('בודק את השם…', {ms: 8000});
     const f = await clLoad(), u = await clUser();
-    if((await f.fs.getDoc(clNameRef(key))).exists()) return toast(`השם "${name}" תפוס. אפשר לבחור שם אחר, או לבקש להצטרף אליה`, {err: true, ms: 6000});
+    if((await f.fs.getDoc(clNameRef(key))).exists()) return toast(`"${name}" תפוס`, {err: true});
     const gid = clRandomId(20), secret = clRandomId(32), b = f.fs.writeBatch(f.db);
     b.set(clRef(gid), {name, key, owner: u.uid, members: {[u.uid]: true}, names: {[u.uid]: me}, createdAt: nowIso()});
     b.set(clNameRef(key), {gid, owner: u.uid, name});
     b.set(clRef(gid, 'keys', secret), {uid: u.uid});
-    try{ await b.commit(); }catch(e){ return toast(/permission/.test(e?.code || '') ? `השם "${name}" תפוס. אפשר לבחור שם אחר` : clErrText(e), {err: true, ms: 6000}); }
+    try{ await b.commit(); }catch(e){ return toast(/permission/.test(e?.code || '') ? `"${name}" תפוס` : clErrText(e), {err: true}); }
     const s = clState(); s.lists.push({gid, name, key: secret, uid: u.uid, owner: true}); clSave(s);
-    // הרשימה הנוכחית שלי: להעתיק אליה?
-    const live = clActive() ? [] : ל.shopList(D.file.shop.items);
-    if(live.length && await ask('להעתיק את הרשימה שלך?', [], {note: `יש ${live.length} מוצרים ברשימת הקניות שלך. להעתיק אותם לרשימה "${name}"?`, ok: 'העתקה', no: 'לא, להתחיל ריקה'})){
-      const t = nowIso(); store(clShopKey(gid), JSON.stringify({v: 1, items: D.file.shop.items.filter(x => !x.deleted).map(x => Object.assign({}, x, {updatedAt: t}))}));
-    }
-    clSwitch(gid); await clStart();
-    toast(`👥 הרשימה "${name}" נפתחה. מי שירצה להצטרף ירשום את השם הזה`, {ms: 6000});
-    renderAll();
-  }catch(e){ toast(clErrText(e), {err: true, ms: 6000}); }
+    const col = screen === 'recipes' ? 'recipes' : 'shop';
+    clSwitch(col, gid); await clStart();
+    toast(`✓ "${name}" נפתחה`);
+  }catch(e){ toast(clErrText(e), {err: true}); }
 }
 async function clJoin(){
-  const r = await ask('הצטרפות לרשימה', [{label: 'שם הרשימה', req: true}],
-    {note: 'הבעלים של הרשימה יקבל/תקבל בקשה. אחרי האישור תגיע אליך התראה, והרשימה תופיע אצלך.', ok: 'שליחת בקשה'});
+  const r = await ask('🔗 התחברות', [{label: 'שם הרשימה', req: true}], {ok: 'שליחת בקשה'});
   if(!r) return;
   const key = clNameKey(r[0]); if(!key) return;
   const me = await clAskName(); if(!me) return;
   try{
-    toast('מחפש…', {ms: 8000});
     const f = await clLoad(), u = await clUser(), n = await f.fs.getDoc(clNameRef(key));
-    if(!n.exists()) return toast(`לא מצאתי רשימה בשם "${clClean(r[0])}"`, {err: true, ms: 5000});
+    if(!n.exists()) return toast(`"${clClean(r[0])}" לא נמצאה`, {err: true});
     const {gid, name} = n.data(), s = clState();
-    if(s.lists.some(l => l.gid === gid)){ clSwitch(gid); return toast('כבר ברשימה הזו'); }
-    if(s.pend.some(p => p.gid === gid)) return toast('הבקשה כבר נשלחה. מחכים לאישור');
+    if(s.lists.some(l => l.gid === gid)){ clSwitch(screen === 'recipes' ? 'recipes' : 'shop', gid); return toast('כבר מחובר/ת'); }
+    if(s.pend.some(p => p.gid === gid)) return toast('כבר נשלחה בקשה');
     await f.fs.setDoc(clRef(gid, 'requests', u.uid), {name: me, status: 'pending', at: nowIso()});
     s.pend.push({gid, name, at: nowIso()}); clSave(s);
     await clStart();
-    toast(`📨 נשלחה בקשה להצטרף ל"${name}". תגיע אליך התראה כשיאשרו`, {ms: 6000});
-  }catch(e){ toast(clErrText(e), {err: true, ms: 6000}); }
+    toast(`📨 נשלחה בקשה ל"${name}"`);
+  }catch(e){ toast(clErrText(e), {err: true}); }
 }
 async function clCancelReq(gid){
   const s = clState(), p = s.pend.find(x => x.gid === gid); if(!p) return;
@@ -1949,9 +1942,8 @@ async function clCancelReq(gid){
 }
 async function clLeave(gid){
   const l = clList(gid); if(!l) return;
-  const g = CL.g[gid], others = Object.keys(g?.doc?.members || {}).filter(x => x !== CL.user?.uid);
-  const last = !others.length;
-  if(!(await ask(`יציאה מ"${l.name}"?`, [], {note: last ? 'את/ה האחרון/ה ברשימה: היא תיסגר, והשם יתפנה.' : 'הרשימה תמשיך אצל שאר החברים. הקניות שלה יימחקו מהטלפון שלך, והמתכונים יישארו.', ok: 'יציאה', danger: true}))) return;
+  const g = CL.g[gid], last = !Object.keys(g?.doc?.members || {}).some(x => x !== CL.user?.uid);
+  if(!(await ask(`יציאה מ"${l.name}"?`, [], {note: last ? 'הרשימה תיסגר' : '', ok: 'יציאה', danger: true}))) return;
   try{
     const f = await clLoad(), u = await clUser(), d = (await f.fs.getDoc(clRef(gid))).data();
     const rest = Object.keys(d?.members || {}).filter(x => x !== u.uid);
@@ -1970,83 +1962,78 @@ async function clLeave(gid){
       await f.fs.updateDoc(clRef(gid), ch);
     }
   }catch(e){}
-  clDropList(gid, last ? `הרשימה "${l.name}" נסגרה` : `יצאת מ"${l.name}"`);
+  clDropList(gid, last ? `"${l.name}" נסגרה` : `יצאת מ"${l.name}"`);
 }
 async function clRemove(gid, uid, name){
-  if(!(await ask(`להוציא את ${name}?`, [], {note: 'הוא/היא לא יוכלו לראות ולערוך את הרשימה, עד שיבקשו שוב ותאשר/י.', ok: 'הוצאה', danger: true}))) return;
+  if(!(await ask(`להוציא את ${name}?`, [], {ok: 'הוצאה', danger: true}))) return;
   try{ const f = CL.fb; await f.fs.updateDoc(clRef(gid), {[`members.${uid}`]: f.fs.deleteField(), [`names.${uid}`]: f.fs.deleteField()}); toast(`${name} הוצא/ה`); }
   catch(e){ toast(clErrText(e), {err: true}); }
 }
+/** לחיצה על לשונית של רשימה שכבר פתוחה: מי בה, ויציאה. */
+function clManage(gid){
+  const l = clList(gid); if(!l) return;
+  const d = CL.g[gid]?.doc, own = clIsOwner(gid), me = CL.user?.uid;
+  const mem = Object.entries(d?.names || {}).map(([u, n]) => ({u, n, owner: u === d?.owner}));
+  sheet('👥 ' + l.name, [
+    ...(own ? mem.filter(m => m.u !== me).map(m => [`✕ להוציא את ${m.n}`, () => clRemove(gid, m.u, m.n)]) : []),
+    ['🚪 יציאה', () => clLeave(gid)],
+  ], mem.map(m => (m.owner ? '👑 ' : '') + m.n + (m.u === me ? ' (אני)' : '')).join(' · '));
+}
 
-/* --- מסך "רשימות משותפות" בהגדרות, והכפתורים בקניות ובמתכונים --- */
-function openShare(){ show('prefs'); pfGo('share'); }
+/* --- הלשוניות בקניות ובמתכונים, הבקשות, והעמוד בהגדרות --- */
+function clTabsHtml(col){
+  const s = clState(), act = s[CL_PTR[col]] || null;
+  const t = (on, attrs, txt, cls) => `<button type="button" class="${on ? 'on' : ''}${cls ? ' ' + cls : ''}" ${attrs}>${txt}</button>`;
+  return t(!act, 'data-sl=""', col === 'recipes' ? '📖 שלי' : '🛒 שלי')
+    + s.lists.map(l => t(act === l.gid, `data-sl="${esc(l.gid)}"`, '👥 ' + esc(l.name))).join('')
+    + s.pend.map(p => t(false, `data-pend="${esc(p.gid)}"`, '⏳ ' + esc(p.name))).join('')
+    + t(false, 'data-add="1" aria-label="רשימה משותפת"', s.lists.length || s.pend.length ? '+' : '+ רשימה משותפת', 'cl-plus');
+}
+function clReqsHtml(){
+  return clAllReqs().map(({l, r}) => `<div class="cl-req"><span><b>${esc(r.name || 'מישהו')}</b> ← ${esc(l.name)}</span>
+    <button class="btn" type="button" data-no="${esc(l.gid)}" data-u="${esc(r.uid)}" aria-label="דחייה">✕</button>
+    <button class="btn primary" type="button" data-yes="${esc(l.gid)}" data-u="${esc(r.uid)}" aria-label="אישור">✓</button></div>`).join('');
+}
+function clTabsClick(col, e){
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.add) return clAdd();
+  if(b.dataset.pend != null){ const p = clState().pend.find(x => x.gid === b.dataset.pend);
+    return sheet('⏳ ' + (p?.name || ''), [['ביטול הבקשה', () => clCancelReq(b.dataset.pend)]], 'מחכה לאישור'); }
+  if(b.dataset.yes || b.dataset.no){
+    const gid = b.dataset.yes || b.dataset.no, r = (CL.g[gid]?.reqs || []).find(x => x.uid === b.dataset.u); if(!r) return;
+    b.disabled = true; return clAnswer(gid, r, !!b.dataset.yes);
+  }
+  if(b.dataset.sl != null){
+    const gid = b.dataset.sl || null;
+    if(gid && clActive(col) === gid) return clManage(gid);
+    clSwitch(col, gid);
+  }
+}
 function renderPfShare(){
   const box = $('pf-share'); if(!box) return;
-  const s = clState(), me = CL.user?.uid;
-  const st = {on: '🟢 מחובר. כל שינוי מתעדכן אצל כולם מיד', connecting: '🟡 מתחבר…', error: '🔴 ' + CL.err}[CL.status];
-  let h = `<div class="note">רשימת קניות ומתכונים משותפים: כל שינוי מופיע אצל כל החברים מיד. כל רשימה עם שם משלה. מי שרוצה להצטרף רושם את השם, ומי שפתח/ה את הרשימה מאשר/ת. המשימות, הבריאות, התרופות והאימונים נשארים רק בטלפון.</div>`;
-  if(st && (s.lists.length || s.pend.length)) h += `<div class="note cl-st">${esc(st)}${CL.status === 'error' ? ' <button class="txt-btn" type="button" data-cl="retry">ניסיון חוזר</button>' : ''}</div>`;
-  const reqs = s.lists.flatMap(l => (CL.g[l.gid]?.reqs || []).map(r => ({l, r})));
-  if(reqs.length) h += `<div class="sec"><h2>📨 בקשות להצטרף</h2><div class="cl-cards">${reqs.map(({l, r}) =>
-    `<div class="cl-card req"><div class="t"><b>${esc(r.name || 'מישהו')}</b> רוצה להצטרף ל"${esc(l.name)}"</div><div class="btns">
-      <button class="btn" type="button" data-cl="no" data-g="${esc(l.gid)}" data-u="${esc(r.uid)}">✕ דחייה</button>
-      <button class="btn primary" type="button" data-cl="yes" data-g="${esc(l.gid)}" data-u="${esc(r.uid)}">✓ אישור</button></div></div>`).join('')}</div></div>`;
-  h += `<div class="sec"><h2>הרשימות שלי</h2><div class="cl-cards">`;
-  h += `<div class="cl-card${!s.active ? ' on' : ''}"><div class="t"><b>🛒 שלי</b><span class="s">רשימת הקניות הפרטית, רק בטלפון</span></div>
-    <div class="btns"><button class="btn" type="button" data-cl="open" data-g="">${!s.active ? '✓ פתוחה' : '🛒 פתיחה'}</button></div></div>`;
-  for(const l of s.lists){
-    const g = CL.g[l.gid], d = g?.doc, own = clIsOwner(l.gid);
-    const mem = Object.entries(d?.names || {}).map(([u, n]) => ({u, n, me: u === me, owner: u === d?.owner}));
-    h += `<div class="cl-card${s.active === l.gid ? ' on' : ''}"><div class="t"><b>👥 ${esc(l.name)}</b>${own ? '<span class="tag">👑 שלי</span>' : ''}
-      <span class="s">${d ? mem.length + ' חברים' : 'מתחבר…'}</span></div>
-      ${mem.length ? `<div class="cl-mem">${mem.map(m => `<span class="chip">${m.owner ? '👑 ' : ''}${esc(m.n)}${m.me ? ' (אני)' : ''}${own && !m.me ? ` <button type="button" class="x" data-cl="kick" data-g="${esc(l.gid)}" data-u="${esc(m.u)}" data-n="${esc(m.n)}" aria-label="הוצאת ${esc(m.n)}">✕</button>` : ''}</span>`).join('')}</div>` : ''}
-      <div class="btns"><button class="btn" type="button" data-cl="open" data-g="${esc(l.gid)}">${s.active === l.gid ? '✓ פתוחה' : '🛒 פתיחה'}</button>
-      <button class="btn" type="button" data-cl="invite" data-g="${esc(l.gid)}">📤 הזמנה</button>
-      <button class="btn" type="button" data-cl="leave" data-g="${esc(l.gid)}" style="color:var(--red)">יציאה</button></div></div>`;
-  }
-  h += `</div></div>`;
-  if(s.pend.length) h += `<div class="sec"><h2>⏳ מחכות לאישור</h2><div class="cl-cards">${s.pend.map(p =>
-    `<div class="cl-card"><div class="t"><b>${esc(p.name)}</b><span class="s">נשלחה בקשה. תגיע התראה כשיאשרו</span></div>
-      <div class="btns"><button class="btn" type="button" data-cl="cancel" data-g="${esc(p.gid)}">ביטול הבקשה</button></div></div>`).join('')}</div></div>`;
-  h += `<div class="btns cl-main"><button class="btn primary" type="button" data-cl="new">➕ רשימה חדשה</button><button class="btn" type="button" data-cl="join">🔑 הצטרפות לרשימה</button></div>`;
+  const s = clState();
+  let h = `<div class="cl-cards">${clReqsHtml()}`;
+  h += s.lists.map(l => { const n = Object.keys(CL.g[l.gid]?.doc?.members || {}).length;
+    return `<button type="button" class="more-row" data-m="${esc(l.gid)}"><span class="i">👥</span><span class="b"><span class="t">${esc(l.name)}${clIsOwner(l.gid) ? ' 👑' : ''}</span><span class="s">${n ? n + ' חברים' : ''}</span></span><span class="side">‹</span></button>`; }).join('');
+  h += s.pend.map(p => `<button type="button" class="more-row" data-pend="${esc(p.gid)}"><span class="i">⏳</span><span class="b"><span class="t">${esc(p.name)}</span><span class="s">מחכה לאישור</span></span></button>`).join('');
+  h += `</div><div class="cl-main"><button class="btn primary" type="button" data-add="1">+ ${s.lists.length ? 'צירוף לרשימה' : 'רשימה משותפת'}</button>
+    <button class="btn cl-i" type="button" data-info="1" aria-label="מה זה?">❗</button></div>`;
+  if(CL.status === 'error') h += `<div class="note">🔴 ${esc(CL.err)}</div>`;
   box.innerHTML = h;
 }
-async function clShareClick(e){
-  const b = e.target.closest('[data-cl]'); if(!b) return;
-  const a = b.dataset.cl, gid = b.dataset.g;
-  if(a === 'new') return clCreate();
-  if(a === 'join') return clJoin();
-  if(a === 'retry'){ CL.status = 'connecting'; Object.keys(CL.g).forEach(clStopG); return clStart(); }
-  if(a === 'open'){ clSwitch(gid || null); return show('shop'); }
-  if(a === 'leave') return clLeave(gid);
-  if(a === 'cancel') return clCancelReq(gid);
-  if(a === 'kick') return clRemove(gid, b.dataset.u, b.dataset.n);
-  if(a === 'invite'){
-    const l = clList(gid); if(!l) return;
-    const text = `בוא/י נכין רשימת קניות ומתכונים משותפת 🛒\nבאפליקציה "ניהול שיגרה": הגדרות ← 👥 רשימות משותפות ← הצטרפות לרשימה, ושם הרשימה:\n${l.name}\n\nלהתקנה: https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3`;
-    const url = waLink(text); if(!window.open(url, '_blank')) location.href = url; return;
-  }
-  if(a === 'yes' || a === 'no'){
-    const r = (CL.g[gid]?.reqs || []).find(x => x.uid === b.dataset.u); if(!r) return;
-    b.disabled = true; return clAnswer(gid, r, a === 'yes');
-  }
-}
-/** הכפתורים בקניות ובמתכונים, ובחירת הרשימה בקניות. */
+$('pf-share').onclick = e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.info) return clInfo();
+  if(b.dataset.m) return clManage(b.dataset.m);
+  clTabsClick('shop', e);
+};
+function openShare(){ show('shop'); }
+/** הלשוניות בקניות ובמתכונים, והבקשות שמחכות (אצל החברים). */
 function clUi(){
   let s; try{ s = clState(); }catch(e){ return; }
-  const n = clPendingCount(), act = s.active ? s.lists.find(l => l.gid === s.active) : null;
-  for(const id of ['shop-cloud', 'rc-cloud']){
-    const b = $(id); if(!b) continue;
-    b.dataset.st = s.lists.length ? CL.status : 'off';
-    b.querySelector('span').textContent = id === 'shop-cloud' && act ? act.name : s.lists.length ? 'משותף' : 'שיתוף';
-    b.querySelector('i').textContent = n ? String(n) : ''; b.querySelector('i').hidden = !n;
-    b.title = 'רשימות משותפות';
-  }
-  const box = $('shop-lists');
-  if(box){
-    box.hidden = !s.lists.length;
-    box.innerHTML = s.lists.length ? [`<button type="button" class="${!s.active ? 'on' : ''}" data-sl="">🛒 שלי</button>`,
-      ...s.lists.map(l => `<button type="button" class="${s.active === l.gid ? 'on' : ''}" data-sl="${esc(l.gid)}">👥 ${esc(l.name)}</button>`)].join('') : '';
+  for(const [col, id, rq] of [['shop', 'shop-tabs', 'shop-reqs'], ['recipes', 'rc-tabs', 'rc-reqs']]){
+    const box = $(id); if(box) box.innerHTML = clTabsHtml(col);
+    const q = $(rq); if(q){ q.innerHTML = clReqsHtml(); q.hidden = !q.innerHTML; }
   }
   try{ if(screen === 'prefs' && pfPage === 'share') renderPfShare(); else if(screen === 'prefs' && !pfPage) pfShow(); }catch(e){}
 }
@@ -2062,9 +2049,10 @@ async function clNative(){
     if(more.length){ const s2 = clState(); s2.seen.push(...more); s2.seen = s2.seen.slice(-300); store(CL_KEY, JSON.stringify(s2)); }
   }catch(e){}
 }
-$('shop-cloud').onclick = $('rc-cloud').onclick = () => openShare();
-$('shop-lists').onclick = e => { const b = e.target.closest('[data-sl]'); if(b) clSwitch(b.dataset.sl || null); };
-$('pf-share').onclick = clShareClick;
+for(const [col, id, rq] of [['shop', 'shop-tabs', 'shop-reqs'], ['recipes', 'rc-tabs', 'rc-reqs']]){
+  $(id).onclick = e => clTabsClick(col, e);
+  $(rq).onclick = e => clTabsClick(col, e);
+}
 clUi();
 if(clState().lists.length || clState().pend.length) setTimeout(clStart, 300);
 document.addEventListener('visibilitychange', () => { if(!document.hidden && (clState().lists.length || clState().pend.length)) clStart(); });
@@ -5147,7 +5135,7 @@ async function sync(){
     if(migrate()){ await syncFile('config'); await syncFile('tasks'); }
     await readCommands();
     await readPending();
-    await syncFile('occ'); if(!clActive()) await syncFile('shop'); await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal'); await syncFile('todos');
+    await syncFile('occ'); if(!clActive('shop')) await syncFile('shop'); if(!clActive('recipes')) await syncFile('recipes'); await syncFile('timers'); await syncFile('kcal'); await syncFile('todos');
     // המנות הקבועות של המשתמש נכנסות פעם אחת, רק אחרי שהקובץ מהמאגר נקרא (כדי לא להחזיר מה שנמחק)
     const ks = ל.kcalSeed(D.file.kcal, nowIso());
     if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); await syncFile('kcal'); }
@@ -7700,7 +7688,7 @@ function pfPages(){
     ['notif', '🔔', 'התראות ושעות', `התראות ${c.activeFrom}–${c.activeTo} · סיכום בוקר ${c.summaryTime}`],
     ['behav', '⚙️', 'התנהגות', 'רטט, יציאה, טיימר, מצב בישול'],
     ['doms', '🗂️', 'תחומים', `${doms} תחומים`],
-    ['share', '👥', 'רשימות משותפות', (() => { const s = clState(), n = clPendingCount(); return (n ? `📨 ${n} בקשות להצטרף · ` : '') + (s.lists.length ? s.lists.map(l => l.name).join(', ') : 'קניות ומתכונים עם עוד אנשים: יצירה או הצטרפות'); })()],
+    ['share', '👥', 'רשימות משותפות', (() => { const s = clState(), n = clAllReqs().length; return (n ? `📨 ${n} · ` : '') + (s.lists.map(l => l.name).join(', ') || 'יצירה או התחברות'); })()],
     ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
     ['sound', '🔊', 'צלילים', `התראות: ${(SND_NOTIF.find(x => x[0] === nSnd()) || SND_NOTIF[0])[1]} · טיימר: ${(SND_TIMER.find(x => x[0] === tSnd()) || SND_TIMER[0])[1]}`],
     ['ai', '📷', 'זיהוי אוכל מתמונה', store(AIK) ? '✓ Gemini מחובר' : 'לא מחובר · צריך מפתח Gemini (חינם)'],
