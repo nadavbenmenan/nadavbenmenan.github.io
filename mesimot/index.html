@@ -1651,7 +1651,9 @@ let syncTimer = null;
 function changed(){ renderAll(); clearTimeout(syncTimer); syncTimer = setTimeout(() => sync(), 800); afterChangeNative(); }
 
 /* ---------- רשימות משותפות: קניות ומתכונים בענן (Firebase) ---------- */
-// בקניות ובמתכונים יש לשוניות: "שלי" (רק בטלפון), כל רשימה משותפת, ו"＋" (יצירה או התחברות).
+// בקניות ובמתכונים יש לשוניות: "שלי" (רק בטלפון), כל רשימה משותפת, ו"+" (יצירה או התחברות).
+// לכל רשימה שם תצוגה (name, כל חבר יכול לשנות) ושם ייחודי (key, להתחברות). כל חבר מנהל: מאשר, מוציא, משנה שם.
+// רשימה מועדפת (def): עליה נפתחים כשנכנסים לקניות או למתכונים. רשימה חדשה נהיית המועדפת. לחיצה ארוכה על לשונית: הגדרות הרשימה.
 // names/{שם}            = {gid, owner, name}: השם של כל רשימה ייחודי. דרכו מתחברים.
 // groups/{gid}          = {name, key, owner, members: {uid: true}, names: {uid: 'שם'}, createdAt}
 // groups/{gid}/requests/{uid} = {name, status: pending|approved|denied, at}: בקשת התחברות. חבר מאשר.
@@ -1675,12 +1677,12 @@ function clRandomId(n){
   const abc = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(n); crypto.getRandomValues(b);
   return Array.from(b, x => abc[x % abc.length]).join('');
 }
-/** {lists: [{gid, name, key, uid, owner}], active: הלשונית בקניות, activeRc: הלשונית במתכונים (null = שלי), pend: [{gid, name, at}], seen} */
+/** {lists: [{gid, name, key, uid, owner}], active: הלשונית בקניות, activeRc: הלשונית במתכונים (null = שלי), def: המועדפת, pend: [{gid, name, at}], seen} */
 function clState(){
   let s = storeJson(CL_KEY, null) || {};
   if(s.gid) s = {lists: [{gid: s.gid, name: s.name}], active: s.gid};   // הגרסה הראשונה: קבוצה אחת
   s.lists = s.lists || []; s.pend = s.pend || []; s.seen = s.seen || [];
-  for(const p of ['active', 'activeRc']) if(s[p] && !s.lists.some(l => l.gid === s[p])) s[p] = null;
+  for(const p of ['active', 'activeRc', 'def']) if(s[p] && !s.lists.some(l => l.gid === s[p])) s[p] = null;
   return s;
 }
 function clSave(s){ s.seen = s.seen.slice(-300); store(CL_KEY, JSON.stringify(s)); clUi(); clNative(); }
@@ -1767,7 +1769,7 @@ async function clStartG(l){
     if(!g.doc) return clDropList(l.gid, `"${l.name}" נסגרה`);
     if(!g.doc.members?.[CL.user.uid]) return clDropList(l.gid, `הוצאת מ"${l.name}"`);
     const s = clState(), me = s.lists.find(x => x.gid === l.gid), own = g.doc.owner === CL.user.uid;
-    if(me && (me.name !== g.doc.name || !!me.owner !== own)){ me.name = g.doc.name; me.owner = own; clSave(s); }
+    if(me && (me.name !== g.doc.name || !!me.owner !== own || me.code !== g.doc.key)){ me.name = g.doc.name; me.owner = own; me.code = g.doc.key; clSave(s); }
     clUi();
   }, e => clFail(e)));
   for(const col of CL_COLS) g.unsub.push(f.fs.onSnapshot(f.fs.collection(ref, col), sn => clRecv(l.gid, col, sn), e => clFail(e)));
@@ -1778,7 +1780,7 @@ function clDropList(gid, msg){
   clStopG(gid);
   if(!clList(gid)) return;
   for(const col of CL_COLS) if(clActive(col) === gid) clSwitch(col, null);
-  const s = clState(); s.lists = s.lists.filter(x => x.gid !== gid); clSave(s);
+  const s = clState(); s.lists = s.lists.filter(x => x.gid !== gid); if(s.def === gid) s.def = null; clSave(s);
   for(const col of CL_COLS) store(clKey(gid, col), null);
   if(msg) toast(msg);
   renderAll();
@@ -1836,7 +1838,7 @@ function clReqs(gid, snap){
   for(const r of g.reqs){ const k = 'r:' + gid + '/' + r.uid; if(!s.seen.includes(k)){ s.seen.push(k); fresh.push(r); } }
   if(fresh.length){
     clSave(s);
-    if(clIsOwner(gid)) clAlert('👥 ' + (l?.name || ''), fresh.length === 1 ? `${fresh[0].name || 'מישהו'} רוצה להתחבר` : `${fresh.length} רוצים להתחבר`);
+    clAlert('👥 ' + (l?.name || ''), fresh.length === 1 ? `${fresh[0].name || 'מישהו'} רוצה להתחבר` : `${fresh.length} רוצים להתחבר`);
   }
   clUi();
 }
@@ -1863,10 +1865,10 @@ async function clReqChange(p, d){
     const key = clRandomId(32);
     try{ await CL.fb.fs.setDoc(clRef(p.gid, 'keys', key), {uid: CL.user.uid}); }catch(e){}
     if(!s.lists.some(l => l.gid === p.gid)) s.lists.push({gid: p.gid, name: p.name, key, uid: CL.user.uid});
-    clSave(s);
+    s.def = p.gid; clSave(s);
     if(!told) clAlert('✅ ' + p.name, 'אושרת. אפשר לערוך ביחד');
     try{ await CL.fb.fs.deleteDoc(ref); }catch(e){}
-    await clStart(); clSwitch(screen === 'recipes' ? 'recipes' : 'shop', p.gid);
+    await clStart(); clSwitch('shop', p.gid); clSwitch('recipes', p.gid);
   }else{
     clSave(s);
     if(!told) clAlert(p.name, 'הבקשה לא אושרה');
@@ -1886,7 +1888,8 @@ async function clAnswer(gid, r, yes){
 
 /* --- יצירה, התחברות, יציאה --- */
 const CL_INFO = 'רשימה משותפת: כמה אנשים רואים ועורכים את אותה רשימת קניות ואותם מתכונים, וכל שינוי מופיע אצל כולם מיד.\n\n'
-  + '✨ יצירה: בוחרים שם פנוי. הוא הדרך להתחבר.\n🔗 התחברות: רושמים את שם הרשימה, ומי שיצר/ה אותה מאשר/ת.\n\n'
+  + '✨ יצירה: שם לרשימה, ושם ייחודי שדרכו מתחברים.\n🔗 התחברות: רושמים את השם הייחודי, ואחד החברים מאשר.\n\n'
+  + '⭐ המועדפת נפתחת כשנכנסים. לחיצה ארוכה על לשונית: הגדרות הרשימה.\n'
   + '"שלי" נשארת רק בטלפון. משימות, בריאות ותרופות לא משותפים אף פעם.';
 function clInfo(){ ask('❗ רשימות משותפות', [], {note: CL_INFO, ok: 'הבנתי', no: 'סגירה'}); }
 /** "＋": יצירה או התחברות. */
@@ -1898,27 +1901,29 @@ async function clAskName(){
   saveConfig({userName: r[0]}); return r[0];
 }
 async function clCreate(){
-  const r = await ask('✨ רשימה חדשה', [{label: 'שם', ph: 'למשל: הבית', req: true}], {ok: 'יצירה'});
+  let typed = false;
+  const r = await ask('✨ רשימה חדשה', [{label: 'שם', ph: 'למשל: הבית', req: true}, {label: 'שם ייחודי (להתחברות)', ph: 'למשל: הבית של נדב', req: true}], {ok: 'יצירה',
+    init: d => { const a = d.querySelector('#ask-0'), b = d.querySelector('#ask-1');
+      a.oninput = () => { if(!typed) b.value = a.value; }; b.oninput = () => { typed = true; }; }});
   if(!r) return;
-  const name = clClean(r[0]), key = clNameKey(name);
-  if(key.replace(/[\s-]/g, '').length < 2) return toast('שם קצר מדי', {err: true});
+  const name = clClean(r[0]), code = clClean(r[1]), key = clNameKey(code);
+  if(key.replace(/[\s-]/g, '').length < 2) return toast('שם ייחודי קצר מדי', {err: true});
   const me = await clAskName(); if(!me) return;
   try{
     const f = await clLoad(), u = await clUser();
-    if((await f.fs.getDoc(clNameRef(key))).exists()) return toast(`"${name}" תפוס`, {err: true});
+    if((await f.fs.getDoc(clNameRef(key))).exists()) return toast(`"${code}" תפוס. צריך שם ייחודי אחר`, {err: true});
     const gid = clRandomId(20), secret = clRandomId(32), b = f.fs.writeBatch(f.db);
     b.set(clRef(gid), {name, key, owner: u.uid, members: {[u.uid]: true}, names: {[u.uid]: me}, createdAt: nowIso()});
-    b.set(clNameRef(key), {gid, owner: u.uid, name});
+    b.set(clNameRef(key), {gid, owner: u.uid, name: code});
     b.set(clRef(gid, 'keys', secret), {uid: u.uid});
-    try{ await b.commit(); }catch(e){ return toast(/permission/.test(e?.code || '') ? `"${name}" תפוס` : clErrText(e), {err: true}); }
-    const s = clState(); s.lists.push({gid, name, key: secret, uid: u.uid, owner: true}); clSave(s);
-    const col = screen === 'recipes' ? 'recipes' : 'shop';
-    clSwitch(col, gid); await clStart();
-    toast(`✓ "${name}" נפתחה`);
+    try{ await b.commit(); }catch(e){ return toast(/permission/.test(e?.code || '') ? `"${code}" תפוס. צריך שם ייחודי אחר` : clErrText(e), {err: true}); }
+    const s = clState(); s.lists.push({gid, name, code: key, key: secret, uid: u.uid, owner: true}); s.def = gid; clSave(s);
+    clSwitch('shop', gid); clSwitch('recipes', gid); await clStart();
+    toast(`✓ "${name}" נפתחה ⭐`);
   }catch(e){ toast(clErrText(e), {err: true}); }
 }
 async function clJoin(){
-  const r = await ask('🔗 התחברות', [{label: 'שם הרשימה', req: true}], {ok: 'שליחת בקשה'});
+  const r = await ask('🔗 התחברות', [{label: 'השם הייחודי של הרשימה', req: true}], {ok: 'שליחת בקשה'});
   if(!r) return;
   const key = clNameKey(r[0]); if(!key) return;
   const me = await clAskName(); if(!me) return;
@@ -1945,21 +1950,23 @@ async function clLeave(gid){
   const g = CL.g[gid], last = !Object.keys(g?.doc?.members || {}).some(x => x !== CL.user?.uid);
   if(!(await ask(`יציאה מ"${l.name}"?`, [], {note: last ? 'הרשימה תיסגר' : '', ok: 'יציאה', danger: true}))) return;
   try{
-    const f = await clLoad(), u = await clUser(), d = (await f.fs.getDoc(clRef(gid))).data();
+    const f = await clLoad(), u = await clUser(), ref = clRef(gid);
+    let d = (await f.fs.getDoc(ref)).data();
     const rest = Object.keys(d?.members || {}).filter(x => x !== u.uid);
-    if(d && !rest.length && d.owner === u.uid){
-      // סגירה: מוחקים את הקניות והמתכונים של הרשימה מהענן, ומשחררים את השם
+    if(d && !rest.length){
+      // האחרון/ה: סוגרים. מוחקים את הקניות והמתכונים של הרשימה מהענן, ומשחררים את השם הייחודי
+      if(d.owner !== u.uid) await f.fs.updateDoc(ref, {owner: u.uid});
       for(const col of CL_COLS){
         const ids = [...(g?.remote[col].keys() || [])];
         for(let i = 0; i < ids.length; i += 400){ const b = f.fs.writeBatch(f.db); ids.slice(i, i + 400).forEach(id => b.delete(clRef(gid, col, id))); await b.commit(); }
       }
       const b = f.fs.writeBatch(f.db);
       if(d.key) b.delete(clNameRef(d.key));
-      b.delete(clRef(gid)); await b.commit();
+      b.delete(ref); await b.commit();
     }else if(d){
       const ch = {[`members.${u.uid}`]: f.fs.deleteField(), [`names.${u.uid}`]: f.fs.deleteField()};
       if(d.owner === u.uid) ch.owner = rest[0];
-      await f.fs.updateDoc(clRef(gid), ch);
+      await f.fs.updateDoc(ref, ch);
     }
   }catch(e){}
   clDropList(gid, last ? `"${l.name}" נסגרה` : `יצאת מ"${l.name}"`);
@@ -1970,22 +1977,38 @@ async function clRemove(gid, uid, name){
   catch(e){ toast(clErrText(e), {err: true}); }
 }
 /** לחיצה על לשונית של רשימה שכבר פתוחה: מי בה, ויציאה. */
-function clManage(gid){
+/** הגדרות רשימה (לחיצה ארוכה על לשונית, או מההגדרות): מועדפת, שם, השם הייחודי, חברים, יציאה. כל חבר מנהל. */
+function clListSettings(gid){
+  const s = clState(), isDef = (s.def || null) === (gid || null);
+  const fav = isDef ? [] : [['⭐ לפתוח עליה כשנכנסים', () => { const s2 = clState(); s2.def = gid || null; clSave(s2); toast('⭐ מועדפת'); }]];
+  if(!gid) return sheet('🛒 שלי' + (isDef ? ' ⭐' : ''), fav, 'רק בטלפון שלך');
   const l = clList(gid); if(!l) return;
-  const d = CL.g[gid]?.doc, own = clIsOwner(gid), me = CL.user?.uid;
-  const mem = Object.entries(d?.names || {}).map(([u, n]) => ({u, n, owner: u === d?.owner}));
-  sheet('👥 ' + l.name, [
-    ...(own ? mem.filter(m => m.u !== me).map(m => [`✕ להוציא את ${m.n}`, () => clRemove(gid, m.u, m.n)]) : []),
+  const d = CL.g[gid]?.doc, me = CL.user?.uid, code = d?.key || l.code || '';
+  const mem = Object.entries(d?.names || {}).map(([u, n]) => ({u, n}));
+  sheet('👥 ' + l.name + (isDef ? ' ⭐' : ''), [
+    ...fav,
+    ['✏️ שינוי שם', () => clRename(gid)],
+    ...(code ? [['📋 העתקת השם הייחודי', async () => { try{ await navigator.clipboard.writeText(code); toast('הועתק: ' + code); }catch(e){ toast(code, {ms: 8000}); } }]] : []),
+    ...mem.filter(m => m.u !== me).map(m => [`✕ להוציא את ${m.n}`, () => clRemove(gid, m.u, m.n)]),
     ['🚪 יציאה', () => clLeave(gid)],
-  ], mem.map(m => (m.owner ? '👑 ' : '') + m.n + (m.u === me ? ' (אני)' : '')).join(' · '));
+  ], (code ? `🔗 להתחברות: ${code}\n` : '') + mem.map(m => m.n + (m.u === me ? ' (אני)' : '')).join(' · '));
 }
+async function clRename(gid){
+  const l = clList(gid); if(!l) return;
+  const r = await ask('✏️ שם הרשימה', [{label: 'שם', value: l.name, req: true}], {ok: 'שמירה'});
+  if(!r) return;
+  try{ await clLoad(); await clUser(); await CL.fb.fs.updateDoc(clRef(gid), {name: clClean(r[0])}); toast('✓'); }catch(e){ toast(clErrText(e), {err: true}); }
+}
+/** כשנכנסים לקניות או למתכונים: הרשימה המועדפת. */
+function clOpenDefault(col){ const d = clState().def || null; if(clActive(col) !== d) clSwitch(col, d); }
 
 /* --- הלשוניות בקניות ובמתכונים, הבקשות, והעמוד בהגדרות --- */
 function clTabsHtml(col){
   const s = clState(), act = s[CL_PTR[col]] || null;
   const t = (on, attrs, txt, cls) => `<button type="button" class="${on ? 'on' : ''}${cls ? ' ' + cls : ''}" ${attrs}>${txt}</button>`;
-  return t(!act, 'data-sl=""', col === 'recipes' ? '📖 שלי' : '🛒 שלי')
-    + s.lists.map(l => t(act === l.gid, `data-sl="${esc(l.gid)}"`, '👥 ' + esc(l.name))).join('')
+  const star = g => s.lists.length && (s.def || null) === g ? ' ⭐' : '';
+  return t(!act, 'data-sl=""', (col === 'recipes' ? '📖 שלי' : '🛒 שלי') + star(null))
+    + s.lists.map(l => t(act === l.gid, `data-sl="${esc(l.gid)}"`, '👥 ' + esc(l.name) + star(l.gid))).join('')
     + s.pend.map(p => t(false, `data-pend="${esc(p.gid)}"`, '⏳ ' + esc(p.name))).join('')
     + t(false, 'data-add="1" aria-label="רשימה משותפת"', s.lists.length || s.pend.length ? '+' : '+ רשימה משותפת', 'cl-plus');
 }
@@ -2005,16 +2028,18 @@ function clTabsClick(col, e){
   }
   if(b.dataset.sl != null){
     const gid = b.dataset.sl || null;
-    if(gid && clActive(col) === gid) return clManage(gid);
+    if(clActive(col) === gid) return clListSettings(gid);
     clSwitch(col, gid);
   }
 }
 function renderPfShare(){
   const box = $('pf-share'); if(!box) return;
-  const s = clState();
+  const s = clState(), star = g => (s.def || null) === g ? ' ⭐' : '';
+  const row = (attr, i, t, sub) => `<button type="button" class="more-row" ${attr}><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${sub}</span></span><span class="side">‹</span></button>`;
   let h = `<div class="cl-cards">${clReqsHtml()}`;
-  h += s.lists.map(l => { const n = Object.keys(CL.g[l.gid]?.doc?.members || {}).length;
-    return `<button type="button" class="more-row" data-m="${esc(l.gid)}"><span class="i">👥</span><span class="b"><span class="t">${esc(l.name)}${clIsOwner(l.gid) ? ' 👑' : ''}</span><span class="s">${n ? n + ' חברים' : ''}</span></span><span class="side">‹</span></button>`; }).join('');
+  if(s.lists.length) h += row('data-m=""', '🛒', 'שלי' + star(null), 'רק בטלפון');
+  h += s.lists.map(l => { const d = CL.g[l.gid]?.doc, n = Object.keys(d?.members || {}).length;
+    return row(`data-m="${esc(l.gid)}"`, '👥', esc(l.name) + star(l.gid), [d?.key || l.code ? '🔗 ' + esc(d?.key || l.code) : '', n ? n + ' חברים' : ''].filter(Boolean).join(' · ')); }).join('');
   h += s.pend.map(p => `<button type="button" class="more-row" data-pend="${esc(p.gid)}"><span class="i">⏳</span><span class="b"><span class="t">${esc(p.name)}</span><span class="s">מחכה לאישור</span></span></button>`).join('');
   h += `</div><div class="cl-main"><button class="btn primary" type="button" data-add="1">+ ${s.lists.length ? 'צירוף לרשימה' : 'רשימה משותפת'}</button>
     <button class="btn cl-i" type="button" data-info="1" aria-label="מה זה?">❗</button></div>`;
@@ -2024,7 +2049,7 @@ function renderPfShare(){
 $('pf-share').onclick = e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.info) return clInfo();
-  if(b.dataset.m) return clManage(b.dataset.m);
+  if(b.dataset.m != null) return clListSettings(b.dataset.m || null);
   clTabsClick('shop', e);
 };
 function openShare(){ show('shop'); }
@@ -2042,7 +2067,7 @@ async function clNative(){
   if(!NATIVE || !CL.user) return;
   const s = clState(), c = clCfg();
   const cfg = s.lists.length || s.pend.length ? {apiKey: c.apiKey, projectId: c.projectId, refresh: CL.user.refreshToken, uid: CL.user.uid,
-    watch: s.lists.filter(l => clIsOwner(l.gid)).map(l => ({gid: l.gid, name: l.name})), pend: s.pend.map(p => ({gid: p.gid, name: p.name})), seen: s.seen} : null;
+    watch: s.lists.map(l => ({gid: l.gid, name: l.name})), pend: s.pend.map(p => ({gid: p.gid, name: p.name})), seen: s.seen} : null;
   try{
     const r = await window.Capacitor.Plugins.Alarm.cloud({cfg: cfg ? JSON.stringify(cfg) : ''});
     const more = (r?.seen || []).filter(k => !s.seen.includes(k));
@@ -2051,6 +2076,7 @@ async function clNative(){
 }
 for(const [col, id, rq] of [['shop', 'shop-tabs', 'shop-reqs'], ['recipes', 'rc-tabs', 'rc-reqs']]){
   $(id).onclick = e => clTabsClick(col, e);
+  onHold($(id), '[data-sl]', el => clListSettings(el.dataset.sl || null));
   $(rq).onclick = e => clTabsClick(col, e);
 }
 clUi();
@@ -2318,6 +2344,7 @@ function show(s){
   // כניסה לבריאות: תמיד הסיכום היומי של היום, והארוחה של השעה הזו
   if(s === 'kcal' && screen !== 'kcal'){ hTab = 'kcal'; kcDate = today(); kcMeal = mealNow(); }
   if(s === 'prefs' && screen !== 'prefs') pfPage = null;
+  if((s === 'shop' || s === 'recipes') && screen !== s) try{ clOpenDefault(s); }catch(e){}   // נפתחים על הרשימה המועדפת
   if(s === 'notif' && screen !== 'notif') ntTab = 'notif';
   screen = s;
   for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history', 'calc']) $('scr-' + x).hidden = x !== s;
