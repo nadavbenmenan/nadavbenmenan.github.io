@@ -745,15 +745,22 @@
   .shop-add input{flex:1}
   .shop-add .btn{flex:none}
   #shop-sug{margin-top:12px}
-  /* הוספה מהירה: פס צר בצד (משמאל), לא בתוך הסל. רק מוצרים שהוספת 10 פעמים */
-  .quick-rail{position:sticky;top:12px;float:left;margin:14px -8px 0 0;max-height:calc(100vh - var(--sb, 0px) - 110px);width:60px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;align-items:center;
-    padding:8px 3px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.08);z-index:4}
+  /* הצעות: פס צר בצד (משמאל), לא בתוך הסל. נראה כהצעה: מקווקו, רקע אחר, קטן ושקוף-למחצה, ＋ על כל מוצר */
+  .quick-rail{position:sticky;top:12px;float:left;margin:14px -8px 0 0;max-height:calc(100vh - var(--sb, 0px) - 110px);width:54px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;align-items:center;
+    padding:6px 2px;background:var(--bg);border:1.5px dashed var(--muted);border-radius:16px;z-index:4;opacity:.92}
   .quick-rail[hidden]{display:none}
-  .quick-rail .qh{font-size:16px;line-height:1}
-  .quick-rail button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;width:56px;padding:2px 0;cursor:pointer;color:var(--text)}
-  .quick-rail img,.quick-rail .qe{width:40px;height:40px;border-radius:10px;background:#fff;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:24px}
-  .quick-rail small{font-size:10px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #scr-shop.has-quick #shop-list{margin-left:66px}
+  .quick-rail .qh{font-size:10px;font-weight:700;color:var(--muted);line-height:1.1}
+  .quick-rail button{position:relative;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:1px;width:50px;padding:2px 0;cursor:pointer;color:var(--muted);-webkit-touch-callout:none;user-select:none}
+  .quick-rail img,.quick-rail .qe{width:32px;height:32px;border-radius:8px;background:#fff;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:19px;filter:saturate(.75)}
+  .quick-rail button::after{content:"+";position:absolute;top:0;right:4px;width:14px;height:14px;border-radius:50%;background:var(--muted);color:#fff;font-size:12px;font-weight:700;line-height:14px;text-align:center}
+  .quick-rail small{font-size:9.5px;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #shop-list .item{-webkit-touch-callout:none;user-select:none}
+  .pic-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0}
+  .pic-grid button{font-size:26px;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer}
+  .pic-grid button.on{outline:3px solid var(--accent)}
+  #sp-prev{display:flex;justify-content:center;margin-top:6px}
+  #sp-prev .pic{width:64px;height:64px;font-size:40px}
+  #scr-shop.has-quick #shop-list{margin-left:60px}
   #shop-sug button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #shop-list{margin-top:4px}
   #shop-list .sec{margin-top:18px}
@@ -821,7 +828,7 @@
   </div>
   <div id="shop-sug-box"><span class="lbl sug" id="shop-sug-lbl"></span>
   <div class="opts" id="shop-sug" aria-label="הצעות"></div></div>
-  <aside id="shop-quick" class="quick-rail" hidden aria-label="הוספה מהירה"></aside>
+  <aside id="shop-quick" class="quick-rail" hidden aria-label="הצעות"></aside>
   <div id="shop-list"></div>
   <button class="btn" id="shop-copy" type="button" hidden style="width:100%;margin-top:18px">📋 העתקת הסל לרשימה אחרת</button>
   <button class="btn" id="shop-clear" type="button" hidden style="width:100%;margin-top:10px;color:var(--red)">🗑 ריקון הסל</button>
@@ -1182,6 +1189,13 @@
   <div class="btns"><button class="btn" id="d-cancel">ביטול</button><button class="btn primary" id="d-ok">✓ אישור</button></div>
 </div></dialog>
 
+<dialog id="dlg-shoppic" aria-label="תמונה למוצר"><div class="dlg">
+  <h2 id="sp-title">תמונה</h2>
+  <div id="sp-prev"></div>
+  <div class="pic-grid" id="sp-grid"></div>
+  <div class="btns" style="flex-wrap:wrap"><button class="btn" id="sp-gal" type="button">📷 מהגלריה</button><button class="btn" id="sp-auto" type="button">↺ אוטומטית</button><button class="btn" id="sp-cancel" type="button">ביטול</button><button class="btn primary" id="sp-ok" type="button">שמירה</button></div>
+  <input type="file" id="sp-file" accept="image/*" hidden>
+</div></dialog>
 <dialog id="dlg-shopcat" aria-label="מחלקה"><div class="dlg">
   <h2 id="sc-title">מחלקה</h2>
   <div class="opts" id="sc-opts"></div>
@@ -2509,7 +2523,7 @@ function prodPic(x){
 }
 function renderShop(){
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
-  // כשמקלידים: עד 10 הצעות להשלמה, מתחת לשורה. בלי הקלדה: אין הצעות בתוך הסל, רק הפס בצד (הוספה מהירה)
+  // כשמקלידים: עד 10 הצעות להשלמה, מתחת לשורה. בלי הקלדה: אין הצעות בתוך הסל, רק הפס בצד (תמיד 10 הצעות)
   const sug = q ? ל.shopSuggest(items, q, 10) : [], quick = q ? [] : ל.shopQuick(items);
   $('shop-wa').hidden = !groups.length;
   $('shop-clear').hidden = !groups.length;
@@ -2517,7 +2531,7 @@ function renderShop(){
   $('shop-sug-lbl').textContent = '';
   $('shop-sug-box').hidden = !sug.length;
   $('shop-quick').hidden = !quick.length; $('scr-shop').classList.toggle('has-quick', !!quick.length);
-  $('shop-quick').innerHTML = quick.length ? '<span class="qh" title="הוספה מהירה">⚡</span>' + quick.map(x => `<button type="button" data-n="${esc(x.name)}" aria-label="הוספה: ${esc(x.name)}">${x.photo
+  $('shop-quick').innerHTML = quick.length ? '<span class="qh">הצעות</span>' + quick.map(x => `<button type="button" data-n="${esc(x.name)}" aria-label="הצעה, להוסיף: ${esc(x.name)}">${x.photo
     ? `<img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=qe>${esc(x.emoji || '🛒')}</span>'">` : `<span class="qe">${x.emoji || '🛒'}</span>`}<small>${esc(x.name)}</small></button>`).join('') : '';
   $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.fav ? '⭐' : ''}${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
   $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
@@ -2584,6 +2598,52 @@ $('shop-list').onclick = e => {
   saveShop(ל.shopBuy(x, nowIso()));
   toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))});
 };
+// לחיצה ארוכה על מוצר (בסל או בהצעות): שינוי שם, החלפת תמונה, מחלקה. השינוי נשמר עם המוצר, וברשימה משותפת עובר לכולם
+const shopRecOf = name => ל.shopRecord(D.file.shop.items, name, nowIso());
+function shopProdMenu(x){
+  const ed = ch => Object.assign({}, x, ch, {updatedAt: nowIso()});
+  sheet(x.name, [
+    ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; const n = (v || '').trim().replace(/\s+/g, ' ');
+      if(!n || n === x.name) return;
+      if(D.file.shop.items.some(i => !i.deleted && i.id !== x.id && ל.shopKey(i.name) === ל.shopKey(n))) return toast('כבר יש מוצר בשם הזה');
+      saveShop(ed({name: n})); renderShop(); toast('✓ נשמר'); }],
+    ['🖼️ החלפת תמונה', () => openShopPic(x)],
+    [`🗂️ מחלקה: ${ל.shopInfo(x).catName}`, () => openShopCat(x)],
+    ...(x.active ? [['✓ קניתי', () => { saveShop(ל.shopBuy(x, nowIso())); renderShop(); }]] : [['🛒 להוסיף לסל', () => { shopAddName(x.name); renderShop(); }]])]);
+}
+const SHOP_PICS = '🥛 🧀 🥚 🧈 🍞 🥖 🥐 🥯 🍎 🍌 🍊 🍋 🍇 🍓 🍉 🍐 🍑 🥝 🥭 🍍 🥥 🍅 🥒 🥕 🌽 🥔 🧅 🧄 🥬 🥦 🫑 🌶️ 🍄 🥑 🍆 🫘 🍚 🍝 🥫 🧂 🫒 🍯 ☕ 🍵 🧃 🥤 🍷 🍺 💧 🍫 🍪 🍬 🍿 🥜 🍗 🥩 🐟 🍤 🌭 🥓 🍕 🍦 🧊 🧻 🧽 🧼 🧴 🪥 💊 🩹 🍼 🐶 🐱 🔋 💡 🛒'.split(' ');
+let spItem = null, spSel = '';
+function renderShopPic(){
+  const now = Object.assign({}, spItem, {pic: spSel});
+  $('sp-prev').innerHTML = prodPic(Object.assign(now, ל.shopInfo(now)));
+  $('sp-grid').innerHTML = SHOP_PICS.map(e => `<button type="button" data-e="${e}" class="${spSel === e ? 'on' : ''}" aria-label="${e}">${e}</button>`).join('');
+}
+function openShopPic(x){
+  spItem = x; spSel = x.pic || '';
+  $('sp-title').textContent = 'תמונה ל' + x.name;
+  renderShopPic(); $('dlg-shoppic').showModal();
+}
+$('sp-grid').onclick = e => { const b = e.target.closest('[data-e]'); if(b){ spSel = b.dataset.e; renderShopPic(); } };
+$('sp-gal').onclick = () => $('sp-file').click();
+// מהגלריה: מוקטנת ל-160 פיקסלים (כמה קילובייטים), כדי שתעבור גם ברשימה משותפת
+$('sp-file').onchange = async () => { const f = $('sp-file').files[0]; $('sp-file').value = ''; if(!f) return;
+  try{ spSel = await shrinkImage(f, 160); renderShopPic(); }catch(e){ toast(e.message); } };
+const spSave = pic => { const r = Object.assign({}, spItem, {updatedAt: nowIso()}); if(pic) r.pic = pic; else delete r.pic;
+  saveShop(r); $('dlg-shoppic').close(); renderShop(); if(pfList === 'shop') renderPfLists(); toast('✓ התמונה נשמרה'); };
+$('sp-ok').onclick = () => spSave(spSel);
+$('sp-auto').onclick = () => spSave('');
+$('sp-cancel').onclick = () => $('dlg-shoppic').close();
+{ let t = null, lp = false;
+  const at = e => { const p = e.target.closest('#shop-list [data-p]'), q = e.target.closest('#shop-quick [data-n]');
+    if(p) return D.file.shop.items.find(i => i.id === p.dataset.p); if(q) return shopRecOf(q.dataset.n); return null; };
+  for(const root of [$('shop-list'), $('shop-quick')]){
+    root.addEventListener('pointerdown', e => { lp = false; clearTimeout(t); if(!at(e)) return;
+      t = setTimeout(() => { const x = at(e); if(!x) return; lp = true; navigator.vibrate?.(30); shopProdMenu(x); }, 550); });
+    for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, () => clearTimeout(t));
+    root.addEventListener('pointermove', e => { if(Math.abs(e.movementY) > 4) clearTimeout(t); });
+    root.addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    root.addEventListener('contextmenu', e => { if(at(e)) e.preventDefault(); });
+  } }
 
 /* ---------- מתכונים ---------- */
 // הנתונים ב-משימות/מתכונים.json. מצרך → מוצר לקניות: ליבה.ingredientProduct. משך בשלב → כפתור תזכורת (משימה עם שעה,
@@ -8001,6 +8061,7 @@ function shopItemMenu(x){
   sheet(x.name, [
     [x.fav ? '★ הסרה מהמועדפים' : '⭐ הוספה למועדפים', () => shopFavMany([x], !x.fav)],
     ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; if(v && v !== x.name){ saveShop(shopRecWith(x, {name: v})); toast('✓ נשמר'); } }],
+    ['🖼️ החלפת תמונה', () => openShopPic(shopRecWith(x, {}))],
     [`🗂️ מחלקה: ${(ל.SHOP_CATS.find(c => c.id === x.cat) || {}).name || 'אחר'}`, () => openShopCat(shopRecWith(x, {}))],
     x.rec?.active ? ['✓ כבר ברשימת הקניות', () => {}] : ['🛒 להוסיף לרשימת הקניות', () => { shopAddName(x.name); toast(`✓ ${x.name} ברשימה`); }],
     ['🗑 מחיקה (גם מההצעות)', () => { pfSel.delete(x.key); shopHideMany([x]); }]]);
