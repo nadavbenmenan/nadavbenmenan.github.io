@@ -2061,8 +2061,8 @@ async function clRename(gid){
   if(!r) return;
   try{ await clLoad(); await clUser(); await CL.fb.fs.updateDoc(clRef(gid), {name: clClean(r[0])}); toast('✓'); }catch(e){ toast(clErrText(e), {err: true}); }
 }
-/** רשימת קניות: כשיש רשימה משותפת, "שלי" לא מוצגת (גם בקניות וגם במתכונים). מה שהיה בה נשמר בטלפון, וחוזר אם כל הרשימות נמחקות. */
-const clNoMine = () => SHOP && clState().lists.length > 0;
+/** כשיש רשימה משותפת, "שלי" לא מוצגת (בקניות, במתכונים ובהגדרות), בשתי האפליקציות. מה שהיה בה נשמר בטלפון, וחוזר אם כל הרשימות נמחקות. */
+const clNoMine = () => clState().lists.length > 0;
 function clFixMine(){
   if(CL.dropping || !clNoMine()) return;
   const s = clState(), to = s.def || s.lists[0].gid;
