@@ -2454,6 +2454,10 @@ function shopInfo(nameOrItem){
   }
   let emoji = entry ? entry.emoji : '', photo = entry ? (entry.pack ? packUrl(entry.pack, entry.name) : photoUrl(entry.photo)) : '';
   if(!emoji && !photo) ({emoji, photo} = genericFor(name, cat));   // תחום על: תמונה של הסוג
+  // תמונה שבחרו למוצר (לחיצה ארוכה): אמוג'י או תמונה מהגלריה. עוברת עם הרשימה לכל המשתמשים בה
+  const pic = item && typeof item.pic === 'string' ? item.pic : '';
+  if(/^data:image\//.test(pic)){ photo = pic; emoji = ''; }
+  else if(pic && pic.length <= 16){ emoji = pic; photo = ''; }
   // לטקסט (וואטסאפ, מצרכי מתכון) תמיד יש אמוג'י: של המוצר, של הסוג (פלפל לבן = תבלין), או של המחלקה
   const textEmoji = emoji || genericFor(name, cat).emoji || catOf(cat).emoji;
   return {cat, emoji, photo, textEmoji, catName: catOf(cat).name, catEmoji: catOf(cat).emoji, order: catOf(cat).order};
@@ -2473,6 +2477,7 @@ function shopAdd(items, name, nowIso){
     boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
   if(cur && cur.cat) r.cat = cur.cat;
   if(cur && cur.fav) r.fav = true;
+  if(cur && cur.pic) r.pic = cur.pic;   // תמונה שבחרו נשארת
   return r;
 }
 /** רשומה למוצר (גם מוצר מהרשימה המובנית שעוד לא השתמשו בו), בלי להכניס לרשימת הקניות. */
@@ -2508,12 +2513,22 @@ function shopSuggest(items, query, limit){
     .map(x => ({name: x.name, catalog: true}));
   return past.concat(cat).slice(0, Math.max(limit || 12, past.filter(x => x.fav).length)).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
 }
-/** הוספה מהירה (בצד): רק מוצרים שהוספת לפחות 10 פעמים (או סימנת ⭐), שלא בסל עכשיו. עד 10, הכי נפוצים קודם. בהתחלה: כלום. */
-const SHOP_QUICK_MIN = 10, SHOP_QUICK_MAX = 10;
+/** הצעות בצד: תמיד 10 (כשיש מספיק). קודם מוצרים שהוספת לפחות 3 פעמים (או ⭐), הנפוצים קודם, ואחריהם
+    הפופולריים מהרשימה המובנית (לסירוגין בין מחלקות). בלי מה שבסל עכשיו ובלי מה שנמחק. */
+const SHOP_QUICK_MIN = 3, SHOP_QUICK_MAX = 10;
 function shopQuick(items){
-  return (items || []).filter(x => !x.deleted && !x.hidden && !x.active && ((+x.count || 0) >= SHOP_QUICK_MIN || x.fav))
-    .sort((a, b) => (b.count || 0) - (a.count || 0) || +!!b.fav - +!!a.fav || a.name.localeCompare(b.name))
-    .slice(0, SHOP_QUICK_MAX).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
+  const mine = (items || []).filter(x => !x.deleted), keyOf = x => shopStemKey(canonName(x.name));
+  const byKey = new Map(mine.map(x => [keyOf(x), x])), seen = new Set(), out = [];
+  const push = x => { const k = keyOf(x); if(seen.has(k) || out.length >= SHOP_QUICK_MAX) return; seen.add(k); out.push(x); };
+  mine.filter(x => !x.hidden && !x.active && ((+x.count || 0) >= SHOP_QUICK_MIN || x.fav))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || +!!b.fav - +!!a.fav || a.name.localeCompare(b.name)).forEach(push);
+  for(const c of SHOP_CATALOG.slice().sort((a, b) => a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)){
+    if(out.length >= SHOP_QUICK_MAX) break;
+    const r = byKey.get(keyOf(c));
+    if(r && (r.active || r.hidden)) continue;
+    push(r || {name: c.name, catalog: true});
+  }
+  return out.map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
 }
 const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
 /** הרשימה מחולקת למחלקות, לפי סדר ההליכה בסופר. */
