@@ -2248,45 +2248,98 @@ for(const x of SHOP_CATALOG){
   x.photo = SHOP_PHOTOS[x.name] || '';
   if(NO_EMOJI.has(x.name) || x.emoji === SHOP_CAT[x.cat].emoji && !EMOJI_OK.has(x.name)) x.emoji = '';
 }
-// "תחומי על": מוצר בלי תמונה ובלי אמוג'י משלו מקבל תמונה של הסוג שלו (פלפל לבן = תבלין, ביסלי = חטיף). הראשון שמתאים קובע.
-// כלל בלי words הוא ברירת המחדל של המחלקה. כך לשום מוצר אין "בלי תמונה".
+/* ---------- סדר בתמונות (25.11.2026): תמונה אמיתית רק אם היא באמת המוצר ---------- */
+// מוצר בלי תמונה אמיתית משלו (קוטג׳, ביסלי, פלפל לבן) לא מקבל תמונה של מוצר "דומה" (גבינה, בייגלה, כמון).
+// במקום: אריזה מצוירת עם שם המוצר עליה (גביע "קוטג׳", שקית "ביסלי", צנצנת "פלפל לבן"). פרי או ירק בלי תמונה: אריח עם השם.
+// הפורמט: סוג צבע: מוצר, מוצר; ...
+const PACKS_SRC = `
+  tub #1E6FD9: קוטג׳; tub #4A90D9: גבינה לבנה; tub #2F9E6E: לבנה; tub #D9534F: שמנת חמוצה; tub #E0577B: יוגורט פירות; tub #3D5A99: יוגורט חלבון;
+  tub #2E8B57: אקטיביה; tub #1F5FAD: דנונה; tub #E06C2B: יופלה; tub #4A7FC1: אשל; tub #7A5CC0: גיל; tub #3B7DD8: לבן;
+  cup #7B4A2E: מעדן, מילקי; cup #A0522D: פודינג; cup #5A3E8C: מעדן חלבון; cup #8B4513: דני; cup #C08A3E: פודינג חלב;
+  bottle #E0577B: יוגורט שתייה; bottle #3B7DD8: קפיר; carton #2F80ED: חלב דל לקטוז; carton #6D4C41: שוקו;
+  block #E8B923: עמק; block #D9822B: אדם; block #EDE3C4: חלומי; block #E9EEF3: גבינה צפתית, גבינה מלוחה; block #F3EBD8: קממבר; block #9BB3D1: גבינה כחולה;
+  salad #C9A56B: חומוס, חומוס מסבחה; salad #D8C3A0: טחינה מוכנה; salad #6B3FA0: סלט חצילים, ממרח חצילים; salad #C0392B: מטבוחה; salad #D35400: סלט טורקי;
+  salad #8BC34A: סלט כרוב; salad #E5B90F: סלט ביצים; salad #E6A23C: סלט טונה; salad #8E6E53: באבא גנוש; salad #7CB342: גוואקמולי, סלט חסה; salad #9CCB86: צזיקי;
+  salad #8D5A3B: כבד קצוץ; salad #F39C12: סלט גזר; salad #C5A880: סלט קינואה; salad #6B7B3A: זיתים מתובלים;
+  tray #D98880: נקניק; tray #B03A2E: פסטרמה; tray #A93226: סלמי; tray #E59866: פסטרמה הודו; tray #F0B27A: חזה הודו פרוס; tray #A1887F: סייטן;
+  tray #D4A055: שניצל, שניצל מוכן; tray #E5B90F: שניצל תירס; tray #7B241C: כבד, כבד עוף; tray #922B21: לבבות עוף, קורקבנים; tray #E8A87C: כנפיים, פרגית שלמה; tray #CD6155: קבב עוף;
+  bag #E67E22: ביסלי, צ׳יטוס; bag #F4D03F: במבה, אפרופו; bag #8E44AD: במבה נוגט; bag #C0392B: דוריטוס, חמוציות; bag #5D6D7E: זרעי צ׳יה; bag #A0522D: זרעי פשתן;
+  bag #34495E: פרג; bag #8E6E53: תאנים מיובשות; bag #48A9C5: במיה קפואה;
+  bar #6E2C00: קליק; bar #7B3F00: פסק זמן; bar #4E342E: טעמי; bar #8B0000: כיף כף; bar #E74C3C: קינדר; bar #5D4037: מקופלת; bar #34495E: חטיף חלבון;
+  bar #C49A6C: חטיף דגנים; bar #2E7D32: חטיף אנרגיה; bar #6D4C41: שוקולד עם אגוזים; bar #D8C8A8: שוקולד לבן;
+  block #C8A165: חלבה; box #C0392B: קרמבו; box #27AE60: סטיביה; box #2980B9: סוכרזית; box #5DADE2: קצפת אבקה; can #2E86C1: טונה;
+  jar #DADFE3: פלפל לבן; jar #8E2430: סומק; jar #C49A3A: חוואיג׳; jar #E8C547: מלח לימון; jar #D68910: תבלין לעוף; jar #A04000: תבלין; jar #5D4037: סילאן; jar #4E8C3A: פסטו;
+  name #8E9E3A: ארטישוק; name #E67E22: אפרסמון; name #F0A030: שסק; name #C2185B: ליצ׳י; name #6A1B9A: פסיפלורה; name #E57373: גויאבה; name #F57C00: פפאיה;
+  name #D81B60: צנון, צנונית; name #9E9D24: קולורבי; name #EF8F00: כורכום טרי; name #558B2F: במיה`;
+const PACKS = {};
+for(const part of PACKS_SRC.split(';')){
+  const m = part.trim().match(/^(\w+)\s+(#[0-9A-Fa-f]{6}):\s*(.+)$/); if(!m) continue;
+  for(const n of m[3].split(',')) PACKS[n.trim()] = {kind: m[1], color: m[2]};
+}
+for(const x of SHOP_CATALOG) if(PACKS[x.name]){ x.pack = PACKS[x.name]; x.photo = ''; x.emoji = ''; }
+const lum = c => { const v = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255); return .299 * v[0] + .587 * v[1] + .114 * v[2]; };
+const shade = (c, k) => '#' + [1, 3, 5].map(i => Math.max(0, Math.min(255, Math.round(parseInt(c.slice(i, i + 2), 16) * k)))).map(v => v.toString(16).padStart(2, '0')).join('');
+const PACK_CACHE = new Map();
+/** תמונת אריזה (SVG, data:) עם שם המוצר. kind: tub cup bottle carton block salad tray bag bar box jar can name. */
+function packUrl(pack, label){
+  label = String(label || '').trim().replace(/\s+/g, ' ').slice(0, 22);
+  const key = pack.kind + pack.color + label; if(PACK_CACHE.has(key)) return PACK_CACHE.get(key);
+  const c = pack.color, dk = shade(c, .78), ink = lum(c) > .62 ? '#222' : '#fff', sx = '#d5dbe2';
+  const esc = t => t.replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
+  // הטקסט: שורה אחת. שם ארוך מתכווץ לרוחב הפס
+  // שם של שתי מילים ויותר (וארוך): שתי שורות. שורה שעדיין ארוכה מדי מתכווצת לרוחב
+  const sp = label.length > 6 && label.includes(' ') ? (() => { const mid = label.length / 2; let best = -1;
+    for(let i = 0; i < label.length; i++) if(label[i] === ' ' && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+    return [label.slice(0, best), label.slice(best + 1)]; })() : [label];
+  const text = (y, w, col, size = 15) => {
+    size = sp.length > 1 ? size * 1.05 : size * 1.2;
+    const line = (t, yy) => { const fit = t.length * size * .56 > w ? ` textLength="${w}" lengthAdjust="spacingAndGlyphs"` : '';
+      return `<text x="48" y="${yy.toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans Hebrew',sans-serif" font-weight="700" font-size="${size.toFixed(1)}" fill="${col}"${fit}>${esc(t)}</text>`; };
+    return sp.length > 1 ? line(sp[0], y - size * .62) + line(sp[1], y + size * .38) : line(label, y + size * .08); };
+  const sticker = (y, w) => `<rect x="${48 - w / 2 - 3}" y="${y - 19}" width="${w + 6}" height="${sp.length > 1 ? 32 : 26}" rx="5" fill="#fff" stroke="${sx}"/>` + text(y - 2, w, '#222', 13);
+  const body = {
+    tub: `<path d="M16 30h64l-6 58H22z" fill="#fff" stroke="${sx}" stroke-width="1.5"/><rect x="11" y="20" width="74" height="13" rx="5" fill="${c}"/><rect x="18" y="42" width="60" height="32" fill="${c}"/>` + text(64, 54, ink),
+    cup: `<path d="M22 34h52l-5 52H27z" fill="#fff" stroke="${sx}" stroke-width="1.5"/><rect x="18" y="26" width="60" height="10" rx="4" fill="#cfd8dc"/><rect x="24" y="44" width="48" height="32" fill="${c}"/>` + text(66, 44, ink, 13),
+    bottle: `<rect x="38" y="8" width="20" height="12" rx="3" fill="${dk}"/><path d="M34 20h28l8 14v52a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4V34z" fill="#fff" stroke="${sx}" stroke-width="1.5"/><rect x="26" y="42" width="44" height="34" fill="${c}"/>` + text(65, 40, ink, 12),
+    carton: `<path d="M26 26l10-16h24l10 16v62H26z" fill="${c}"/><path d="M26 26h44" stroke="${dk}" stroke-width="3"/><rect x="29" y="40" width="38" height="34" rx="3" fill="#fff"/>` + text(62, 34, '#222', 11),
+    block: `<path d="M10 40l14-14h62l-14 14z" fill="${shade(c, 1.08)}"/><path d="M72 40l14-14v40l-14 14z" fill="${dk}"/><rect x="10" y="40" width="62" height="40" rx="3" fill="${c}"/>` + text(64, 54, ink, 13),
+    salad: `<ellipse cx="48" cy="34" rx="40" ry="9" fill="#eef2f5" stroke="${sx}"/><path d="M8 34h80l-5 44a6 6 0 0 1-6 5H19a6 6 0 0 1-6-5z" fill="${c}" opacity=".9"/>` + sticker(66, 56),
+    tray: `<rect x="6" y="34" width="84" height="46" rx="9" fill="#f1f3f5" stroke="${sx}" stroke-width="1.5"/><rect x="13" y="40" width="70" height="34" rx="12" fill="${c}"/>` + sticker(64, 58),
+    bag: `<path d="M18 14l6 4 6-4 6 4 6-4 6 4 6-4 6 4 6-4 6 4 6-4v8l4 60-4 8-6-4-6 4-6-4-6 4-6-4-6 4-6-4-6 4-6-4-6 4-4-8 4-60z" fill="${c}"/><rect x="20" y="36" width="56" height="34" rx="6" fill="#fff" opacity=".93"/>` + text(58, 50, '#222', 13),
+    bar: `<rect x="6" y="28" width="84" height="40" rx="5" fill="${c}"/><rect x="6" y="28" width="12" height="40" rx="3" fill="#c9ced3"/><rect x="78" y="28" width="12" height="40" rx="3" fill="#c9ced3"/>` + text(52, 56, ink, 13),
+    box: `<rect x="16" y="22" width="64" height="66" rx="4" fill="${c}"/><path d="M16 22l8-12h48l8 12z" fill="${dk}"/><rect x="21" y="40" width="54" height="34" rx="4" fill="#fff"/>` + text(62, 48, '#222', 12),
+    jar: `<rect x="26" y="10" width="44" height="16" rx="4" fill="${dk}"/><rect x="22" y="26" width="52" height="62" rx="9" fill="#f7f4ee" stroke="${sx}" stroke-width="1.5"/><rect x="25" y="62" width="46" height="23" rx="7" fill="${c}"/><rect x="24" y="32" width="48" height="30" rx="4" fill="#fff" stroke="${sx}"/>` + text(52, 42, '#222', 11),
+    can: `<rect x="20" y="18" width="56" height="66" rx="5" fill="${c}"/><ellipse cx="48" cy="18" rx="28" ry="7" fill="#cfd6dc" stroke="${sx}"/><rect x="20" y="36" width="56" height="32" fill="#fff"/>` + text(57, 50, '#222', 13),
+    name: `<rect x="6" y="6" width="84" height="84" rx="20" fill="${c}"/>` + text(52, 72, ink, 16),
+  }[pack.kind] || '';
+  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">${body}</svg>`);
+  PACK_CACHE.set(key, url);
+  return url;
+}
+// מוצר שלא ברשימה ("גבינת שקדים", "תבלין גריל"): האריזה של הסוג שלו, עם השם שכתבו. הראשון שמתאים קובע.
+// כלל בלי words הוא ברירת המחדל של המחלקה. ירק ופרי לא ארוזים: אריח עם השם. ניקיון, טיפוח ושונות: אמוג'י של חפץ.
 const GENERIC = [
-  {cat: 'bake', words: ['סטיביה', 'סוכרזית', 'ממתיק', 'סוכר'], photo: 'Sugar'},
-  {cat: 'bake', words: ['זרעי', 'גרעיני', 'פרג', 'צ׳יה', 'פשתן', 'שומשום'], photo: 'Sesame Seed'},
-  {cat: 'bake', words: ['מיובש', 'מיובשות', 'מיובשים', 'חמוציות', 'צימוקים'], photo: 'Dried Fruit'},
-  {cat: 'bake', words: ['שמן', 'תרסיס'], photo: 'Vegetable Oil'},
-  {cat: 'bake', words: ['שמרים'], photo: 'Instant Yeast'},
-  {cat: 'bake', words: ['קמח', 'סולת'], photo: 'Flour'},
-  {cat: 'bake', words: ['אגוזי', 'אגוזים', 'שקדים', 'פיסטוקים', 'בוטנים'], photo: 'Pine Nuts'},
-  {cat: 'bake', photo: 'Cumin'},                                   // תבלין
-  {cat: 'snack', words: ['שוקולד', 'קליק', 'טעמי', 'כיף', 'קינדר', 'מקופלת', 'פסק', 'קרמבו', 'חטיף', 'וופלים', 'ופלים'], photo: 'Milk Chocolate'},
-  {cat: 'snack', words: ['סוכריות', 'סוכריה', 'מסטיק', 'מנטוס', 'טופי', 'גומי', 'מרשמלו'], emoji: '🍬'},
-  {cat: 'snack', words: ['חלבה'], photo: 'Peanut Brittle'},
-  {cat: 'snack', words: ['עוגיות', 'ביסקוויטים', 'פתי'], emoji: '🍪'},
-  {cat: 'snack', photo: 'Pretzels'},                               // חטיף מלוח
-  {cat: 'veg', words: ['שסק', 'משמש'], photo: 'Apricot'},
-  {cat: 'veg', words: ['ליצ׳י', 'פסיפלורה', 'גויאבה', 'פפאיה', 'פרי', 'פירות'], photo: 'Mango'},
-  {cat: 'veg', words: ['אפרסמון'], photo: 'Peaches'},
-  {cat: 'veg', words: ['צנון', 'צנונית', 'קולורבי', 'לפת'], photo: 'Turnips'},
-  {cat: 'veg', words: ['כורכום'], photo: 'Ginger'},
-  {cat: 'veg', words: ['במיה', 'לוביה', 'ארטישוק'], photo: 'Green Beans'},
-  {cat: 'veg', words: ['עלי', 'עשבי', 'נבטי'], photo: 'Coriander Leaves'},
-  {cat: 'veg', emoji: '🥬'},
-  {cat: 'cans', words: ['ריבה', 'ריבת'], photo: 'Jam'},
-  {cat: 'cans', words: ['ממרח'], emoji: '🥫'},
-  {cat: 'cans', emoji: '🥫'},
-  {cat: 'dairy', words: ['גבינה', 'גבינת'], photo: 'Cheese'},
-  {cat: 'dairy', words: ['לבנה'], photo: 'Cream Cheese'},
-  {cat: 'dairy', emoji: '🥛'},
-  {cat: 'deli', words: ['נקניק', 'נקניקיות', 'פסטרמה', 'סלמי', 'קבנוס', 'פרוס', 'כבד'], photo: 'Doner Meat'},
-  {cat: 'deli', words: ['סייטן', 'טופו'], photo: 'Tofu'},
-  {cat: 'deli', emoji: '🥙'},
-  {cat: 'meat', words: ['דג', 'דגים', 'קרפיון', 'מוסר', 'נסיכת', 'פילה'], photo: 'White Fish'},
-  {cat: 'meat', words: ['עוף', 'הודו', 'פרגית', 'כנפיים', 'ירכיים'], photo: 'Chicken Thighs'},
-  {cat: 'meat', photo: 'Mixed Beef Cuts'},                         // בשר (כולל כבד, לבבות, קורקבנים)
-  {cat: 'frozen', words: ['במיה'], photo: 'Green Beans'},
-  {cat: 'frozen', emoji: '🧊'},
-  {cat: 'bread', emoji: '🍞'}, {cat: 'dry', emoji: '🫘'}, {cat: 'morning', emoji: '☕'}, {cat: 'drink', emoji: '🥤'},
+  {cat: 'veg', pack: 'name', color: '#3F9D4F'},
+  {cat: 'bread', emoji: '🍞'},
+  {cat: 'dry', pack: 'bag', color: '#9A6B3F'},
+  {cat: 'cans', words: ['ריבה', 'ריבת', 'ממרח'], pack: 'jar', color: '#C0392B'},
+  {cat: 'cans', pack: 'can', color: '#C0392B'},
+  {cat: 'bake', words: ['שמן', 'תרסיס', 'חומץ'], pack: 'bottle', color: '#C9A227'},
+  {cat: 'bake', words: ['קמח', 'סולת', 'סוכר', 'אגוזי', 'אגוזים', 'שקדים', 'פיסטוקים', 'בוטנים', 'זרעי', 'גרעיני', 'מיובש', 'מיובשות', 'מיובשים'], pack: 'bag', color: '#8E6E53'},
+  {cat: 'bake', pack: 'jar', color: '#A04000'},                    // תבלין
+  {cat: 'morning', pack: 'box', color: '#6D4C41'},
+  {cat: 'snack', words: ['שוקולד', 'חטיף', 'וופלים', 'ופלים'], pack: 'bar', color: '#6E2C00'},
+  {cat: 'snack', pack: 'bag', color: '#D35400'},
+  {cat: 'drink', pack: 'bottle', color: '#2E86C1'},
+  {cat: 'dairy', words: ['גבינה', 'גבינת'], pack: 'tub', color: '#4A90D9'},
+  {cat: 'dairy', words: ['חלב', 'משקה'], pack: 'carton', color: '#2F80ED'},
+  {cat: 'dairy', pack: 'tub', color: '#5D8AA8'},
+  {cat: 'deli', words: ['נקניק', 'נקניקיות', 'פסטרמה', 'סלמי', 'קבנוס', 'פרוס'], pack: 'tray', color: '#D98880'},
+  {cat: 'deli', pack: 'salad', color: '#B9770E'},
+  {cat: 'meat', words: ['דג', 'דגים', 'קרפיון', 'מוסר', 'נסיכת', 'פילה'], pack: 'tray', color: '#7FB3D5'},
+  {cat: 'meat', words: ['עוף', 'הודו', 'פרגית', 'כנפיים', 'ירכיים'], pack: 'tray', color: '#E8A87C'},
+  {cat: 'meat', pack: 'tray', color: '#A93226'},
+  {cat: 'frozen', pack: 'bag', color: '#48A9C5'},
   {cat: 'clean', words: ['נייר', 'מגבות', 'מפיות', 'ניילון'], emoji: '🧻'}, {cat: 'clean', emoji: '🧽'},
   {cat: 'care', words: ['תרופה', 'כדורים', 'סירופ', 'ויטמין', 'טיפות'], emoji: '💊'}, {cat: 'care', emoji: '🧴'},
   {cat: 'other', emoji: '🛒'},
@@ -2294,7 +2347,8 @@ const GENERIC = [
 function genericFor(name, cat){
   const words = shopNorm(name).split(' ');
   const g = GENERIC.find(r => r.cat === cat && (!r.words || r.words.some(w => words.some(x => x === w || sameWord(x, w)))));
-  return g ? {photo: g.photo ? photoUrl(g.photo) : '', emoji: g.emoji || ''} : {photo: '', emoji: (SHOP_CAT[cat] || SHOP_CAT.other).emoji};
+  if(g && g.pack) return {photo: packUrl({kind: g.pack, color: g.color}, String(name || '').trim()), emoji: ''};
+  return g ? {photo: '', emoji: g.emoji || ''} : {photo: '', emoji: (SHOP_CAT[cat] || SHOP_CAT.other).emoji};
 }
 // מילים שמזהות מחלקה גם כשהמוצר לא ברשימה (למשל "גבינת עזים" = חלב). לא מוצעות בהצעות.
 const SHOP_WORDS = {
@@ -2398,7 +2452,7 @@ function shopInfo(nameOrItem){
     let bs = 0;
     for(const x of SHOP_MATCH) if(!x.word && x.cat === cat){ const sc = phraseScore(inWords, x.words); if(sc > bs){ bs = sc; entry = x.entry; } }
   }
-  let emoji = entry ? entry.emoji : '', photo = entry ? photoUrl(entry.photo) : '';
+  let emoji = entry ? entry.emoji : '', photo = entry ? (entry.pack ? packUrl(entry.pack, entry.name) : photoUrl(entry.photo)) : '';
   if(!emoji && !photo) ({emoji, photo} = genericFor(name, cat));   // תחום על: תמונה של הסוג
   // לטקסט (וואטסאפ, מצרכי מתכון) תמיד יש אמוג'י: של המוצר, של הסוג (פלפל לבן = תבלין), או של המחלקה
   const textEmoji = emoji || genericFor(name, cat).emoji || catOf(cat).emoji;
@@ -2453,6 +2507,13 @@ function shopSuggest(items, query, limit){
     .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
     .map(x => ({name: x.name, catalog: true}));
   return past.concat(cat).slice(0, Math.max(limit || 12, past.filter(x => x.fav).length)).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
+}
+/** הוספה מהירה (בצד): רק מוצרים שהוספת לפחות 10 פעמים (או סימנת ⭐), שלא בסל עכשיו. עד 10, הכי נפוצים קודם. בהתחלה: כלום. */
+const SHOP_QUICK_MIN = 10, SHOP_QUICK_MAX = 10;
+function shopQuick(items){
+  return (items || []).filter(x => !x.deleted && !x.hidden && !x.active && ((+x.count || 0) >= SHOP_QUICK_MIN || x.fav))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || +!!b.fav - +!!a.fav || a.name.localeCompare(b.name))
+    .slice(0, SHOP_QUICK_MAX).map(x => { const i = shopInfo(x); return Object.assign({}, x, {emoji: i.emoji, photo: i.photo, cat: i.cat}); });
 }
 const shopList = items => (items || []).filter(x => x.active && !x.deleted).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
 /** הרשימה מחולקת למחלקות, לפי סדר ההליכה בסופר. */
@@ -2679,7 +2740,7 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
