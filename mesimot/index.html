@@ -1383,6 +1383,7 @@
   <div id="tmr-title" style="font-weight:600;font-size:17px"></div>
   <div id="tmr-left" class="tmr-left">0:00</div>
   <div id="tmr-note" class="note"></div>
+  <button class="btn primary" id="tmr-next" type="button" aria-label="לשלב הבא במתכון" hidden style="width:100%;min-height:58px;font-size:19px;margin-top:12px"></button>
   <div class="btns"><button class="btn" id="tmr-cancel" type="button" style="color:var(--red)">ביטול הטיימר</button><button class="btn" id="tmr-plus" type="button">+1 דקה</button><button class="btn primary" id="tmr-close" type="button">סגירה</button></div>
 </div></dialog>
 <dialog id="dlg-cook" class="full" aria-label="מצב בישול"><div class="dlg-head">
@@ -2853,8 +2854,9 @@ function saveTimers(list){
 }
 function recipeTimer(r, minutes, label, step){
   unlockAudio();
+  // rid + step: כשהטיימר נגמר, לחיצה עליו פותחת את השלב הבא במצב בישול
   const now = Date.now(), t = {id: 'tm' + uid(), at: now + Math.round(minutes * 60) * 1000, title: `${r.title}: שלב ${step}`, body: label,
-    updatedAt: nowIso(), deleted: false};
+    rid: r.id, step: +step || 0, updatedAt: nowIso(), deleted: false};
   // ניקיון: טיימרים שנגמרו לפני יותר מיום
   const old = (D.file.timers.timers || []).filter(x => !x.deleted && x.at < now - 864e5).map(x => Object.assign({}, x, {deleted: true, updatedAt: nowIso()}));
   saveTimers([t, ...old]);
@@ -2897,6 +2899,23 @@ function stopAlarm(mark){
 }
 // חלון הטיימר: נפתח מיד, עם ספירה לאחור גדולה ומתי תגיע ההתראה
 let tmrOpen = null;
+/** טיימר של שלב במתכון שנגמר: לאיזה שלב ממשיכים. null = אין (טיימר ישן, או שהמתכון לא ברשימה שפתוחה עכשיו). */
+function timerNext(t){
+  const r = t && t.rid && t.step ? recipeById(t.rid) : null; if(!r) return null;
+  const steps = (r.steps || []).filter(x => !/[:：]\s*$/.test(x)), off = (r.ingredients || []).length ? 1 : 0;
+  const last = t.step >= steps.length;
+  return {r, idx: (last ? steps.length - 1 : t.step) + off, label: last ? '🍽 חזרה למתכון (שלב אחרון)' : `▶ לשלב ${t.step + 1}`};
+}
+/** לחיצה על טיימר שנגמר: עוצרים את הצלצול, ומצב הבישול נפתח על השלב הבא. */
+function timerGoNext(t){
+  const nx = timerNext(t); if(!nx) return false;
+  if(t.at <= Date.now() && !t.stopped){ tmrOpen = t.id; stopAlarm(true); }
+  if($('dlg-timer').open) $('dlg-timer').close();
+  ckState.at[nx.r.id] = nx.idx;
+  openCooking(nx.r);
+  return true;
+}
+$('tmr-next').onclick = () => timerGoNext((D.file.timers.timers || []).find(x => x.id === tmrOpen));
 function openTimer(id){
   tmrOpen = id;
   renderTimerDlg();
@@ -2915,6 +2934,8 @@ function renderTimerDlg(){
   $('tmr-cancel').hidden = left <= 0;
   $('tmr-plus').hidden = !!t.stopped && left <= 0;
   $('tmr-close').textContent = left <= 0 && !t.stopped ? '⏹ עצור' : 'סגירה';
+  const nx = left <= 0 ? timerNext(t) : null;
+  $('tmr-next').hidden = !nx; if(nx){ $('tmr-next').textContent = nx.label; $('tmr-next').setAttribute('aria-label', nx.label); }
   $('dlg-timer').classList.toggle('ringing', left <= 0 && !t.stopped);
 }
 $('tmr-close').onclick = () => {
@@ -2941,6 +2962,18 @@ $('tmr-cancel').onclick = () => {
   if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
   $('dlg-timer').close(); renderTimers(); toast('הטיימר בוטל');
 };
+// לחיצה על הפס (מאזין אחד למסמך: הפס נבנה מחדש כל שנייה ועובר בין חלונות). טיימר שנגמר: ישר לשלב הבא במצב בישול
+document.addEventListener('click', e => {
+  // הפריט של הטיימר (.tm). גם אם הפס נבנה מחדש באמצע הנגיעה והאלמנט כבר לא בדף, הוא עדיין יודע לאיזה טיימר שייך
+  const item = e.target.closest?.('#timer-bar .tm, .tm[data-open]'); if(!item) return;
+  // ✕ רק בתוך הפריט עצמו: לכל חלון יש data-x, ובמצב בישול הפס יושב בתוך החלון (לכן קודם לחיצה שם לא פתחה כלום)
+  const b = e.target.closest('[data-x]');
+  if(b && item.contains(b)){ const t = (D.file.timers.timers || []).find(x => x.id === b.dataset.x);
+    if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]); renderTimers(); return; }
+  const t = (D.file.timers.timers || []).find(x => x.id === item.dataset.open); if(!t) return;
+  if(t.at <= Date.now() && timerGoNext(t)) return;
+  openTimer(t.id);
+}, true);   // בשלב הלכידה: לפני שמשהו אחר בונה את הפס מחדש (ואז האלמנט שנלחץ כבר לא בדף)
 const announced = new Set(storeJson('משימות.טיימרים.הוכרזו', []));
 function renderTimers(){
   let bar = $('timer-bar');
@@ -2950,18 +2983,12 @@ function renderTimers(){
   if(!bar || bar.parentNode !== topLayer()){
     if(bar) bar.remove();
     bar = document.createElement('div'); bar.id = 'timer-bar'; topLayer().appendChild(bar);
-    bar.onclick = e => {
-      const o = e.target.closest('[data-open]'); if(o && !e.target.closest('[data-x]')){ openTimer(o.dataset.open); return; }
-      const b = e.target.closest('[data-x]'); if(!b) return;
-      const t = (D.file.timers.timers || []).find(x => x.id === b.dataset.x);
-      if(t) saveTimers([Object.assign({}, t, {deleted: true, updatedAt: nowIso()})]);
-      renderTimers();
-    };
   }
   const now = Date.now(), fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
     return (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60); };
-  bar.innerHTML = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}" data-open="${esc(t.id)}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
+  const html = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}" data-open="${esc(t.id)}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
     <button type="button" data-x="${esc(t.id)}" aria-label="${t.at <= now ? 'סגירה' : 'ביטול טיימר'}">✕</button></div>`).join('');
+  if(bar._h !== html){ bar._h = html; bar.innerHTML = html; }   // רק כשמשהו השתנה, כדי שנגיעה לא "תיפול" באמצע בנייה מחדש
 }
 setInterval(() => {
   const list = timerList();
