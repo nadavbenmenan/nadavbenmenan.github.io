@@ -742,6 +742,15 @@
   .shop-add input{flex:1}
   .shop-add .btn{flex:none}
   #shop-sug{margin-top:12px}
+  /* הוספה מהירה: פס צר בצד (משמאל), לא בתוך הסל. רק מוצרים שהוספת 10 פעמים */
+  .quick-rail{position:sticky;top:12px;float:left;margin:14px -8px 0 0;max-height:calc(100vh - var(--sb, 0px) - 110px);width:60px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;align-items:center;
+    padding:8px 3px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.08);z-index:4}
+  .quick-rail[hidden]{display:none}
+  .quick-rail .qh{font-size:16px;line-height:1}
+  .quick-rail button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;width:56px;padding:2px 0;cursor:pointer;color:var(--text)}
+  .quick-rail img,.quick-rail .qe{width:40px;height:40px;border-radius:10px;background:#fff;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .quick-rail small{font-size:10px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #scr-shop.has-quick #shop-list{margin-left:66px}
   #shop-sug button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #shop-list{margin-top:4px}
   #shop-list .sec{margin-top:18px}
@@ -809,6 +818,7 @@
   </div>
   <div id="shop-sug-box"><span class="lbl sug" id="shop-sug-lbl"></span>
   <div class="opts" id="shop-sug" aria-label="הצעות"></div></div>
+  <aside id="shop-quick" class="quick-rail" hidden aria-label="הוספה מהירה"></aside>
   <div id="shop-list"></div>
   <button class="btn" id="shop-copy" type="button" hidden style="width:100%;margin-top:18px">📋 העתקת הסל לרשימה אחרת</button>
   <button class="btn" id="shop-clear" type="button" hidden style="width:100%;margin-top:10px;color:var(--red)">🗑 ריקון הסל</button>
@@ -1791,8 +1801,12 @@ async function clStartG(l){
 function clDropList(gid, msg){
   clStopG(gid);
   if(!clList(gid)) return;
-  for(const col of CL_COLS) if(clActive(col) === gid) clSwitch(col, null);
-  const s = clState(); s.lists = s.lists.filter(x => x.gid !== gid); if(s.def === gid) s.def = null; clSave(s);
+  CL.dropping = true;   // בזמן ההסרה לא עוברים לבד לרשימה אחרת (clFixMine), כדי שהתוכן לא יישמר ברשימה הלא נכונה
+  try{
+    for(const col of CL_COLS) if(clActive(col) === gid) clSwitch(col, null);
+    const s = clState(); s.lists = s.lists.filter(x => x.gid !== gid); if(s.def === gid) s.def = null; clSave(s);
+  }finally{ CL.dropping = false; }
+  clFixMine();
   for(const col of CL_COLS) store(clKey(gid, col), null);
   if(msg) toast(msg);
   renderAll();
@@ -1957,6 +1971,43 @@ async function clCancelReq(gid){
   try{ await clLoad(); await clUser(); await CL.fb.fs.deleteDoc(clRef(gid, 'requests', CL.user.uid)); }catch(e){}
   s.pend = s.pend.filter(x => x.gid !== gid); clSave(s); toast('הבקשה בוטלה');
 }
+/** סגירה בענן: מוחקים את הקניות והמתכונים של הרשימה, משחררים את השם הייחודי ומוחקים את הרשימה (כל חבר יכול: נהיה בעלים קודם). */
+async function clCloseCloud(f, u, gid, d){
+  const g = CL.g[gid], ref = clRef(gid);
+  if(d.owner !== u.uid) await f.fs.updateDoc(ref, {owner: u.uid});
+  for(const col of CL_COLS){
+    const ids = [...(g?.remote[col].keys() || [])];
+    for(let i = 0; i < ids.length; i += 400){ const b = f.fs.writeBatch(f.db); ids.slice(i, i + 400).forEach(id => b.delete(clRef(gid, col, id))); await b.commit(); }
+  }
+  const b = f.fs.writeBatch(f.db);
+  if(d.key) b.delete(clNameRef(d.key));
+  b.delete(ref); await b.commit();
+}
+/** מחיקת רשימה משותפת: נמחקת אצל כל החברים (הקניות והמתכונים שבה). */
+async function clDelete(gid){
+  const l = clList(gid); if(!l) return;
+  const others = Object.keys(CL.g[gid]?.doc?.members || {}).filter(x => x !== CL.user?.uid).length;
+  if(!(await ask(`🗑 למחוק את "${l.name}"?`, [], {note: (others ? `נמחקת גם אצל ${others === 1 ? 'החבר/ה השני/ה' : others + ' החברים האחרים'}. ` : '') + 'הקניות והמתכונים שבה נמחקים.', ok: 'מחיקה', danger: true}))) return;
+  try{
+    const f = await clLoad(), u = await clUser(), d = (await f.fs.getDoc(clRef(gid))).data();
+    if(d) await clCloseCloud(f, u, gid, d);
+  }catch(e){ return toast(clErrText(e), {err: true}); }
+  clDropList(gid, `"${l.name}" נמחקה`);
+}
+/** מחיקת "שלי" (בטלפון): הסל מתרוקן וכל המתכונים נמחקים. אפשר לבטל. */
+async function clDeleteMine(){
+  const shop = clFile(null, 'shop'), rc = clFile(null, 'recipes');
+  const live = ל.shopList(shop.items || []), recs = (rc.recipes || []).filter(r => !r.deleted);
+  if(!live.length && !recs.length) return toast('"שלי" כבר ריקה');
+  if(!(await ask('🗑 למחוק את "שלי"?', [], {note: [live.length && `${live.length} מוצרים בסל`, recs.length && `${recs.length} מתכונים`].filter(Boolean).join(' ו-') + ' יימחקו.', ok: 'מחיקה', danger: true}))) return;
+  const put = (col, list) => { if(!list.length) return; const arr = CL_ARR[col], f = clFile(null, col);
+    clStore(null, col, Object.assign({}, f, {v: 1, [arr]: ל.mergeById(f[arr] || [], list)})); store(FILES[col].pending, '1'); };
+  const t = nowIso();
+  put('shop', live.map(x => Object.assign({}, x, {active: false, updatedAt: t}))); put('recipes', recs.map(r => Object.assign({}, r, {deleted: true, updatedAt: t})));
+  changed(); renderAll();
+  toast('"שלי" נמחקה', {undo: () => { const t2 = nowIso();
+    put('shop', live.map(x => Object.assign({}, x, {updatedAt: t2}))); put('recipes', recs.map(r => Object.assign({}, r, {updatedAt: t2}))); changed(); renderAll(); }});
+}
 async function clLeave(gid){
   const l = clList(gid); if(!l) return;
   const g = CL.g[gid], last = !Object.keys(g?.doc?.members || {}).some(x => x !== CL.user?.uid);
@@ -1967,14 +2018,7 @@ async function clLeave(gid){
     const rest = Object.keys(d?.members || {}).filter(x => x !== u.uid);
     if(d && !rest.length){
       // האחרון/ה: סוגרים. מוחקים את הקניות והמתכונים של הרשימה מהענן, ומשחררים את השם הייחודי
-      if(d.owner !== u.uid) await f.fs.updateDoc(ref, {owner: u.uid});
-      for(const col of CL_COLS){
-        const ids = [...(g?.remote[col].keys() || [])];
-        for(let i = 0; i < ids.length; i += 400){ const b = f.fs.writeBatch(f.db); ids.slice(i, i + 400).forEach(id => b.delete(clRef(gid, col, id))); await b.commit(); }
-      }
-      const b = f.fs.writeBatch(f.db);
-      if(d.key) b.delete(clNameRef(d.key));
-      b.delete(ref); await b.commit();
+      await clCloseCloud(f, u, gid, d);
     }else if(d){
       const ch = {[`members.${u.uid}`]: f.fs.deleteField(), [`names.${u.uid}`]: f.fs.deleteField()};
       if(d.owner === u.uid) ch.owner = rest[0];
@@ -1993,7 +2037,7 @@ async function clRemove(gid, uid, name){
 function clListSettings(gid){
   const s = clState(), isDef = (s.def || null) === (gid || null);
   const fav = isDef ? [] : [['⭐ לפתוח עליה כשנכנסים', () => { const s2 = clState(); s2.def = gid || null; clSave(s2); toast('⭐ מועדפת'); }]];
-  if(!gid) return sheet('🛒 שלי' + (isDef ? ' ⭐' : ''), fav, 'רק בטלפון שלך');
+  if(!gid) return sheet('🛒 שלי' + (isDef ? ' ⭐' : ''), [...(clNoMine() ? [] : fav), ['🗑 מחיקת הרשימה', clDeleteMine]], 'רק בטלפון שלך');
   const l = clList(gid); if(!l) return;
   const d = CL.g[gid]?.doc, me = CL.user?.uid, code = d?.key || l.code || '';
   const mem = Object.entries(d?.names || {}).map(([u, n]) => ({u, n}));
@@ -2003,6 +2047,7 @@ function clListSettings(gid){
     ...(code ? [['📋 העתקת השם הייחודי', async () => { try{ await navigator.clipboard.writeText(code); toast('הועתק: ' + code); }catch(e){ toast(code, {ms: 8000}); } }]] : []),
     ...mem.filter(m => m.u !== me).map(m => [`✕ להוציא את ${m.n}`, () => clRemove(gid, m.u, m.n)]),
     ['🚪 יציאה', () => clLeave(gid)],
+    ['🗑 מחיקת הרשימה', () => clDelete(gid)],
   ], (code ? `🔗 להתחברות: ${code}\n` : '') + mem.map(m => m.n + (m.u === me ? ' (אני)' : '')).join(' · '));
 }
 async function clRename(gid){
@@ -2011,13 +2056,20 @@ async function clRename(gid){
   if(!r) return;
   try{ await clLoad(); await clUser(); await CL.fb.fs.updateDoc(clRef(gid), {name: clClean(r[0])}); toast('✓'); }catch(e){ toast(clErrText(e), {err: true}); }
 }
+/** רשימת קניות: כשיש רשימה משותפת, "שלי" לא מוצגת (גם בקניות וגם במתכונים). מה שהיה בה נשמר בטלפון, וחוזר אם כל הרשימות נמחקות. */
+const clNoMine = () => SHOP && clState().lists.length > 0;
+function clFixMine(){
+  if(CL.dropping || !clNoMine()) return;
+  const s = clState(), to = s.def || s.lists[0].gid;
+  for(const col of CL_COLS) if(!clActive(col)) clSwitch(col, to);
+}
 /** כשנכנסים לקניות או למתכונים: הרשימה המועדפת. */
-function clOpenDefault(col){ const d = clState().def || null; if(clActive(col) !== d) clSwitch(col, d); }
+function clOpenDefault(col){ const d = clState().def || (clNoMine() ? clState().lists[0].gid : null); if(clActive(col) !== d) clSwitch(col, d); }
 /* --- העתקה לרשימה אחרת: מתכון אחד, או כל הסל --- */
 /** הרשימות שאפשר להעתיק אליהן (כל מה שלא בלשונית עכשיו). */
 function clTargets(col){
   const act = clActive(col);
-  return [{gid: null, name: col === 'recipes' ? '📖 שלי' : '🛒 שלי'}, ...clState().lists.map(l => ({gid: l.gid, name: '👥 ' + l.name}))].filter(t => t.gid !== act);
+  return [...(clNoMine() ? [] : [{gid: null, name: col === 'recipes' ? '📖 שלי' : '🛒 שלי'}]), ...clState().lists.map(l => ({gid: l.gid, name: '👥 ' + l.name}))].filter(t => t.gid !== act);
 }
 function clPutTo(col, gid, recs){
   const arr = CL_ARR[col], f = clFile(gid, col);
@@ -2051,7 +2103,7 @@ function clTabsHtml(col){
   const s = clState(), act = s[CL_PTR[col]] || null;
   const t = (on, attrs, txt, cls) => `<button type="button" class="${on ? 'on' : ''}${cls ? ' ' + cls : ''}" ${attrs}>${txt}</button>`;
   const star = g => s.lists.length && (s.def || null) === g ? ' ⭐' : '';
-  return t(!act, 'data-sl=""', (col === 'recipes' ? '📖 שלי' : '🛒 שלי') + star(null))
+  return (clNoMine() ? '' : t(!act, 'data-sl=""', (col === 'recipes' ? '📖 שלי' : '🛒 שלי') + star(null)))
     + s.lists.map(l => t(act === l.gid, `data-sl="${esc(l.gid)}"`, '👥 ' + esc(l.name) + star(l.gid))).join('')
     + s.pend.map(p => t(false, `data-pend="${esc(p.gid)}"`, '⏳ ' + esc(p.name))).join('')
     + t(false, 'data-add="1" aria-label="רשימה משותפת"', s.lists.length || s.pend.length ? '+' : '+ רשימה משותפת', 'cl-plus');
@@ -2081,7 +2133,7 @@ function renderPfShare(){
   const s = clState(), star = g => (s.def || null) === g ? ' ⭐' : '';
   const row = (attr, i, t, sub) => `<button type="button" class="more-row" ${attr}><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${sub}</span></span><span class="side">‹</span></button>`;
   let h = `<div class="cl-cards">${clReqsHtml()}`;
-  if(s.lists.length) h += row('data-m=""', '🛒', 'שלי' + star(null), 'רק בטלפון');
+  if(s.lists.length && !clNoMine()) h += row('data-m=""', '🛒', 'שלי' + star(null), 'רק בטלפון');
   h += s.lists.map(l => { const d = CL.g[l.gid]?.doc, n = Object.keys(d?.members || {}).length;
     return row(`data-m="${esc(l.gid)}"`, '👥', esc(l.name) + star(l.gid), [d?.key || l.code ? '🔗 ' + esc(d?.key || l.code) : '', n ? n + ' חברים' : ''].filter(Boolean).join(' · ')); }).join('');
   h += s.pend.map(p => `<button type="button" class="more-row" data-pend="${esc(p.gid)}"><span class="i">⏳</span><span class="b"><span class="t">${esc(p.name)}</span><span class="s">מחכה לאישור</span></span></button>`).join('');
@@ -2100,6 +2152,7 @@ function openShare(){ show('shop'); }
 /** הלשוניות בקניות ובמתכונים, והבקשות שמחכות (אצל החברים). */
 function clUi(){
   let s; try{ s = clState(); }catch(e){ return; }
+  try{ clFixMine(); }catch(e){}
   for(const [col, id, rq] of [['shop', 'shop-tabs', 'shop-reqs'], ['recipes', 'rc-tabs', 'rc-reqs']]){
     const box = $(id); if(box) box.innerHTML = clTabsHtml(col);
     const q = $(rq); if(q){ q.innerHTML = clReqsHtml(); q.hidden = !q.innerHTML; }
@@ -2450,14 +2503,16 @@ function prodPic(x){
 }
 function renderShop(){
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
-  const sug = ל.shopSuggest(items, q, q ? 10 : 16);
+  // כשמקלידים: עד 10 הצעות להשלמה, מתחת לשורה. בלי הקלדה: אין הצעות בתוך הסל, רק הפס בצד (הוספה מהירה)
+  const sug = q ? ל.shopSuggest(items, q, 10) : [], quick = q ? [] : ל.shopQuick(items);
   $('shop-wa').hidden = !groups.length;
   $('shop-clear').hidden = !groups.length;
   $('shop-copy').hidden = !groups.length || !clCanCopy('shop');
   $('shop-sug-lbl').textContent = '';
-  // כשמקלידים: ההצעות מתחת לשורה. אחרת: מתחת לרשימה, כדי שהרשימה תהיה למעלה
-  if(q || !groups.length) $('shop-list').before($('shop-sug-box')); else $('shop-list').after($('shop-sug-box'));
-  $('shop-sug-box').style.marginTop = q || !groups.length ? '' : '22px';
+  $('shop-sug-box').hidden = !sug.length;
+  $('shop-quick').hidden = !quick.length; $('scr-shop').classList.toggle('has-quick', !!quick.length);
+  $('shop-quick').innerHTML = quick.length ? '<span class="qh" title="הוספה מהירה">⚡</span>' + quick.map(x => `<button type="button" data-n="${esc(x.name)}" aria-label="הוספה: ${esc(x.name)}">${x.photo
+    ? `<img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=qe>${esc(x.emoji || '🛒')}</span>'">` : `<span class="qe">${x.emoji || '🛒'}</span>`}<small>${esc(x.name)}</small></button>`).join('') : '';
   $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.fav ? '⭐' : ''}${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
   $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
     <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
@@ -2507,6 +2562,10 @@ function shopAddName(name){
 $('shop-add').onclick = () => { shopAddName($('shop-in').value); $('shop-in').value = ''; renderShop(); $('shop-in').focus(); };
 $('shop-in').addEventListener('keydown', e => { if(e.key === 'Enter') $('shop-add').click(); });
 $('shop-in').addEventListener('input', renderShop);
+$('shop-quick').onclick = e => {
+  const b = e.target.closest('[data-n]'); if(!b) return;
+  shopAddName(b.dataset.n); toast(`✓ ${b.dataset.n} בסל`); renderShop();
+};
 $('shop-sug').onclick = e => {
   const b = e.target.closest('[data-n]'); if(!b) return;
   shopAddName(b.dataset.n); $('shop-in').value = ''; renderShop();
