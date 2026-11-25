@@ -134,6 +134,7 @@
              gap:2px;padding:6px 0;font-size:12px;color:var(--muted);min-height:56px;border-radius:14px}
   nav button.on{color:var(--accent);font-weight:600}
   nav button{position:relative}
+  .shop-app nav button{flex:1 1 0}   /* רשימת קניות: שלוש לשוניות על כל הרוחב */
   .nb{position:absolute;top:4px;inset-inline-end:16px;min-width:18px;height:18px;border-radius:9px;background:var(--red,#e5484d);color:#fff;font:600 11px/18px Rubik,sans-serif;font-style:normal;padding:0 4px}
   .nt-card{background:var(--card);border-radius:20px;padding:16px;margin-top:14px}
   .nt-card h2{margin:0 0 10px;font-size:18px}
@@ -1410,6 +1411,16 @@ const ל = window.ליבה;
 const NATIVE = !!window.Capacitor?.isNativePlatform?.();   // בתוך אפליקציית האנדרואיד (APK)
 // האפליקציה העצמאית (1.3): הקוד בתוך קובץ ההתקנה, הנתונים בטלפון, וגיבוי לענן של גוגל. בלי גיטהאב.
 const LOCAL = NATIVE && !!window.LOCAL_APP;
+// "רשימת קניות": אפליקציה שנייה מאותו קוד (mode.js קובע window.SHOP_APP). רק קניות, מתכונים והגדרות שלהם.
+// בלי משימות, תזכורות, יומן, בריאות, תרופות וווידג'ט. רשימות משותפות: אותו ענן, אז מתחברים לאותה רשימה גם מניהול שיגרה.
+const SHOP = !!window.SHOP_APP;
+const APP_NAME = SHOP ? 'רשימת קניות' : 'ניהול שיגרה', APP_VER = SHOP ? '1.0' : '1.3';
+const APK_URL = SHOP ? 'https://nadavbenmenan.github.io/mesimot/kniyot.apk?v=1.0' : 'https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3';
+const SHOP_NAV = ['shop', 'recipes', 'prefs'];
+if(SHOP){
+  document.title = APP_NAME; document.documentElement.classList.add('shop-app');
+  document.querySelectorAll('#nav button[data-scr]').forEach(b => { if(!SHOP_NAV.includes(b.dataset.scr)) b.remove(); });
+}
 const NPhone = NATIVE ? window.Capacitor.Plugins.Phone : null;
 const OWNER = 'nadavbenmenan', REPO = 'cv', BRANCH = 'main';
 const KEYS_PATH = 'קלוד/עוזר אישי/הגדרות.json';     // שמות הערוצים. במאגר הפרטי בלבד
@@ -1442,7 +1453,7 @@ function mirrorData(){
   return o;
 }
 const AIK = 'משימות.gemini-מפתח';   // מפתח Gemini: רק בטלפון. לא בקוד, לא בגיבוי ולא בגיטהאב
-const mirrorText = () => JSON.stringify({app: 'ניהול שיגרה', v: 1, at: new Date().toISOString(), data: mirrorData()});
+const mirrorText = () => JSON.stringify({app: APP_NAME, v: 1, at: new Date().toISOString(), data: mirrorData()});
 async function mirrorNow(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); try{ await NPhone.write({name: 'mirror', text: mirrorText()}); }catch(e){} }
 function mirrorSoon(){ if(!LOCAL || !mirrorReady) return; clearTimeout(mirrorT); mirrorT = setTimeout(mirrorNow, 1500); }
 if(LOCAL){
@@ -2122,10 +2133,12 @@ const visibleDomains = () => D.domains.filter(d => !d.deleted && !d.hidden);
 const activeTasks = () => D.tasks.filter(ל.isActiveTask).map(t => ל.normTask(t, D.config));
 
 /* ---------- ערכת צבעים ---------- */
+// רשימת קניות: ירוק כמו הלוגו, כל עוד לא בחרו צבע אחר (הסגול הוא ברירת המחדל של ניהול שיגרה)
+const accentNow = () => { const a = D.config.accent || '#5B5BF7'; return SHOP && a.toUpperCase() === '#5B5BF7' ? '#1E9E57' : a; };
 function applyTheme(){
   document.documentElement.dataset.theme = D.config.theme || 'system';
   document.documentElement.dataset.fs = D.config.fontSize || 'm';
-  document.documentElement.style.setProperty('--accent', D.config.accent || '#5B5BF7');
+  document.documentElement.style.setProperty('--accent', accentNow());
   const dark = D.config.theme === 'dark' || (D.config.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelector('meta[name=theme-color]').content = dark ? '#0F1115' : '#F1F2F5';
 }
@@ -2351,7 +2364,7 @@ function renderHistory(){
 }
 
 /* ---------- ניווט ---------- */
-let screen = 'today';
+let screen = SHOP ? 'shop' : 'today';
 // לכל מסך: הכותרת (והכפתורים שלידה) עוברת לפס קבוע למעלה. ההגדרות רק בלשונית ההגדרות
 const GEAR_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function buildBars(){
@@ -3992,6 +4005,7 @@ function favMealMenu(m){
 const FOOD_ICON = f => ל.FOODS.some(b => b.id === f.id) ? '✏️' : '🍽️';
 /* ---------- ייצוא נתונים (מההגדרות): אקסל ו-PDF ---------- */
 function exportMenu(){
+  if(SHOP) return sheet('📤 ייצוא', [['📖 ספר מתכונים (PDF)', exportRecipes]], `הקובץ נשמר בהורדות/${APP_NAME}, ואפשר לשלוח אותו (דרייב, מייל, וואטסאפ).`);
   sheet('📤 ייצוא נתונים', [
     ['📊 דוח בריאות (אקסל): קלוריות, חלבון, פעילות, שינה, משקל', exportHealth],
     ['💊 היסטוריית תרופות (אקסל)', exportMeds],
@@ -4005,7 +4019,7 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 async function saveExport(name, bytes, mime){
   window.__lastExport = {name, size: bytes.length};
   if(NPhone?.exportFile){
-    try{ const r = await NPhone.exportFile({name, b64: u8To64(bytes), mime}); toast(r?.downloads ? '✓ נשמר בהורדות/ניהול שיגרה' : '✓ הקובץ מוכן'); }
+    try{ const r = await NPhone.exportFile({name, b64: u8To64(bytes), mime}); toast(r?.downloads ? `✓ נשמר בהורדות/${APP_NAME}` : '✓ הקובץ מוכן'); }
     catch(e){ toast('הייצוא נכשל: ' + (e.message || e), {err: true}); }
     return;
   }
@@ -5499,10 +5513,10 @@ function renderSettings(){
     </div>
     <div class="group pf-pg" data-pg="doms"><h3>תחומים</h3><div class="note">כל משימה שייכת לתחום. משנים שם וצבע, ו-👁 מסתיר תחום.</div><div id="s-doms"></div>
       <button class="btn" id="s-dom-add" type="button" style="width:100%;margin-top:8px">הוספת תחום</button></div>
-    <div class="group pf-pg" data-pg="data"><h3>📤 ייצוא נתונים</h3><div class="note">דוח בריאות, היסטוריית תרופות ומשימות באקסל, וספר מתכונים ב-PDF.</div>
+    <div class="group pf-pg" data-pg="data"><h3>📤 ייצוא נתונים</h3><div class="note">${SHOP ? 'ספר המתכונים ב-PDF.' : 'דוח בריאות, היסטוריית תרופות ומשימות באקסל, וספר מתכונים ב-PDF.'}</div>
       <button class="btn" id="s-exp" type="button" style="width:100%;margin-top:8px">📤 ייצוא נתונים</button></div>
     ${LOCAL ? `<div class="group pf-pg" data-pg="data"><h3>💾 גיבוי</h3>
-      <div class="note">${store(LOCAL_DONE) ? 'הכול נשמר בטלפון. כל יום נשמר גיבוי בטלפון ובהורדות/ניהול שיגרה, וגוגל מגבה אותו לדרייב שלך (גיבוי אוטומטי של אנדרואיד).' : 'עוד מעבירים את הנתונים מגיטהאב…'}
+      <div class="note">${store(LOCAL_DONE) ? 'הכול נשמר בטלפון. כל יום נשמר גיבוי בטלפון ובהורדות/${APP_NAME}, וגוגל מגבה אותו לדרייב שלך (גיבוי אוטומטי של אנדרואיד).' : 'עוד מעבירים את הנתונים מגיטהאב…'}
         ${store('משימות.גיבוי') ? `<br>גיבוי אחרון: ${esc(ל.shortDate(ל.localDate(Date.parse(store('משימות.גיבוי')))))} ${esc(ל.localTime(Date.parse(store('משימות.גיבוי'))))}` : ''}</div>
       <div class="btns"><button class="btn primary" id="s-bk-now" type="button">גיבוי עכשיו</button><button class="btn" id="s-bk-share" type="button">📤 שליחה לדרייב</button></div>
       <div class="btns"><button class="btn" id="s-bk-restore" type="button">📥 שחזור מקובץ גיבוי</button></div></div>` : ''}
@@ -5648,13 +5662,18 @@ let wz = {};
 function welcome(step){
   const b = $('o-body'), done = () => { store(K.onboard, '1'); $('dlg-onboard').close(); renderAll(); handleHash(); };
   if(step === 1){
-    b.innerHTML = `<div class="wz"><div class="wz-logo">✓</div><h1 class="hello">ברוך הבא ל"ניהול שיגרה"</h1>
+    b.innerHTML = SHOP ? `<div class="wz"><div class="wz-logo">🛒</div><h1 class="hello">ברוך הבא ל"רשימת קניות"</h1>
+      <p class="note">קניות ומתכונים, גם ברשימה משותפת. הכול נשמר בטלפון שלך.</p>
+      <h3>יש לך גיבוי?</h3>
+      <button class="btn primary wz-big" type="button" id="wz-restore">📥 שחזור מגיבוי<small>גם גיבוי של "ניהול שיגרה": הקניות והמתכונים עוברים</small></button>
+      <button class="btn wz-big" type="button" id="wz-new">✨ התחלה חדשה</button></div>`
+    : `<div class="wz"><div class="wz-logo">✓</div><h1 class="hello">ברוך הבא ל"ניהול שיגרה"</h1>
       <p class="note">משימות, תזכורות, קניות, מתכונים, בריאות ותרופות. הכול נשמר בטלפון שלך.</p>
       <h3>יש לך גיבוי?</h3>
       <button class="btn primary wz-big" type="button" id="wz-restore">📥 שחזור מגיבוי<small>מהטלפון או מגוגל דרייב</small></button>
       <button class="btn wz-big" type="button" id="wz-new">✨ התחלה חדשה</button></div>`;
     $('wz-restore').onclick = restoreBackup;
-    $('wz-new').onclick = () => welcome(2);
+    $('wz-new').onclick = () => SHOP ? done() : welcome(2);
   }else if(step === 2){
     const st = ל.calSettings(KF());
     b.innerHTML = `<div class="wz"><div class="wz-steps"><i class="on"></i><i></i><i></i></div><h1 class="hello">קצת עליך</h1>
@@ -6826,6 +6845,7 @@ async function nativeScheduleNow(){
     .concat(safeList(() => extraNotifs(now)).map(n => ({id: intId(n.k), k: n.k, kind: n.kind, title: n.title, body: n.body, at: n.at, channelId: remCh(n.kind === 'medstock' ? 'meds' : 'reminders'), extra: {u: n.u || '#notif'}, late: n.late, name: n.name}))), now);
   // אנדרואיד מגביל כמה התראות מתוזמנות יש לאפליקציה: הקרובות קודם
   list.push(...safeList(() => wkNotifs(now)));
+  if(SHOP) list.length = 0;   // ברשימת קניות: רק שעון מעורר לטיימרים (למעלה). בלי תזכורות
   list.sort((a, b) => a.at - b.at); list.splice(300);
   notifPlan(list.filter(n => n.kind !== 'workout'));
   const sig = JSON.stringify(list);
@@ -6889,7 +6909,7 @@ async function nativeEvents(){
     if(ev.hash){ location.hash = ev.hash; handleHash(); }
     if(ev.shared) setTimeout(() => handleShared(ev.shared), 300);
   }catch(e){}
-  meetingSuggestions();
+  if(!SHOP) meetingSuggestions();
 }
 /* ---------- הצעות ליומן: הודעה נכנסת שנראית כמו פגישה (נקלטה בטלפון, MeetingListener) ---------- */
 let suggesting = false;
@@ -6920,15 +6940,15 @@ async function nativeInit(){
   document.documentElement.classList.add('native');
   try{
     await NLN.requestPermissions();
-    await NLN.createChannel({id: 'reminders', name: 'משימות', description: 'תזכורות למשימות', importance: 4, visibility: 1, vibration: true});
-    await NLN.createChannel({id: 'meds', name: 'תרופות', description: 'תזכורות לתרופות', importance: 4, visibility: 1, vibration: true});
+    if(!SHOP) await NLN.createChannel({id: 'reminders', name: 'משימות', description: 'תזכורות למשימות', importance: 4, visibility: 1, vibration: true});
+    if(!SHOP) await NLN.createChannel({id: 'meds', name: 'תרופות', description: 'תזכורות לתרופות', importance: 4, visibility: 1, vibration: true});
     NLN.addListener('localNotificationActionPerformed', a => { const u = a?.notification?.extra?.u || ''; const h = u.includes('#') ? u.slice(u.indexOf('#')) : '';
       if(h){ location.hash = h; handleHash(); } });
   }catch(e){}
   await nativeEvents();
   nativeSchedule();
-  calEventsSync();
-  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ nativeEvents(); calEventsSync(); } });
+  if(!SHOP) calEventsSync();
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ nativeEvents(); if(!SHOP) calEventsSync(); } });
 }
 
 
@@ -6983,13 +7003,13 @@ async function backupNow(manual){
   }catch(e){ if(manual) toast('הגיבוי נכשל: ' + (e.message || e), {err: true}); }
 }
 function backupDaily(){ const b = store('משימות.גיבוי'); if(LOCAL && store(LOCAL_DONE) && (!b || ל.localDate(Date.parse(b)) !== today())) backupNow(); }
-async function shareBackup(){ await backupNow(); try{ await NPhone.shareBackup({file: `גיבוי-ניהול-שיגרה-${today()}.json`}); }catch(e){ toast(e.message || String(e), {err: true}); } }
+async function shareBackup(){ await backupNow(); try{ await NPhone.shareBackup({file: `גיבוי-${APP_NAME.replace(' ', '-')}-${today()}.json`}); }catch(e){ toast(e.message || String(e), {err: true}); } }
 function restoreBackup(){
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
   inp.onchange = async () => {
     try{
       const m = JSON.parse(await inp.files[0].text());
-      if(!m || m.app !== 'ניהול שיגרה' || !m.data) return toast('זה לא קובץ גיבוי של האפליקציה', {err: true});
+      if(!m || !['ניהול שיגרה', 'רשימת קניות'].includes(m.app) || !m.data) return toast('זה לא קובץ גיבוי של האפליקציה', {err: true});
       if(!await sure(`לשחזר את הגיבוי מ-${ל.shortDate(ל.localDate(Date.parse(m.at)))}?`, 'שחזור', {note: 'מה שבטלפון עכשיו יוחלף במה שבגיבוי', danger: true})) return;
       const keep = store('משימות.גיבוי');
       localStorage.clear(); for(const [k, v] of Object.entries(m.data)) localStorage.setItem(k, v);
@@ -7363,7 +7383,7 @@ function renderNotif(){
 $('scr-notif').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if(!b) return; const u = b.dataset.u;
   if(u === '#notif' || !u) return; if(u.startsWith('#')){ location.hash = u; handleHash(); } });
 var dailyT = null;   // var: נקרא גם מקוד שרץ לפני השורה הזו
-function dailySoon(){ if(!NATIVE || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
+function dailySoon(){ if(!NATIVE || SHOP || !NPhone?.setDaily) return; clearTimeout(dailyT); dailyT = setTimeout(() => { try{ NPhone.setDaily({days: dailyInfo(), rules: ל.LEAVE_RULES}).catch(() => {}); }catch(e){} }, 1500); }
 async function calCleanStuck(){
   if(!LOCAL || store('משימות.יומן-v3') || !NPhone?.eventStatus) return;
   store('משימות.יומן-v3', '1');
@@ -7386,6 +7406,12 @@ async function calRehome(){
 }
 function localInit(){
   if(!NATIVE) return;
+  if(SHOP){   // רשימת קניות: רק גיבוי. בלי יומן, ווידג'ט ובריאות
+    if(!LOCAL) return;
+    backupDaily();
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden'){ mirrorNow(); return; } backupDaily(); goLocal(); });
+    return;
+  }
   if(LOCAL) calRehome().then(calCleanStuck).then(() => phoneCalendarSync());
   dailySoon();
   setTimeout(() => healthSync(), 4000);
@@ -7398,7 +7424,7 @@ function localInit(){
   });
 }
 /** אחרי כל שינוי: ווידג'ט, ויומן הטלפון (בהשהיה קצרה). */
-function afterChangeNative(){ if(!NATIVE) return; dailySoon(); if(LOCAL){ clearTimeout(calT); calT = setTimeout(phoneCalendarSync, 900); } }
+function afterChangeNative(){ if(!NATIVE || SHOP) return; dailySoon(); if(LOCAL){ clearTimeout(calT); calT = setTimeout(phoneCalendarSync, 900); } }
 
 /* ---------- שיתוף לאפליקציה (מדפדפן, וואטסאפ, מייל) ---------- */
 function handleShared(s){
@@ -7407,13 +7433,13 @@ function handleShared(s){
   const asTask = cal => { openQuick(); $('q-title').value = text.replace(/\s+/g, ' ').slice(0, 300); $('q-title').dispatchEvent(new Event('input'));
     $('q-title').value = (short || url || '').slice(0, 120); quick.touched = true; if(cal){ quick.cal = true; } renderQuick(); };
   sheet('מה לעשות עם זה?', [
-    ['🔔 משימה עם תזכורת', () => asTask(false)],
-    ['📅 אירוע ביומן', () => asTask(true)],
-    ['📝 לרשימת המשימות', () => { show('todo'); $('td-new').value = (short || url).slice(0, 200); addTodo(); toast('✓ נוסף לרשימה'); }],
+    ...(SHOP ? [] : [['🔔 משימה עם תזכורת', () => asTask(false)],
+    ['📅 אירוע ביומן', () => asTask(true)]]),
+    !SHOP && ['📝 לרשימת המשימות', () => { show('todo'); $('td-new').value = (short || url).slice(0, 200); addTodo(); toast('✓ נוסף לרשימה'); }],
     ['🛒 לקניות', () => { const items = text.split(/\n|,/).map(x => x.replace(/^[\s•\-*\d.)]+/, '').trim()).filter(x => x && x.length < 40 && !/https?:/.test(x));
       for(const n of items) saveShop(ל.shopAdd(D.file.shop.items, n, nowIso())); show('shop'); toast(`✓ ${items.length} לקניות`); }],
     ['🧾 מתכון', () => importRecipe(url, text)],
-  ], text.slice(0, 160));
+  ].filter(Boolean), text.slice(0, 160));
 }
 /** מתכון מקישור: מושכים את הדף (דרך הטלפון, בלי חסימות), וקוראים את המתכון שבתוכו (schema.org/Recipe). בלי קישור: הדבקת טקסט. */
 async function importRecipe(url, text){
@@ -7711,19 +7737,20 @@ function renderPrefs(){
   $('pf-start').innerHTML = btns.filter(b => !hidden.has(b.dataset.scr)).map(b => `<option value="${b.dataset.scr}"${(D.config.startScreen || 'today') === b.dataset.scr ? ' selected' : ''}>${esc(navName(b))}</option>`).join('');
   if(document.activeElement !== $('pf-name')) $('pf-name').value = D.config.userName || '';
   $('pf-fs').innerHTML = [['s', 'קטן'], ['m', 'רגיל'], ['l', 'גדול'], ['xl', 'גדול מאוד']].map(([k, n]) => `<button type="button" data-fs="${k}" class="${(D.config.fontSize || 'm') === k ? 'on' : ''}">${n}</button>`).join('');
-  $('s-accent').value = D.config.accent || '#5B5BF7';
-  $('pf-behav').innerHTML = PF_TOGGLES.map(([k, t, sub, def]) => `<label><span>${t}<small>${sub}</small></span><input type="checkbox" data-tg="${k}"${(D.config[k] ?? def) ? ' checked' : ''}></label>`).join('');
+  $('s-accent').value = accentNow();
+  $('pf-behav').innerHTML = PF_TOGGLES.filter(([k]) => !SHOP || PF_SHOP.includes(k)).map(([k, t, sub, def]) => `<label><span>${t}<small>${sub}</small></span><input type="checkbox" data-tg="${k}"${(D.config[k] ?? def) ? ' checked' : ''}></label>`).join('');
   const kst = ל.calSettings(KF()), w = ל.weightOn(KF(), today());
   $('pf-goals').innerHTML = [['kcal', '🔥', 'יעד קלוריות', `${kNum(kst.goal)} ביום`], ['prot', '💪', 'יעד חלבון', `${kNum(Math.round(+kst.protGoal || 1.6 * w))} גרם ביום`],
     ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`], ['weight', '⚖️', 'יעד משקל', kst.weightGoal ? `${kg1(+kst.weightGoal)} ק״ג` : 'בלי יעד'], ['now', '🏋️', 'משקל עכשיו', `${kg1(+w)} ק״ג`], ['height', '📏', 'גובה', `${kst.height} ס״מ`]].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
-  $('pf-about').innerHTML = `<div class="sec"><h2>ניהול שיגרה</h2><div class="rows">
-      <div><span class="k">גרסה</span><span class="v">1.3${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
-      <div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>
+  $('pf-about').innerHTML = `<div class="sec"><h2>${APP_NAME}</h2><div class="rows">
+      <div><span class="k">גרסה</span><span class="v">${APP_VER}${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
+      ${SHOP ? `<div><span class="k">ברשימת הקניות</span><span class="v">${D.file.shop.items.filter(x => x.active && !x.deleted).length}</span></div>`
+        : `<div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>`}
       <div><span class="k">מתכונים</span><span class="v">${live(D.file.recipes?.recipes).length}</span></div>
       <div><span class="k">הנתונים נשמרים</span><span class="v">${LOCAL ? 'בטלפון (+ גיבוי לדרייב)' : 'בגיטהאב ובמכשיר'}</span></div></div>
     <div class="btns"><button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש / עדכון</button></div>
     <div class="note">ההתקנה מחדש מאותו קישור שומרת את כל הנתונים.</div></div>`;
-  $('pf-upd').onclick = () => { const u = 'https://nadavbenmenan.github.io/mesimot/mesimot.apk?v=1.3';
+  $('pf-upd').onclick = () => { const u = APK_URL;
     // באפליקציה: בדפדפן של הטלפון (האפליקציה יושבת על אותה כתובת, ובפנים הקובץ לא יורד)
     if(NATIVE) NPhone.openUrl({url: u}).catch(() => { location.href = u; }); else window.open(u, '_blank'); };
   if(pfPage === 'lists') renderPfLists();
@@ -7737,6 +7764,7 @@ function renderPrefs(){
 }
 /* תתי נושאים בהגדרות: תפריט, וכל נושא בדף משלו (‹ הגדרות חוזר) */
 var pfPage = null;
+const PF_SHOP = ['haptics', 'askExit', 'timerSound', 'cookAwake'];   // ההתנהגות שרלוונטית לרשימת קניות
 const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר כשמחזיקים משימה, מתכון או לשונית', true],
   ['askExit', 'לשאול לפני יציאה', 'כפתור "הקודם" במסך רגיל שואל "לצאת מהאפליקציה?"', true],
   ['timerSound', 'צליל בטיימר', 'כשטיימר מסתיים והאפליקציה פתוחה', true],
@@ -7762,9 +7790,12 @@ function pfPages(){
     ['meds', '💊', 'תרופות', 'תאריך התחלה, תחילת היום, סיווגים, רשימת התרופות'],
     NATIVE && ['places', '📍', 'בית ועבודה', 'הגעה: מה לעשות שם · יציאה מהבית: מה לקחת'],
     NATIVE && ['cal', '📅', 'יומן', c.calRead === false ? 'לא קורא את היומן' : `אירועים בסיכום · תזכורת ${c.eventLead === 0 ? 'כבויה' : leadText(c.eventLead ?? 30) + ' לפני'}`],
-    NATIVE && ['phone', '📱', 'טלפון והרשאות', 'בדיקת התראות, יומן, יציאה מהבית'],
-    ['data', '📤', 'ייצוא וגיבוי', 'אקסל, PDF, גיבוי'],
-    ['about', 'ℹ️', 'אודות', 'גרסה ועדכון']].filter(Boolean);
+    NATIVE && ['phone', '📱', 'טלפון והרשאות', SHOP ? 'בדיקת התראות ושעון מעורר' : 'בדיקת התראות, יומן, יציאה מהבית'],
+    ['data', '📤', 'ייצוא וגיבוי', SHOP ? 'ספר מתכונים, גיבוי' : 'אקסל, PDF, גיבוי'],
+    ['about', 'ℹ️', 'אודות', 'גרסה ועדכון']].filter(Boolean)
+    .filter(p => !SHOP || ['look', 'behav', 'share', 'lists', 'sound', 'ai', 'phone', 'data', 'about'].includes(p[0]))
+    .map(p => !SHOP ? p : p[0] === 'lists' ? ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים'] : p[0] === 'ai' ? ['ai', '📷', 'זיהוי מתמונה', store(AIK) ? '✓ Gemini מחובר' : 'מתכון מצילום · צריך מפתח Gemini (חינם)']
+      : p[0] === 'sound' ? ['sound', '🔊', 'צלילים', `טיימר: ${(SND_TIMER.find(x => x[0] === tSnd()) || SND_TIMER[0])[1]}`] : p);
 }
 function pfShow(){
   const pages = pfPages(), cur = pages.find(p => p[0] === pfPage);
@@ -7781,7 +7812,7 @@ $('pf-fs').onclick = e => { const b = e.target.closest('[data-fs]'); if(b){ save
 $('s-accent').onchange = () => { saveConfig({accent: $('s-accent').value}); applyTheme(); toast('✓ נשמר'); };
 $('pf-behav').onchange = e => { const x = e.target.closest('[data-tg]'); if(x){ saveConfig({[x.dataset.tg]: x.checked}); toast('✓ נשמר'); if(x.dataset.tg === 'bedRemind') bedtimeArm(); } };
 /** "כדאי ללכת לישון": הטלפון עצמו עוקב אחרי השעון המעורר (Bedtime.java). כאן רק מדליקים/מכבים, ובכל פתיחה נקבע מחדש. */
-function bedtimeArm(){ if(NATIVE && typeof NAlarm?.bedtime === 'function') Promise.resolve().then(() => NAlarm.bedtime({on: D.config.bedRemind !== false})).catch(() => {}); }
+function bedtimeArm(){ if(NATIVE && typeof NAlarm?.bedtime === 'function') Promise.resolve().then(() => NAlarm.bedtime({on: !SHOP && D.config.bedRemind !== false})).catch(() => {}); }
 $('pf-goals').onclick = async e => { const b = e.target.closest('[data-goal]'); if(!b) return;
   await ({kcal: editGoal, prot: editProtGoal, sleep: editSleepGoal, weight: editWeightGoal, now: () => addWeight(today()), height: editHeight}[b.dataset.goal])(); renderPrefs(); };
 async function editHeight(){
@@ -7805,7 +7836,7 @@ $('pf-name').onchange = () => { saveConfig({userName: $('pf-name').value.trim()}
 $('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
 /* ---------- הגדרות ← רשימות: כל המוצרים, המתכונים והמאכלים במקום אחד, לשינוי שם, מחלקה ומחיקה ---------- */
 let pfList = 'shop';
-const PF_LISTS = [['shop', '🛒 מוצרים'], ['recipes', '🍳 מתכונים'], ['foods', '🍽️ מאכלים']];
+const PF_LISTS = [['shop', '🛒 מוצרים'], ['recipes', '🍳 מתכונים'], ['foods', '🍽️ מאכלים']].filter(([k]) => !SHOP || k !== 'foods');
 function pfListRows(){
   const q = ל.shopKey($('pf-l-q').value || ''), has = (...x) => !q || ל.shopKey(x.join(' ')).includes(q), byName = (a, b) => (a.t || '').localeCompare(b.t || '', 'he');
   if(pfList === 'recipes') return recipeList().filter(r => has(r.title)).map(r => ({k: r.id, i: recipeEmoji(r), t: r.title, s: ל.recipeCat(r)})).sort(byName);
@@ -8133,7 +8164,9 @@ function renderPfSound(){
   const row = (key, cur) => ([k, n, rec]) => `<button type="button" class="more-row${cur === k ? ' today' : ''}" data-snd="${key}" data-v="${k}"><span class="i">${cur === k ? '◉' : '○'}</span><span class="b"><span class="t">${n}${rec ? ' <small class="note" style="margin:0">(מומלץ)</small>' : ''}</span></span><span class="side">${k ? '▶' : ''}</span></button>`;
   const vol = (key, snd, cur) => snd ? `<span class="lbl">עוצמה</span><div class="opts" data-vol="${key}">${SND_VOL.map(([v, n]) => `<button type="button" data-vv="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`
     : '<div class="note">העוצמה של צליל הטלפון נקבעת בהגדרות הטלפון.</div>';
-  $('pf-sound').innerHTML = `<div class="sec"><h2>🔔 התראות ותזכורות</h2><div class="note">לוחצים לשמוע ולבחור. משימות, תרופות וסיכומים.</div><div class="more-list">${SND_NOTIF.map(row('n', nSnd())).join('')}</div>${vol('n', nSnd(), nVol())}</div>
+  $('pf-sound').innerHTML = SHOP ? `<div class="sec"><h2>⏱ טיימר</h2><div class="note">מצלצל עד שעוצרים, גם כשהטלפון על שקט (כמו שעון מעורר).</div><div class="more-list">${SND_TIMER.map(row('t', tSnd())).join('')}</div>${vol('t', tSnd(), tVol())}</div>
+    ${NATIVE ? `<div class="btns"><button class="btn" type="button" id="snd-t2">⏱ טיימר לדוגמה בעוד 5 שניות</button></div>` : ''}<div id="snd-bat"></div>`
+    : `<div class="sec"><h2>🔔 התראות ותזכורות</h2><div class="note">לוחצים לשמוע ולבחור. משימות, תרופות וסיכומים.</div><div class="more-list">${SND_NOTIF.map(row('n', nSnd())).join('')}</div>${vol('n', nSnd(), nVol())}</div>
     <div class="sec"><h2>⏱ טיימר</h2><div class="note">מצלצל עד שעוצרים, גם כשהטלפון על שקט (כמו שעון מעורר).</div><div class="more-list">${SND_TIMER.map(row('t', tSnd())).join('')}</div>${vol('t', tSnd(), tVol())}</div>
     ${NATIVE ? `<div class="btns"><button class="btn" type="button" id="snd-t1">🔔 התראה לדוגמה בעוד 5 שניות</button><button class="btn" type="button" id="snd-t2">⏱ טיימר לדוגמה בעוד 5 שניות</button></div>` : ''}
     <div class="note">העוצמה כאן יחסית: גם עוצמת ההתראות (או השעון המעורר) בטלפון משפיעה.</div><div id="snd-bat"></div>`;
@@ -8221,14 +8254,14 @@ async function renderNativePrefs(){
   const ok = v => v ? '✓' : '✗';
   box.innerHTML = `<div class="sec"><h2>📱 אפליקציית אנדרואיד</h2><div class="pf-stat">
       ${st.err ? `✗ ${esc(st.err)}` : `${ok(st.notifications)} התראות מותרות<br>${ok(st.exact)} שעון מעורר מדויק<br>${ok(st.fullScreen)} מסך מלא כשהטלפון נעול${st.battery === undefined ? '' : `<br>${ok(st.battery)} בלי חיסכון סוללה (תזכורות בדקה המדויקת)`}`}</div>
-    <div class="btns"><button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button><button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
+    <div class="btns">${SHOP ? '' : '<button class="btn" type="button" id="pf-t1">🔔 התראה בעוד 10 שניות</button>'}<button class="btn" type="button" id="pf-t2">⏰ שעון מעורר בעוד 10 שניות</button></div>
     <div class="btns"><button class="btn" type="button" id="pf-set">הגדרות ההתראות בטלפון</button>${st.fullScreen === false ? '<button class="btn" type="button" id="pf-fs">אישור מסך מלא</button>' : ''}${st.battery === false ? '<button class="btn" type="button" id="pf-bat">🔋 תזכורות בזמן</button>' : ''}</div></div>
-    ${LOCAL && NPhone?.calendars ? `<div class="sec"><h2>📅 יומן <span id="pf-cal" class="note" style="margin:0"></span></h2>
+    ${!SHOP && LOCAL && NPhone?.calendars ? `<div class="sec"><h2>📅 יומן <span id="pf-cal" class="note" style="margin:0"></span></h2>
       <div class="btns"><button class="btn" type="button" id="pf-cal-pick">בחירת יומן</button></div><div id="pf-cal-ev" class="more-list" style="margin-top:8px"></div></div>` : ''}
-    ${NPhone?.homeStatus ? `<div class="sec"><h2>📍 בית ועבודה</h2><div class="btns"><button class="btn" type="button" id="pf-go-places">להגדרות המקומות ‹</button></div></div>` : ''}
-    ${st.listener === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
+    ${!SHOP && NPhone?.homeStatus ? `<div class="sec"><h2>📍 בית ועבודה</h2><div class="btns"><button class="btn" type="button" id="pf-go-places">להגדרות המקומות ‹</button></div></div>` : ''}
+    ${SHOP || st.listener === undefined ? '' : `<div class="sec"><h2>💬 הצעות מהודעות <span class="note" style="margin:0">${st.listener ? '✓ פועל' : '✗ לא מאושר'}</span></h2>
       <div class="btns">${st.listener ? '' : '<button class="btn" type="button" id="pf-lis">אישור הצעות</button><button class="btn" type="button" id="pf-app">חסום? הגדרות מוגבלות</button>'}</div></div>`}`;
-  $('pf-t1').onclick = async () => {
+  if($('pf-t1')) $('pf-t1').onclick = async () => {
     try{ await ensureSoundChannels(); await NLN.schedule({notifications: [{id: 77001, title: 'בדיקה: תזכורת', body: 'ההתראות מהטלפון עובדות', channelId: remCh('reminders'), smallIcon: 'ic_stat_notify',
       schedule: {at: new Date(Date.now() + 10e3), allowWhileIdle: true}}]}); toast('✓ נקבע. אפשר לצאת מהאפליקציה'); }
     catch(e){ toast('שגיאה בהתראה: ' + (e.message || e), {err: true, ms: 8000}); }
@@ -8307,13 +8340,14 @@ setInterval(() => { if(document.visibilityState === 'visible') sync(); }, 5 * 60
 // הנעילה בוטלה (16.11.2026). מנקים קוד שנשמר בגרסה הקודמת
 store('משימות.נעילה', null); store('משימות.נעילה.ניסיונות', null);
 if(migrate()) renderAll();
-{ const ks = NEW_USER ? null : ל.kcalSeed(D.file.kcal, nowIso()); if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); } }
+{ const ks = NEW_USER || SHOP ? null : ל.kcalSeed(D.file.kcal, nowIso()); if(ks){ D.file.kcal = ל.mergeCaloriesFile(D.file.kcal, ks); persist('kcal', true); } }
 if(!store(K.onboard)) (LOCAL ? welcome(1) : onboard(1));
-else{ if(needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
+else{ if(!SHOP && needsHaircut() && !store('משימות.נשאל-תספורת')){ store('משימות.נשאל-תספורת', '1'); onboard(3); } handleHash(); }
 nativeInit();
 localInit();
 applyNav();
-if(!location.hash && D.config.startScreen && D.config.startScreen !== 'today' && $('scr-' + D.config.startScreen)) show(D.config.startScreen);
+if(SHOP){ if(!location.hash) show(SHOP_NAV.includes(D.config.startScreen) ? D.config.startScreen : 'shop'); }
+else if(!location.hash && D.config.startScreen && D.config.startScreen !== 'today' && $('scr-' + D.config.startScreen)) show(D.config.startScreen);
 if(LOCAL) goLocal(); else sync();
 </script>
 </body>
