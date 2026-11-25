@@ -601,6 +601,9 @@
   .rc-item{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:8px;border:0;text-align:right;width:100%;color:inherit}
   .rc-pic{width:72px;height:72px;border-radius:14px;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:34px;flex:none}
   .rc-item .t{font-size:17px;font-weight:600}
+  .rc-item.sel{outline:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+  .rc-item .rc-pic{position:relative} .rc-item.sel .rc-pic::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--accent) 72%,transparent);color:#fff;font-size:26px;font-weight:700;border-radius:inherit}
   .rc-item .s{font-size:13px;color:var(--muted);margin-top:2px}
   .rc-hero{height:200px;margin:-18px -16px 12px;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:80px}
   .rc-sec{margin-top:18px}
@@ -830,6 +833,7 @@
   <div class="shop-add"><input type="search" id="rc-q" placeholder="מה מתחשק לך להכין?" aria-label="חיפוש מתכון" autocomplete="off"></div>
   <div class="opts rc-cats" id="rc-cats"></div>
   <div id="rc-list"></div>
+  <div id="rc-bar" class="sel-bar" hidden></div>
 </main>
 
 <main class="screen" id="scr-kcal" hidden>
@@ -1581,6 +1585,7 @@ function onBack(){
   if(open.length){ closeTop(open[open.length - 1]); return; }
   if(!$('task-page').hidden){ $('tp-back').click(); return; }
   if(screen === 'prefs' && pfPage){ pfGo(null); return; }
+  if(screen === 'recipes' && rcSel.size){ rcSel.clear(); renderRecipes(); return; }   // "הקודם" מבטל את הסימון
   if(D.config.askExit === false){ if(NATIVE) window.Capacitor.Plugins.Alarm.exit().catch(() => {}); else{ backExit = true; history.go(-2); } return; }
   if(backAsking) return;
   backAsking = true;
@@ -2627,14 +2632,43 @@ function renderRecipes(){
   $('rc-cats').hidden = used.length < 2;
   const list = all.filter(r => (!rcCat || ל.recipeCat(r) === rcCat) && (!q || ל.shopKey([r.title, r.desc, ...(r.ingredients || [])].join(' ')).includes(q)))
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'he'));
-  $('rc-list').innerHTML = list.length ? list.map(r => `<button class="rc-item" type="button" data-r="${esc(r.id)}">
+  for(const id of [...rcSel]) if(!all.some(r => r.id === id)) rcSel.delete(id);   // רשימה אחרת או מתכון שנמחק
+  $('rc-list').innerHTML = list.length ? list.map(r => `<button class="rc-item${rcSel.has(r.id) ? ' sel' : ''}" type="button" data-r="${esc(r.id)}" aria-pressed="${rcSel.has(r.id)}">
       <span class="rc-pic"${picStyle(r, true)}>${picUrl(r) ? '' : recipeEmoji(r)}</span>
       <span><span class="t">${esc(r.title)}</span><span class="s" style="display:block">${esc([ל.recipeCat(r), r.total && '⏱ ' + r.total, (r.ingredients || []).length + ' מצרכים'].filter(Boolean).join(' · '))}</span></span></button>`).join('')
     : `<div class="empty">${all.length ? 'לא נמצא מתכון' : 'אין עדיין מתכונים. לוחצים + כדי להוסיף'}</div>`;
+  renderRcBar();
 }
+/* סימון כמה מתכונים: לחיצה ארוכה מסמנת, ואז כל לחיצה מסמנת עוד (או מורידה). למטה פס: העתקה לרשימה אחרת, מחיקה, ⋯ (למתכון אחד) */
+const rcSel = new Set();
+function renderRcBar(){
+  const n = rcSel.size; $('rc-bar').hidden = !n;
+  if(screen === 'recipes') $('fab').hidden = !!n;   // בזמן סימון: בלי ＋ (שלא יסתתר מאחורי הפס)
+  if(!n) return;
+  $('rc-bar').innerHTML = `<span>${n === 1 ? 'מתכון אחד' : n + ' מתכונים'}</span><button class="btn primary" type="button" data-rs="copy">📋 העתקה</button>`
+    + (n === 1 ? '<button class="btn" type="button" data-rs="more" aria-label="עוד אפשרויות">⋯</button>' : '')
+    + '<button class="btn" type="button" data-rs="del" style="color:var(--red)" aria-label="מחיקה">🗑</button><button class="btn" type="button" data-rs="x" aria-label="ביטול הסימון">✕</button>';
+}
+function rcToggle(id){ rcSel.has(id) ? rcSel.delete(id) : rcSel.add(id); renderRecipes(); }
+$('rc-bar').onclick = async e => {
+  const b = e.target.closest('[data-rs]'); if(!b) return;
+  const rs = [...rcSel].map(recipeById).filter(Boolean), what = rs.length === 1 ? 'המתכון' : rs.length + ' מתכונים';
+  if(b.dataset.rs === 'x'){ rcSel.clear(); return renderRecipes(); }
+  if(b.dataset.rs === 'more') return rs[0] && recipeMenu(rs[0]);
+  if(b.dataset.rs === 'copy'){
+    if(!clTargets('recipes').length) return toast('אין רשימה אחרת. יוצרים רשימה משותפת ב-+ למעלה', {ms: 5000});
+    return clCopyMenu('recipes', what, g => { rs.forEach(r => clCopyRecipe(g, r)); rcSel.clear(); renderRecipes(); return rs.length; });
+  }
+  if(b.dataset.rs === 'del'){
+    if(!await sure(`למחוק ${rs.length === 1 ? `את "${rs[0].title}"` : rs.length + ' מתכונים'}?`, 'מחיקה', {danger: true})) return;
+    rs.forEach(r => saveRecipe(Object.assign({}, r, {deleted: true}))); rcSel.clear(); renderRecipes();
+    toast(rs.length === 1 ? 'נמחק' : `נמחקו ${rs.length} מתכונים`, {undo: () => { rs.forEach(r => saveRecipe(Object.assign({}, r, {deleted: false}))); renderRecipes(); }});
+  }
+};
 $('rc-q').addEventListener('input', renderRecipes);
 $('rc-cats').onclick = e => { const b = e.target.closest('[data-c]'); if(b){ rcCat = b.dataset.c; renderRecipes(); } };
-$('rc-list').onclick = e => { if(longPressed){ longPressed = false; return; } const b = e.target.closest('[data-r]'); if(b) openRecipe(b.dataset.r); };
+$('rc-list').onclick = e => { if(longPressed){ longPressed = false; return; } const b = e.target.closest('[data-r]'); if(!b) return;
+  if(rcSel.size) rcToggle(b.dataset.r); else openRecipe(b.dataset.r); };
 // לחיצה ארוכה על תמונה (ברשימה או בדף המתכון): בחירת תמונה אחרת
 let longPressed = false, lpTimer = null;
 function onLongPress(root, sel, getId, menu){
@@ -2642,12 +2676,12 @@ function onLongPress(root, sel, getId, menu){
     longPressed = false;   // לחיצה חדשה: מה שנשאר מלחיצה ארוכה קודמת לא בולע אותה
     const el = e.target.closest(sel); if(!el) return;
     clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? recipeMenu(r) : openImagePicker(r)); }, 550);
+    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? rcToggle(r.id) : openImagePicker(r)); }, 550);
   });
   for(const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) root.addEventListener(ev, e => { if(ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(lpTimer); });
   root.addEventListener('contextmenu', e => { if(e.target.closest(sel)) e.preventDefault(); });
 }
-// ברשימת המתכונים: לחיצה ארוכה על מתכון = עריכה, תמונה או מחיקה, בלי לפתוח אותו
+// ברשימת המתכונים: לחיצה ארוכה על מתכון = סימון (ואז אפשר לסמן עוד ולהעתיק יחד). עריכה, תמונה וקטגוריה: ⋯ בפס
 onLongPress($('rc-list'), '[data-r]', el => el.closest('[data-r]').dataset.r, true);
 function recipeMenu(r){
   sheet(r.title, [
