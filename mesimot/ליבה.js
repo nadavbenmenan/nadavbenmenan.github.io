@@ -2397,15 +2397,28 @@ function wordStems(w){
   return out;
 }
 const sameWord = (a, b) => { if(a === b) return true; const sa = wordStems(a); for(const x of wordStems(b)) if(sa.has(x)) return true; return false; };
+/** שגיאת כתיב קטנה: אות אחת חסרה או נוספה (עגבנות = עגבניות, מלפפנים = מלפפונים), או הוחלפה במילה של 6 אותיות ומעלה.
+    רק במילים של 4 אותיות ומעלה, ורק כשאין התאמה מדויקת (כדי שפיצה לא תהיה פיתה). */
+function nearWord(a, b){
+  const f = w => w.replace(/[ךםןףץ]/g, c => FINALS[c]).replace(/יי/g, 'י');
+  a = f(a); b = f(b);
+  if(a === b) return true;
+  if(Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while(i < a.length && a[i] === b[i]) i++;
+  if(a.length === b.length) return a.length >= 6 && a.slice(i + 1) === b.slice(i + 1);   // אות שהוחלפה: רק במילה ארוכה
+  const [lo, hi] = a.length < b.length ? [a, b] : [b, a];
+  return i < lo.length && lo.slice(i) === hi.slice(i + 1);   // אות נוספת בסוף היא סיומת (קשיו ≠ קשיות), לא שגיאה
+}
+const likeWord = (a, b) => sameWord(a, b) || nearWord(a, b) || [...wordStems(a)].some(x => [...wordStems(b)].some(y => nearWord(x, y)));
 // מילה עם ו/ה בהתחלה ("והבננות") נבדקת גם בלעדיהן
 const wordForms = w => w.startsWith('וה') && w.length > 4 ? [w, w.slice(1), w.slice(2)] : w.length > 3 && /^[וה]/.test(w) ? [w, w.slice(1)] : [w];
 /** כמה טוב שם הרשימה (מילים) מתאים לשם שהוקלד. 0 = לא מתאים. כל מילה ברשימה חייבת להופיע בשם. */
-function phraseScore(inWords, words){
+function phraseScore(inWords, words, fuzzy){
   let score = 0;
   for(let i = 0; i < words.length; i++){
     let best = 0;
     for(let j = 0; j < inWords.length; j++) for(const f of wordForms(inWords[j])){
-      const v = f === words[i] ? 3 : sameWord(f, words[i]) ? 2 : 0;
+      const v = f === words[i] ? 3 : sameWord(f, words[i]) ? 2 : fuzzy && likeWord(f, words[i]) ? 1 : 0;
       best = Math.max(best, v ? v * Math.min(f.length, words[i].length) + (j === i ? 1 : 0) : 0);
     }
     if(!best) return 0;
@@ -2423,10 +2436,28 @@ function shopMatch(name){
     const sc = phraseScore(inWords, m.words) - (m.word ? 0.5 : 0);   // שוויון: מוצר מהרשימה לפני מילת מפתח
     if(sc > bestScore){ best = m; bestScore = sc; }
   }
+  if(best) return best;
+  // אין התאמה: סלחנות לשגיאת כתיב (אות אחת)
+  for(const m of SHOP_MATCH){
+    const sc = phraseScore(inWords, m.words, true) - (m.word ? 0.5 : 0);
+    if(sc > bestScore){ best = m; bestScore = sc; }
+  }
+  if(best) return best;
+  // עדיין אין: לפי חלק של מילה. מילה שמתחילה במילה מוכרת ("שוקולדית" = שוקולד, "גבינונים" = גבינה, "שמפונים" = שמפו).
+  // המילה המוכרת הארוכה ביותר קובעת. רק מילים של 3 אותיות ומעלה
+  const fin = w => w.replace(/[ךםןףץ]/g, c => FINALS[c]);
+  let len = 0;
+  for(const w of inWords.map(fin)) if(w.length >= 4) for(const m of SHOP_MATCH){
+    if(m.words.length !== 1) continue;
+    for(const st of wordStems(m.words[0])) if(st.length >= 3 && st.length < w.length && w.startsWith(st) && st.length > len){ best = m; len = st.length; }
+  }
   return best;
 }
 /** מפתח השוואה: אותו מוצר בכתיב אחר (בננה / בננות) מקבל אותו מפתח */
 const shopStemKey = name => shopNorm(name).split(' ').map(w => [...wordStems(w)].sort((a, b) => a.length - b.length)[0]).join(' ');
+/** אותו מוצר עם שגיאת כתיב ("שישית מים" = "שישיית מים"): אותו מספר מילים, וכל מילה דומה */
+const nearProduct = (a, b) => { const x = shopNorm(a).split(' '), y = shopNorm(b).split(' ');
+  return x.length === y.length && x.every((w, i) => likeWord(w, y[i])); };
 const sameProduct = (a, b) => {
   const x = shopNorm(a).split(' '), y = shopNorm(b).split(' ');
   return x.length === y.length && x.every((w, i) => sameWord(w, y[i]));
@@ -2471,7 +2502,7 @@ function shopAdd(items, name, nowIso){
   const clean = canonName(name);   // שם נרדף ("קשיות") נשמר בשם הראשי ("קשים")
   const live = (items || []).filter(x => !x.deleted);
   // אותו מוצר בכתיב אחר ("בננות" כשיש "בננה") או בשם נרדף: אותה רשומה, כדי שלא יהיו כפילויות וההיסטוריה תישמר
-  const cur = live.find(x => x.id === shopId(clean)) || live.find(x => sameProduct(canonName(x.name), clean));
+  const cur = live.find(x => x.id === shopId(clean)) || live.find(x => sameProduct(canonName(x.name), clean)) || live.find(x => nearProduct(canonName(x.name), clean));
   if(cur && cur.active) return null;
   const r = {id: cur ? cur.id : shopId(clean), name: cur ? cur.name : clean, active: true, count: (cur ? +cur.count || 0 : 0) + 1, addedAt: nowIso,
     boughtAt: cur ? cur.boughtAt || null : null, updatedAt: nowIso, deleted: false};
@@ -2502,12 +2533,12 @@ function shopSuggest(items, query, limit){
   const qWords = q.split(' ').filter(Boolean);
   // מתאים להקלדה: מכיל את הטקסט, או אותן מילים בכתיב אחר ("בננה" מוצא "בננות")
   const fits = name => { const n = shopKey(name), w = n.split(' ');
-    return n.includes(q) || qWords.every(a => w.some(b => sameWord(a, b))); };
+    return n.includes(q) || qWords.every(a => w.some(b => likeWord(a, b))); };
   const past = mine.filter(x => !x.active && !x.hidden && (!q || aliasesOf(x.name).some(fits)))
     .sort((a, b) => +!!b.fav - +!!a.fav || (b.count || 0) - (a.count || 0) || (b.addedAt || '').localeCompare(a.addedAt || '') || a.name.localeCompare(b.name));
   // מהרשימה המובנית: לסירוגין בין המחלקות, כדי שבהתחלה יופיע מגוון ולא רק ירקות
   // ברשימה המובנית: רק מילה שמתחילה במה שהוקלד ("גב" = גבינה, לא עגבניות)
-  const hit = n => { n = shopNorm(n); return n.startsWith(q) || n.includes(' ' + q) || qWords.every(a => n.split(' ').some(b => sameWord(a, b))); };
+  const hit = n => { n = shopNorm(n); return n.startsWith(q) || n.includes(' ' + q) || qWords.every(a => n.split(' ').some(b => likeWord(a, b))); };
   const cat = SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name)) && (!q || [x.name, ...x.aliases].some(hit)))
     .sort((a, b) => (q ? +!a.name.startsWith(q) - +!b.name.startsWith(q) : 0) || a.rank - b.rank || SHOP_CAT[a.cat].order - SHOP_CAT[b.cat].order)
     .map(x => ({name: x.name, catalog: true}));
