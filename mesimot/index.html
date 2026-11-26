@@ -7729,8 +7729,45 @@ async function calRehome(){
   for(const x of Object.values(map)) if(x.eid) await NPhone.calendarDelete({eid: x.eid}).catch(() => {});
   store('משימות.יומן-טלפון', '{}');
 }
+/* ---------- עדכון מתוך האפליקציה ----------
+   מספר הבנייה (APP_BUILD) נכנס לקובץ ההתקנה בהכנה (מתוך sw.js). באתר: אותו מספר ב-sw.js. גדול יותר = יש עדכון.
+   בדיקה בפתיחה ובחזרה לאפליקציה (פעם ב-6 שעות), ומ"אודות". העדכון: מורידים בתוך האפליקציה ונפתח מסך ההתקנה של אנדרואיד. הנתונים נשמרים. */
+const APP_BUILD = +window.APP_BUILD || 0, LIVE_SW = 'https://nadavbenmenan.github.io/mesimot/sw.js';
+let updLive = +store('mesimot.upd-live') || 0;
+const updAvail = () => LOCAL && APP_BUILD && updLive > APP_BUILD;
+async function liveBuild(){
+  const u = LIVE_SW + '?t=' + Date.now(), H = window.Capacitor?.Plugins?.CapacitorHttp;   // בתוך האפליקציה fetch לאותה כתובת נשאר בטלפון
+  const t = H ? (await H.get({url: u, responseType: 'text'})).data : await (await fetch(u, {cache: 'no-store'})).text();
+  const m = String(t).match(/mesimot-v(\d+)/); if(!m) throw new Error('no ver');
+  return +m[1];
+}
+async function checkUpdate(manual){
+  if(!LOCAL || !APP_BUILD) return;
+  if(!manual && Date.now() - (+store('mesimot.upd-at') || 0) < 6 * 3600e3){ if(updAvail()) updOffer(); return; }
+  try{ updLive = await liveBuild(); store('mesimot.upd-at', String(Date.now())); store('mesimot.upd-live', String(updLive)); }
+  catch(e){ if(manual) toast('אין חיבור. לנסות שוב אחר כך', {err: true}); return; }
+  if(document.getElementById('pf-about')?.offsetParent) renderPrefs();
+  if(updAvail()) updOffer(manual); else if(manual) toast('✓ זו הגרסה הכי חדשה');
+}
+async function updOffer(manual){
+  if(!manual && store('mesimot.upd-no') === String(updLive)) return;   // "אחר כך": לא שואלים שוב על אותה גרסה (נשאר ב"אודות")
+  if(document.querySelector('dialog[open]') && !manual) return;
+  if(await sure(`יש גרסה חדשה של ${APP_NAME}. לעדכן עכשיו? כל הנתונים נשמרים`, '⬇️ עדכון', {no: 'אחר כך'})) doUpdate();
+  else store('mesimot.upd-no', String(updLive));
+}
+async function doUpdate(){
+  const u = APK_URL + '&b=' + (updLive || Date.now());
+  if(!NATIVE){ window.open(u, '_blank'); return; }
+  toast('מוריד את העדכון…', {ms: 90000});
+  try{
+    const r = await NPhone.installApk({url: u});
+    if(r?.needPermission){ toast('צריך לאשר פעם אחת "התקנת אפליקציות" ל' + APP_NAME + ', לחזור וללחוץ שוב על עדכון', {ms: 9000}); return; }
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+  }catch(e){ toast('ההורדה בתוך האפליקציה לא הצליחה. פותח בדפדפן', {err: true}); NPhone.openUrl({url: u}).catch(() => { location.href = u; }); }
+}
 function localInit(){
   if(!NATIVE) return;
+  if(LOCAL){ setTimeout(() => checkUpdate(), 5000); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkUpdate(); }); }
   if(SHOP){   // רשימת קניות: רק גיבוי. בלי יומן, ווידג'ט ובריאות
     if(!LOCAL) return;
     backupDaily();
@@ -8069,13 +8106,16 @@ function renderPrefs(){
   $('pf-goals').innerHTML = [['kcal', '🔥', 'יעד קלוריות', `${kNum(kst.goal)} ביום`], ['prot', '💪', 'יעד חלבון', `${kNum(Math.round(+kst.protGoal || 1.6 * w))} גרם ביום`],
     ['sleep', '😴', 'יעד שינה', `${durText(sleepGoal())} שעות בלילה`], ['weight', '⚖️', 'יעד משקל', kst.weightGoal ? `${kg1(+kst.weightGoal)} ק״ג` : 'בלי יעד'], ['now', '🏋️', 'משקל עכשיו', `${kg1(+w)} ק״ג`], ['height', '📏', 'גובה', `${kst.height} ס״מ`]].map(([k, i, t, x]) => `<button type="button" class="more-row" data-goal="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">✏️</span></button>`).join('');
   $('pf-about').innerHTML = `<div class="sec"><h2>${APP_NAME}</h2><div class="rows">
-      <div><span class="k">גרסה</span><span class="v">${APP_VER}${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
+      <div><span class="k">גרסה</span><span class="v">${APP_VER}${APP_BUILD ? ` (${APP_BUILD})` : ''}${NATIVE ? ' · אנדרואיד' : ' · אתר'}</span></div>
+      ${updAvail() ? `<div><span class="k">🆕 עדכון</span><span class="v">יש גרסה חדשה (${updLive})</span></div>` : ''}
       ${SHOP ? `<div><span class="k">ברשימת הקניות</span><span class="v">${D.file.shop.items.filter(x => x.active && !x.deleted).length}</span></div>`
         : `<div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>`}
       <div><span class="k">מתכונים</span><span class="v">${live(D.file.recipes?.recipes).length}</span></div>
       <div><span class="k">הנתונים נשמרים</span><span class="v">${LOCAL ? 'בטלפון (+ גיבוי לדרייב)' : 'בגיטהאב ובמכשיר'}</span></div></div>
-    <div class="btns"><button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש / עדכון</button></div>
-    <div class="note">ההתקנה מחדש מאותו קישור שומרת את כל הנתונים.</div></div>`;
+    <div class="btns">${LOCAL && APP_BUILD ? `<button class="btn${updAvail() ? ' primary' : ''}" type="button" id="pf-updchk">${updAvail() ? '⬇️ עדכון עכשיו' : '🔄 בדיקת עדכון'}</button>` : ''}
+      <button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש</button></div>
+    <div class="note">העדכון יורד בתוך האפליקציה ונפתח מסך ההתקנה של אנדרואיד. כל הנתונים נשמרים.</div></div>`;
+  if($('pf-updchk')) $('pf-updchk').onclick = () => updAvail() ? doUpdate() : checkUpdate(true);
   $('pf-upd').onclick = () => { const u = APK_URL;
     // באפליקציה: בדפדפן של הטלפון (האפליקציה יושבת על אותה כתובת, ובפנים הקובץ לא יורד)
     if(NATIVE) NPhone.openUrl({url: u}).catch(() => { location.href = u; }); else window.open(u, '_blank'); };
