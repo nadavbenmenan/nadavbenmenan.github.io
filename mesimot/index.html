@@ -622,12 +622,16 @@
   .rc-timers{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .rc-timers button{border:0;border-radius:999px;background:color-mix(in srgb, var(--accent) 14%, var(--card));color:var(--accent);
                     font-weight:600;font-size:14px;min-height:36px;padding:4px 12px}
-  #timer-bar{position:fixed;right:12px;left:12px;bottom:calc(var(--sb) + 76px);z-index:60;display:flex;flex-direction:column;gap:6px}
-  #timer-bar .tm{display:flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);border-radius:16px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  /* טיימר פעיל: כפתור קטן למעלה בצד (לא פס על כל התחתית). לחיצה פותחת את הטיימר, ושם מבטלים. אין ✕ שמבטל בטעות */
+  #timer-bar{position:fixed;top:calc(var(--st) + 2px);left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:4px;pointer-events:none}
+  #timer-bar .tm{pointer-events:auto;display:flex;align-items:center;gap:4px;min-height:28px;background:color-mix(in srgb, var(--text) 78%, transparent);color:var(--bg);
+    border-radius:999px;padding:3px 10px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
   #timer-bar .tm.done{background:var(--accent);color:var(--on-accent)}
-  #timer-bar .tm span:first-child{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
-  #timer-bar .m{flex:1;font-size:13px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #timer-bar button{border:0;background:transparent;color:inherit;font-size:18px;width:44px;height:44px}
+  #timer-bar .tm span:first-child{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #timer-bar .m{display:none}
+  html.has-timer .screen:not(.has-bar){padding-top:calc(var(--st) + 40px)}
+  html.has-timer .scr-bar{padding-top:calc(var(--st) + 36px)}   /* יש טיימר: המסך יורד קצת, כדי שהכפתור לא יסתיר כלום */
+  html.has-timer dialog.full .dlg-head{padding-top:calc(var(--st) + 36px)}
   .img-pick .big{height:150px;border-radius:16px;background:var(--soft) center/cover no-repeat;position:sticky;top:0;z-index:2;box-shadow:0 6px 16px rgba(0,0,0,.15)}
 
   .pl-card{background:var(--card);border-radius:18px;padding:14px 16px;margin-top:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
@@ -3240,7 +3244,8 @@ function renderTimerDlg(){
   $('tmr-note').textContent = left <= 0 ? (t.stopped ? 'נעצר' : 'הזמן עבר') : `תגיע התראה בעוד ${mins === 1 ? 'דקה' : mins + ' דקות'} (ב־${ל.localTime(t.at)})` +
     (pushMode() ? ', גם אם תסגור את האפליקציה.' : '. המנוע לא פועל, אז רק כשהאפליקציה פתוחה.');
   // נגמר: כפתור אחד גדול, "עצור"
-  $('tmr-cancel').hidden = left <= 0;
+  $('tmr-cancel').hidden = left <= 0 && !t.stopped;
+  $('tmr-cancel').textContent = left <= 0 ? 'הסרה' : 'ביטול הטיימר';
   $('tmr-plus').hidden = !!t.stopped && left <= 0;
   $('tmr-close').textContent = left <= 0 && !t.stopped ? '⏹ עצור' : 'סגירה';
   const nx = left <= 0 ? timerNext(t) : null;
@@ -3288,6 +3293,7 @@ function renderTimers(){
   let bar = $('timer-bar');
   const list = timerList();
   // אין טיימרים, או שחלון הטיימר עצמו פתוח (הוא כבר מציג את הספירה): בלי פס
+  document.documentElement.classList.toggle('has-timer', !!list.length && !$('dlg-timer').open);
   if(!list.length || $('dlg-timer').open){ if(bar) bar.remove(); return; }
   if(!bar || bar.parentNode !== topLayer()){
     if(bar) bar.remove();
@@ -3295,8 +3301,7 @@ function renderTimers(){
   }
   const now = Date.now(), fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
     return (h ? h + ':' + ל.pad(m) : m) + ':' + ל.pad(s % 60); };
-  const html = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}" data-open="${esc(t.id)}"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span>
-    <button type="button" data-x="${esc(t.id)}" aria-label="${t.at <= now ? 'סגירה' : 'ביטול טיימר'}">✕</button></div>`).join('');
+  const html = list.map(t => `<div class="tm${t.at <= now ? ' done' : ''}" data-open="${esc(t.id)}" role="button" tabindex="0" aria-label="טיימר: ${esc(t.title)}. לחיצה לפתיחה ולביטול"><span>⏱ ${t.at <= now ? 'הסתיים' : fmt(t.at - now)}</span><span class="m">${esc(t.title)}</span></div>`).join('');
   if(bar._h !== html){ bar._h = html; bar.innerHTML = html; }   // רק כשמשהו השתנה, כדי שנגיעה לא "תיפול" באמצע בנייה מחדש
 }
 setInterval(() => {
