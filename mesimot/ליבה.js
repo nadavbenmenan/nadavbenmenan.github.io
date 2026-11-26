@@ -2144,9 +2144,39 @@ const SHOP_CATS = [
   ['cans', '🥫', 'שימורים ורטבים'], ['bake', '🧂', 'שמן, תבלינים ואפייה'], ['morning', '☕', 'קפה, תה ודגני בוקר'],
   ['snack', '🍫', 'חטיפים ומתוקים'], ['drink', '🥤', 'משקאות'], ['dairy', '🥛', 'חלב, גבינות וביצים'],
   ['deli', '🥙', 'מעדנייה וסלטים'], ['meat', '🍗', 'בשר, עוף ודגים'], ['frozen', '🧊', 'קפואים'],
-  ['clean', '🧽', 'ניקיון ובית'], ['care', '🧴', 'טיפוח והיגיינה'], ['other', '🛒', 'שונות'],
+  ['clean', '🧽', 'ניקיון ובית'], ['care', '🧴', 'טיפוח והיגיינה'],
+  // מחוץ לסופר (26.11.2026): כדי שכמעט כל דבר ימצא מחלקה משלו
+  ['pharm', '💊', 'בית מרקחת'], ['baby', '🍼', 'תינוקות'], ['pets', '🐾', 'חיות מחמד'], ['home', '🍳', 'כלי בית ומטבח'],
+  ['party', '🎉', 'חד פעמי ומסיבות'], ['games', '🎲', 'משחקים וצעצועים'], ['office', '✏️', 'כלי כתיבה ומשרד'], ['books', '📚', 'ספרים ועיתונים'],
+  ['electric', '🔌', 'חשמל וסוללות'], ['tools', '🔧', 'כלי עבודה ותיקונים'], ['garden', '🌱', 'גינה ופרחים'], ['sport', '⚽', 'ספורט ופנאי'],
+  ['clothes', '👕', 'ביגוד והנעלה'], ['car', '🚗', 'רכב'], ['gifts', '🎁', 'מתנות'], ['travel', '🧳', 'טיולים ונסיעות'],
+  ['other', '🛒', 'שונות'],
 ].map(([id, emoji, name], i) => ({id, emoji, name, order: i}));
 const SHOP_CAT = Object.fromEntries(SHOP_CATS.map(c => [c.id, c]));
+const SHOP_BUILTIN = SHOP_CATS.length;
+/** מחלקות שהמשתמש הוסיף (הגדרות: shopCats = [{id: 'u-…', name, emoji, pic}]). נכנסות לפני "שונות". pic = תמונה קטנה (data:image) או ריק. */
+const SHOP_CAT_DEL = new Set();   // מחלקות שנמחקו: לא חוזרות דרך מוצרים של חברים
+function shopSetCats(list){
+  SHOP_CAT_DEL.clear(); for(const c of list || []) if(c && c.deleted) SHOP_CAT_DEL.add(c.id);
+  for(let i = SHOP_CATS.length - 1; i >= 0; i--) if(SHOP_CATS[i].custom){ delete SHOP_CAT[SHOP_CATS[i].id]; SHOP_CATS.splice(i, 1); }
+  for(const c of list || []) shopAddCat(c);
+  return SHOP_CATS;
+}
+function shopAddCat(c){
+  if(!c || !/^u-[\w-]{2,24}$/.test(c.id || '') || !String(c.name || '').trim() || c.deleted || SHOP_CAT_DEL.has(c.id)) return null;
+  const o = {id: c.id, name: String(c.name).trim().slice(0, 30), emoji: String(c.emoji || '').slice(0, 16) || '🏷️',
+    pic: /^data:image\//.test(c.pic || '') ? c.pic : '', custom: true};
+  if(SHOP_CAT[o.id]){ Object.assign(SHOP_CAT[o.id], o); return SHOP_CAT[o.id]; }
+  SHOP_CATS.splice(SHOP_CATS.findIndex(x => x.id === 'other'), 0, o); SHOP_CAT[o.id] = o;
+  SHOP_CATS.forEach((x, i) => { x.order = i; });
+  return o;
+}
+/** מחלקה חדשה: מזהה, שם (בלי כפילות עם מחלקה קיימת), אמוג'י או תמונה. מחזיר את הרשומה לשמירה בהגדרות, או null. */
+function shopNewCat(name, emoji, pic, id){
+  name = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+  if(!name || SHOP_CATS.some(c => c.name === name && c.id !== id)) return null;
+  return {id: id || 'u-' + sha256(name + Date.now()).slice(0, 8), name, emoji: String(emoji || '').slice(0, 16) || '🏷️', pic: /^data:image\//.test(pic || '') ? pic : ''};
+}
 // המוצרים הנפוצים בסופר בישראל, בכל מחלקה מהנפוץ לפחות נפוץ. "שם|אמוג'י". שם בלי אמוג'י מקבל את של המחלקה.
 const SHOP_POPULAR = {
   veg: 'עגבניות|🍅 מלפפונים|🥒 בצל|🧅 תפוחי אדמה|🥔 גזר|🥕 לימון|🍋 בננות|🍌 תפוחים|🍎 פלפל אדום|🫑 אבוקדו|🥑 שום|🧄 חסה|🥬 ' +
@@ -2194,17 +2224,67 @@ const SHOP_MORE = {
  "other": "אוכל לכלב|🐕 אוכל לחתול|🐈 חול לחתול|🐈 חטיפים לכלב|🐕 שקיות לקקי|🐕 פרחים|💐 מתנה|🎁 כרטיס ברכה|💌 עיתון|📰 בלונים|🎈"
 };
 
+// מוצרים שעברו למחלקה חדשה (26.11.2026)
+const SHOP_RECAT = {
+  pharm: 'אקמול ויטמינים פלסטרים תחבושות',
+  baby: 'חיתולים מגבונים_לתינוק',
+  pets: 'אוכל_לכלב אוכל_לחתול חול_לחתול חטיפים_לכלב שקיות_לקקי',
+  party: 'כוסות_חד_פעמיות צלחות_חד_פעמיות בלונים',
+  electric: 'סוללות נורה',
+  garden: 'פרחים', gifts: 'מתנה כרטיס_ברכה', books: 'עיתון',
+};
+// מוצרים במחלקות החדשות. מוצעים כשמקלידים
+const SHOP_EXTRA = {
+  pharm: 'נורופן|💊 אדוויל|💊 אופטלגין|💊 סירופ לשיעול|🧴 טיפות אף|💧 תרסיס לאף|💧 כדורים לכאב ראש|💊 אנטיהיסטמין|💊 משחה|🧴 מדחום|🌡️ ' +
+         'מסכות פנים|😷 ג׳ל אלכוהול|🧴 בדיקת קורונה|🧪 בדיקת היריון|🧪 טיפות עיניים|💧 עדשות מגע|👁️ נוזל לעדשות|💧 ויטמין D|💊 ויטמין C|💊 ' +
+         'ברזל|💊 אומגה 3|💊 מגנזיום|💊 פרוביוטיקה|💊 תחבושת אלסטית|🩹 פד חם|🔥 קרם לכוויות|🧴 מלטונין|💊 תרופה|💊',
+  baby: 'מטרנה|🍼 תמ״ל|🍼 בקבוק לתינוק|🍼 מוצץ|🍼 משחת החתלה|🧴 שמפו לתינוק|🧴 דייסה|🥣 מחית פירות|🍎 חיתולי בד|🍼 ' +
+        'חיתולי לילה|🍼 חיתולי ים|🩱 מגבונים לחים לתינוק|🧻 פד הנקה|🍼 ביסקוויט לתינוק|🍪 כוס לימוד|🥤',
+  pets: 'אוכל רטוב לחתול|🐈 אוכל רטוב לכלב|🐕 חטיפים לחתול|🐈 צעצוע לכלב|🐕 רצועה|🐕 קולר|🐕 שמפו לכלב|🐕 ' +
+        'אוכל לדגים|🐠 אוכל לציפורים|🐦 נסורת|🐹 טיפות נגד פרעושים|🐕 קערה לכלב|🐕 מיטה לכלב|🐕',
+  home: 'סיר|🍲 מחבת|🍳 סכין|🔪 קרש חיתוך|🔪 כוסות|🥛 צלחות|🍽️ סכו״ם|🍴 קערות|🥣 קופסאות אחסון|🥡 מגבת רחצה|🧺 ' +
+        'מגבות מטבח|🧺 בקבוק מים|💧 תרמוס|☕ קומקום|☕ טוסטר|🍞 פומפייה|🧀 מסננת|🍝 קולב|👕 סל כביסה|🧺 ' +
+        'מצעים|🛏️ כרית שינה|🛏️ שמיכה|🛏️ וילון|🪟 שטיח|🏠 נרות ריחניים|🕯️ פח אשפה|🗑️ מגש|🍽️ תבנית אפייה|🥧',
+  party: 'מפות חד פעמיות|🎉 סכו״ם חד פעמי|🍴 מגשי אלומיניום|🍽️ קשיות|🥤 קישוטים|🎊 נרות יום הולדת|🎂 ' +
+         'כובעי מסיבה|🥳 שלטים ליום הולדת|🎉 קונפטי|🎊 שקיות הפתעה|🎁 מפיות צבעוניות|🎉 קרח למסיבה|🧊 פחמים|🔥 נייר עטיפה|🎁',
+  games: 'משחק קופסה|🎲 פאזל|🧩 קלפים|🃏 לגו|🧱 בובה|🪆 מכונית צעצוע|🚗 כדור|⚽ משחק קלפים|🃏 שחמט|♟️ דמקה|♟️ ' +
+         'טאקי|🃏 מונופול|🎲 רמי|🎲 קוביות|🎲 צעצוע|🧸 בובת פרווה|🧸 משחק מחשב|🎮 משחק לפלייסטיישן|🎮 ' +
+         'בועות סבון|🫧 פליימוביל|🧸 פלסטלינה|🎨 צבעי ידיים|🎨 חול קינטי|🏖️ דאובל|🏓 יו-יו|🪀 עפיפון|🪁 קלפי אספנות|🃏 ' +
+         'רובוט צעצוע|🤖 רכבת צעצוע|🚂 קוביות בנייה|🧱 משחק חשיבה|🧠 משחק לתינוק|🧸 מטבח צעצוע|🍳',
+  office: 'עטים|🖊️ עפרונות|✏️ מחברות|📓 מחק|✏️ מחדד|✏️ דבק|🧴 דבק סלוטייפ|📎 מספריים|✂️ סיכות|📎 מהדק|📎 ' +
+          'טושים|🖍️ צבעים|🖍️ צבעי פנדה|🖍️ דפי A4|📄 מעטפות|✉️ בולים|📮 קלסר|📁 ניילוניות|📁 פתקים דביקים|🗒️ ' +
+          'יומן|📒 סרגל|📏 מחשבון|🧮 קלמר|✏️ ילקוט|🎒 דיו למדפסת|🖨️ מרקר|🖍️ כריכות לספרים|📚',
+  books: 'ספר|📖 ספר ילדים|📖 מגזין|📰 חוברת תשבצים|🧩 חוברת צביעה|🎨 ספר בישול|📖 ספר לימוד|📚 עיתון סוף שבוע|📰',
+  electric: 'סוללות AA|🔋 סוללות AAA|🔋 סוללת כפתור|🔋 נורת לד|💡 מטען|🔌 כבל טעינה|🔌 מטען לטלפון|🔌 מפצל|🔌 כבל מאריך|🔌 ' +
+            'אוזניות|🎧 פנס|🔦 שלט|📺 מתאם|🔌 כרטיס זיכרון|💾 דיסק און קי|💾 סוללה נטענת|🔋 מאוורר|🌀 מפזר חום|🔥',
+  tools: 'פטיש|🔨 מברג|🪛 ברגים|🔩 מסמרים|🔩 דבק פלא|🧴 סרט בידוד|📎 מטר|📏 מקדחה|🔧 פלאיירס|🔧 סולם|🪜 ' +
+         'צבע לקיר|🎨 מברשת צבע|🖌️ סיליקון|🧴 WD-40|🧴 כפפות עבודה|🧤 מנעול|🔒 ווים|🪝',
+  garden: 'עציץ|🪴 אדמה לעציצים|🪴 דשן|🌱 זרעים|🌱 שתילים|🌱 צינור השקיה|💧 מזמרה|✂️ כפפות גינה|🧤 ' +
+          'עציץ תבלינים|🌿 זר פרחים|💐 ורדים|🌹 קוטל חרקים|🪲 דוחה יתושים|🦟 נייר זבובים|🪰',
+  sport: 'כדורגל|⚽ כדורסל|🏀 מחבט טניס|🎾 כדורי טניס|🎾 מזרן יוגה|🧘 משקולות|🏋️ בקבוק ספורט|💧 ' +
+         'חבל קפיצה|🪢 אופניים|🚲 קסדה|⛑️ משקפת|🔭 אוהל|⛺ כיסא מתקפל|🪑 צידנית|🧊 משקפי שחייה|🥽 גלגיליות|🛼',
+  clothes: 'גרביים|🧦 תחתונים|🩲 חולצה|👕 מכנסיים|👖 נעליים|👟 נעלי בית|🩴 כפכפים|🩴 פיג׳מה|🛌 ' +
+           'בגד ים|🩱 כובע|🧢 צעיף|🧣 כפפות|🧤 מעיל|🧥 שרוכים|👟 משחת נעליים|👞 גרביונים|🧦 בגדי תינוק|👶',
+  car: 'דלק|⛽ שמן מנוע|🛢️ נוזל לשמשה|💧 מבשם לרכב|🌸 מטען לרכב|🔌 שטיחונים לרכב|🚗 ' +
+       'מגבונים לרכב|🧻 כיסוי שמשה|☀️ מגבים לרכב|🌧️ כיסא בטיחות|👶 שואב לרכב|🧹 נוזל קירור|💧',
+  gifts: 'שי|🎁 עציץ מתנה|🪴 בקבוק יין למתנה|🍷 שוקולד מתנה|🍫 תו קנייה|🎟️ זר למתנה|💐 בלון הליום|🎈',
+  travel: 'מזוודה|🧳 תיק גב|🎒 כרית צוואר|✈️ מתאם חשמל לחו״ל|🔌 שקיות לנוזלים|🧴 קרם הגנה לילדים|🧴 ' +
+          'בקבוקונים לטיסה|🧴 מנעול למזוודה|🔒 מפה|🗺️ כרטיסים|🎟️',
+  other: 'מתנה לגננת|🎁 צילום מסמכים|📄 מפתח|🔑 תיקון|🔧',
+};
 const SHOP_CATALOG = [];
 // מוצרים שהאמוג'י של המחלקה באמת מראה אותם (שאר מוצרים בלי אמוג'י משלהם לא יקבלו את של המחלקה)
 const EMOJI_OK = new Set(['חסה', 'כרוב', 'עלי בייבי', 'כרוב סגול', 'מנגולד', 'תרד', 'קייל', 'לחם', 'חלה', 'לחם מלא', 'לחם שיפון', 'לחם כוסמין', 'לחם דגנים',
   'לחם לבן', 'לחם פרוס', 'לחם מחמצת', 'לחם ללא גלוטן', 'לחם קלוי', 'שעועית', 'עדשים', 'עדשים כתומות', 'עדשים ירוקות', 'עדשים שחורות', 'שעועית לבנה', 'שעועית אדומה',
   'שעועית שחורה', 'אפונה יבשה', 'פול', 'רסק עגבניות', 'מלח', 'סוכר', 'קפה', 'חלב', 'קרח', 'שוקולד', 'משקה סויה', 'שימורי פטריות']);
-for(const [list, base] of [[SHOP_POPULAR, 0], [SHOP_MORE, 1000]])
+for(const [list, base] of [[SHOP_POPULAR, 0], [SHOP_MORE, 1000], [SHOP_EXTRA, 2000]])
   for(const [cat, s] of Object.entries(list))
     [...s.matchAll(/\s*([^|]+?)\|(\S*)/g)].forEach(([, name, emoji], i) => {
       name = name.trim();
       if(!SHOP_CATALOG.some(x => x.name === name)) SHOP_CATALOG.push({name, cat, emoji: emoji || SHOP_CAT[cat].emoji, rank: base + i});
     });
+for(const [cat, s] of Object.entries(SHOP_RECAT))
+  for(const n of s.split(' ')){ const x = SHOP_CATALOG.find(y => y.name === n.replace(/_/g, ' ')); if(x) x.cat = cat; }
 // שמות נרדפים: מוצר אחד בכמה שמות. החיפוש מוצא אותו בכל אחד מהם, אבל ברשימה הוא מופיע פעם אחת, בשם הראשון.
 const SHOP_ALIASES = `קשים=קשיות; סודה=מים מוגזים; משקה שקדים=חלב שקדים; משקה סויה=חלב סויה; קולה=קוקה קולה;
   צ׳יפס=תפוצ׳יפס; פלפל חריף=צ׳ילי; תפוחים=תפוח עץ,תפוחי עץ; קורנפלקס=פתיתי תירס; קקאו=אבקת קקאו;
@@ -2374,7 +2454,24 @@ const SHOP_WORDS = {
   clean: 'ניקוי ניקיון מנקה כביסה כלים אשפה זבל ספוג מטלית סמרטוט מגב מטאטא אקונומיקה מסיר שקית שקיות ' +
          'נייר מפית מפיות כוס_חד חד_פעמי סוללה נורה גפרורים נרות מרכך_כביסה פרסיל סנו כלור מבריק אלומיניום תבנית',
   care: 'שמפו סבון קרם תרופה ויטמין טיפות גילוח דאודורנט בושם תחבושת טמפון פלסטר מגבונים_לחים ' +
-        'משחה קונדישנר ג׳ל לק אקמול נורופן אדוויל מסכה תחליב צמר_גפן קיסם',
+        'קונדישנר ג׳ל לק מסכה תחליב צמר_גפן קיסם',
+  pharm: 'תרופה תרופות כדור כדורים טיפות סירופ ויטמין אקמול נורופן אדוויל משחה פלסטר תחבושת מדחום אנטיביוטיקה מרשם',
+  baby: 'תינוק תינוקות חיתול חיתולים מטרנה סימילאק תמ״ל מוצץ בקבוק_לתינוק דייסה האגיס פמפרס',
+  pets: 'כלב כלבים חתול חתולים גור דגים_לאקווריום ציפור תוכי אוגר ארנב לכלב לחתול',
+  home: 'סיר מחבת סכין קרש מגבות מצעים כריות_שינה שמיכה וילון שטיח כלי_בית קומקום טוסטר מסננת קולב',
+  party: 'מסיבה מסיבות יום_הולדת חד_פעמי חד_פעמיות קישוט קישוטים בלון בלונים נרות_יום_הולדת מנגל פחמים',
+  games: 'משחק משחקים משחקי צעצוע צעצועים פאזל קלפים לגו בובה בובות קוביה פליימוביל שחמט דמקה טאקי מונופול ' +
+         'רמי פלייסטיישן נינטנדו אקסבוקס קונסולה פלסטלינה עפיפון',
+  office: 'עט עטים עיפרון עפרונות מחברת מחברות מחק מחדד דבק מספריים מהדק טוש טושים צבעים דפים מעטפה קלסר ילקוט קלמר מדפסת',
+  books: 'ספר ספרים חוברת מגזין עיתון תשבץ תשבצים',
+  electric: 'סוללה סוללות נורה נורות מטען כבל מפצל מאריך אוזניות פנס שלט מתאם',
+  tools: 'פטיש מברג ברגים בורג מסמר מסמרים מקדחה סולם צבע_לקיר סיליקון מנעול',
+  garden: 'עציץ עציצים אדמה דשן זרעים שתיל שתילים גינה השקיה פרח פרחים זר',
+  sport: 'ספורט כדורגל כדורסל טניס יוגה משקולות אופניים קסדה אוהל קמפינג שחייה',
+  clothes: 'חולצה חולצות מכנס מכנסיים נעל נעליים גרב גרביים תחתונים פיג׳מה כובע מעיל בגד בגדים סוודר שמלה חצאית',
+  car: 'רכב מכונית דלק צמיגים',
+  gifts: 'מתנה מתנות שי',
+  travel: 'מזוודה טיסה טיול נסיעה חו״ל',
 };
 const shopNorm = s => String(s || '').trim().replace(/\s+/g, ' ').replace(/['"`׳״]/g, '׳').toLowerCase();
 // השוואת מילים בעברית: יחיד ורבים, ה/ת בסוף ואותיות סופיות נחשבים אותה מילה.
@@ -2475,6 +2572,7 @@ function shopInfo(nameOrItem){
   const catOf = id => SHOP_CAT[id] || SHOP_CAT.other;
   const name = item ? item.name : nameOrItem, m = shopMatch(name);
   let cat = m ? m.cat : 'other';
+  if(item && item.cat && !SHOP_CAT[item.cat] && item.catDef) shopAddCat(Object.assign({}, item.catDef, {id: item.cat}));   // מחלקה של חבר ברשימה המשותפת
   if(item && item.cat && SHOP_CAT[item.cat]) cat = item.cat;
   // תמונה ואמוג'י: מהמוצר שהתאים. מילת מפתח ("ביצה"): מהמוצר מהרשימה שהכי מתאים לה באותה מחלקה ("ביצים")
   let entry = m && !m.word && m.cat === cat ? m.entry : null;
@@ -2564,7 +2662,12 @@ function shopAll(items){
     .map(x => { const i = shopInfo(x.rec || x.name); return Object.assign(x, {cat: i.cat, emoji: i.textEmoji, fav: !!(x.rec && x.rec.fav)}); });
 }
 function shopBuy(item, nowIso){ const r = Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); delete r.qty; return r; }
-function shopSetCat(item, cat, nowIso){ return Object.assign({}, item, {cat: SHOP_CAT[cat] ? cat : 'other', updatedAt: nowIso}); }
+function shopSetCat(item, cat, nowIso){
+  const c = SHOP_CAT[cat] ? cat : 'other', o = Object.assign({}, item, {cat: c, updatedAt: nowIso});
+  // מחלקה שהמשתמש הוסיף: ההגדרה שלה עוברת עם המוצר, כדי שגם החברים ברשימה המשותפת יראו אותה
+  if(SHOP_CAT[c].custom){ const {name, emoji, pic} = SHOP_CAT[c]; o.catDef = {name, emoji, pic}; } else delete o.catDef;
+  return o;
+}
 /** הצעות: קודם מוצרים מהעבר (הפופולריים קודם), ואחריהם מוצרים נפוצים מהרשימה המובנית. עם טקסט: רק מה שמכיל אותו. */
 function shopSuggest(items, query, limit){
   const q = shopKey(query), mine = (items || []).filter(x => !x.deleted);
@@ -2826,7 +2929,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopUnit, shopQtyText, shopSetQty, SHOP_UNITS, SHOP_QTY_CHIPS, SHOP_QTY_STEP, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
