@@ -1096,7 +1096,7 @@
       <div class="field"><span class="lbl">גודל תצוגה (בטלפון הזה)</span><div class="opts" id="pf-fs"></div><div class="note" id="pf-fs-n"></div></div>
       <div class="field"><label for="s-accent">צבע ראשי</label><input type="color" id="s-accent" style="width:100%;min-height:48px;border:0;background:transparent"></div>
       <div class="field"><label for="pf-start">מסך פתיחה</label><select id="pf-start"></select></div>
-      <div class="field"><label for="pf-name">השם שלך (לברכה במסך הראשי)</label><input type="text" id="pf-name"></div>
+      <div class="field"><label for="pf-name">השם שלי (בברכה, ומה שחברים רואים ברשימות המשותפות)</label><input type="text" id="pf-name"></div>
     </div>
     <div class="sec"><h2>סדר הלשוניות</h2><div class="note">▲▼ מזיזים, 🙈 מסתירים מהסרגל למטה.</div><div id="pf-nav" class="pf-list"></div></div>
   </div>
@@ -1856,6 +1856,7 @@ async function clStartG(l){
     if(!g.doc.members?.[CL.user.uid]) return clDropList(l.gid, `הוצאת מ"${l.name}"`);
     const s = clState(), me = s.lists.find(x => x.gid === l.gid), own = g.doc.owner === CL.user.uid;
     if(me && (me.name !== g.doc.name || !!me.owner !== own || me.code !== g.doc.key)){ me.name = g.doc.name; me.owner = own; me.code = g.doc.key; clSave(s); }
+    clNameSync(l.gid);
     clUi();
   }, e => clFail(e)));
   for(const col of CL_COLS) g.unsub.push(f.fs.onSnapshot(f.fs.collection(ref, col), sn => clRecv(l.gid, col, sn), e => clFail(e)));
@@ -1984,6 +1985,25 @@ const CL_INFO = 'רשימה משותפת: כמה אנשים רואים ועור�
 function clInfo(){ ask('❗ רשימות משותפות', [], {note: CL_INFO, ok: 'הבנתי', no: 'סגירה'}); }
 /** "＋": יצירה או התחברות. */
 function clAdd(){ sheet('רשימה משותפת', [['✨ יצירה', clCreate], ['🔗 התחברות', clJoin], ['❗ מה זה?', clInfo]]); }
+/** השם שלי ברשימה (names.uid) כמו בהגדרות: אחרי שינוי שם, וגם בכל פתיחה (אם השתנה כשלא היה חיבור). */
+function clNameSync(gid){
+  const n = (D.config.userName || '').trim(), d = CL.g[gid]?.doc, u = CL.user?.uid;
+  if(!n || !d || !u || !d.members?.[u] || d.names?.[u] === n) return;
+  CL.fb.fs.updateDoc(clRef(gid), {[`names.${u}`]: n}).catch(() => {});
+}
+function setMyName(n){
+  n = String(n || '').trim().slice(0, 40);
+  if(n === (D.config.userName || '').trim()) return;
+  saveConfig({userName: n});
+  for(const gid of Object.keys(CL.g)) clNameSync(gid);
+  if($('pf-name') && document.activeElement !== $('pf-name')) $('pf-name').value = n;
+  renderPfShare();
+  toast(n ? `✓ השם עכשיו: ${n}` : '✓ נשמר');
+}
+async function editMyName(){
+  const r = await ask('השם שלי', [{label: 'מה שחברים רואים ברשימות המשותפות (וגם בברכה)', value: D.config.userName || '', req: true}], {ok: 'שמירה'});
+  if(r) setMyName(r[0]);
+}
 async function clAskName(){
   if((D.config.userName || '').trim()) return D.config.userName.trim();
   const r = await ask('השם שלך', [{label: 'יופיע לחברים ברשימה', req: true}], {ok: 'המשך'});
@@ -2197,6 +2217,7 @@ function renderPfShare(){
   const s = clState(), star = g => (s.def || null) === g ? ' ⭐' : '';
   const row = (attr, i, t, sub) => `<button type="button" class="more-row" ${attr}><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${sub}</span></span><span class="side">‹</span></button>`;
   let h = `<div class="cl-cards">${clReqsHtml()}`;
+  h += `<button type="button" class="more-row" data-myname="1"><span class="i">👤</span><span class="b"><span class="t">השם שלי</span><span class="s">${esc((D.config.userName || '').trim() || 'עוד לא נבחר')} · מה שחברים רואים</span></span><span class="side">✏️</span></button>`;
   if(s.lists.length && !clNoMine()) h += row('data-m=""', '🛒', 'שלי' + star(null), 'רק בטלפון');
   h += s.lists.map(l => { const d = CL.g[l.gid]?.doc, n = Object.keys(d?.members || {}).length;
     return row(`data-m="${esc(l.gid)}"`, '👥', esc(l.name) + star(l.gid), [d?.key || l.code ? '🔗 ' + esc(d?.key || l.code) : '', n ? n + ' חברים' : ''].filter(Boolean).join(' · ')); }).join('');
@@ -2209,6 +2230,7 @@ function renderPfShare(){
 $('pf-share').onclick = e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.info) return clInfo();
+  if(b.dataset.myname) return editMyName();
   if(b.dataset.m != null) return clListSettings(b.dataset.m || null);
   clTabsClick('shop', e);
 };
@@ -8199,7 +8221,7 @@ $('pf-nav').onclick = e => {
   applyNav(); renderPrefs();
 };
 $('pf-theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ saveConfig({theme: b.dataset.th}); renderPrefs(); } };
-$('pf-name').onchange = () => { saveConfig({userName: $('pf-name').value.trim()}); toast('✓ נשמר'); };
+$('pf-name').onchange = () => setMyName($('pf-name').value);
 $('pf-start').onchange = () => { saveConfig({startScreen: $('pf-start').value}); toast('✓ מסך הפתיחה נשמר'); };
 /* ---------- הגדרות ← רשימות: כל המוצרים, המתכונים והמאכלים במקום אחד, לשינוי שם, מחלקה ומחיקה ---------- */
 let pfList = 'shop';
