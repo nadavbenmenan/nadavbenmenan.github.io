@@ -87,6 +87,10 @@
   .item .t{font-weight:500;overflow-wrap:anywhere}
   .item .s{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:1px}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
+  /* נקודה אדומה: יש גרסה חדשה, עד שמעדכנים (על "הגדרות" בסרגל ועל "גרסאות" בתפריט) */
+  #nav button[data-scr="prefs"].upd, #pf-menu .more-row.upd .i{position:relative}
+  #nav button[data-scr="prefs"].upd::after, #pf-menu .more-row.upd .i::after{content:'';position:absolute;top:4px;inset-inline-start:calc(50% + 6px);width:10px;height:10px;border-radius:50%;background:#e5383b;border:2px solid var(--bg,#fff)}
+  #pf-menu .more-row.upd .i::after{top:-2px;inset-inline-start:auto;inset-inline-end:-4px}
   .side{font-size:13px;color:var(--muted);flex:none;white-space:nowrap}
   .item.late .side{color:var(--red);font-weight:500}
   .tag{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--soft);color:var(--muted)}
@@ -806,6 +810,15 @@
   .shop-name{display:flex;align-items:center;gap:12px;flex:1;min-width:0;border:0;background:transparent;text-align:right;padding:4px 0;color:inherit}
   .lbl.sug{margin-top:14px;display:block}
   #dlg-shopcat .opts button{min-height:48px}
+  .cat-pic{width:1.3em;height:1.3em;border-radius:6px;object-fit:cover;vertical-align:-.25em}
+  #sc-opts .cc{display:inline-flex;gap:2px}
+  #sc-opts .cc [data-ce]{min-width:40px;padding:0 6px}
+  #sc-opts [data-c="__new"]{border-style:dashed}
+  .nc-prev{font-size:40px;line-height:1;margin:2px 0 8px}
+  .nc-prev img{width:56px;height:56px;border-radius:12px;object-fit:cover}
+  .nc-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;max-height:168px;overflow:auto}
+  .nc-grid button{font-size:22px;min-height:40px;border-radius:10px;border:1px solid var(--line,#ddd);background:transparent;padding:0}
+  .nc-grid button.on{outline:2px solid var(--accent,#5B5BF7)}
   .q-when-line{font-size:14px;color:var(--accent);min-height:20px;margin-top:6px}
   .res{background:var(--soft);border-radius:14px;padding:12px;margin-top:12px}
   .res b{font-size:22px}
@@ -1244,6 +1257,13 @@
   <h2 id="sc-title">מחלקה</h2>
   <div class="opts" id="sc-opts"></div>
   <div class="btns"><button class="btn" id="sc-cancel" type="button">סגירה</button></div>
+</div></dialog>
+<dialog id="dlg-newcat" aria-label="מחלקה חדשה"><div class="dlg">
+  <h2 id="nc-title">מחלקה חדשה</h2>
+  <div class="field"><label for="nc-name">שם המחלקה</label><input type="text" id="nc-name" maxlength="30" autocomplete="off" placeholder="למשל: משחקים"></div>
+  <div class="field"><span class="lbl">תמונה</span><div class="nc-prev" id="nc-prev"></div><div class="nc-grid" id="nc-grid"></div>
+    <div class="btns"><button class="btn" id="nc-gal" type="button">📷 מהגלריה</button></div><input type="file" id="nc-file" accept="image/*" hidden></div>
+  <div class="btns"><button class="btn danger" id="nc-del" type="button" hidden>מחיקה</button><button class="btn" id="nc-cancel" type="button">ביטול</button><button class="btn primary" id="nc-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-snooze" aria-label="דחייה"><div class="dlg">
   <h2 id="z-title">דחייה</h2>
@@ -2602,6 +2622,7 @@ function prodPic(x){
   return `<span class="pic photo" data-fb="${esc(fallback)}"><img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.parentNode.outerHTML = this.parentNode.dataset.fb"></span>`;
 }
 function renderShop(){
+  syncCats();
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
   // כשמקלידים: עד 10 הצעות להשלמה, מתחת לשורה. בלי הקלדה: אין הצעות בתוך הסל, רק הפס בצד (תמיד 10 הצעות)
   // הפס בצד מופיע רק אם הדליקו אותו בהגדרות ← התנהגות (בדיפולט כבוי)
@@ -2615,7 +2636,7 @@ function renderShop(){
   $('shop-quick').innerHTML = quick.length ? '<span class="qh">הצעות</span>' + quick.map(x => `<button type="button" data-n="${esc(x.name)}" aria-label="הצעה, להוסיף: ${esc(x.name)}">${x.photo
     ? `<img src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=qe>${esc(x.emoji || '🛒')}</span>'">` : `<span class="qe">${x.emoji || '🛒'}</span>`}<small>${esc(x.name)}</small></button>`).join('') : '';
   $('shop-sug').innerHTML = sug.map(x => `<button type="button" data-n="${esc(x.name)}">${x.fav ? '⭐' : ''}${x.photo ? `<img class="chip-img" src="${esc(x.photo)}" alt="" loading="lazy" onerror="this.remove()">` : x.emoji ? x.emoji + ' ' : ''}${esc(x.name)}</button>`).join('');
-  $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
+  $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${catIco(ל.SHOP_CAT[g.cat] || g)} ${esc(g.name)} <b>${g.items.length}</b></h2>
     <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
       <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
       <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}">${prodPic(x)}<span class="t">${esc(x.name)}</span></button><span class="stp"><button class="stp-b" data-act="dec" aria-label="פחות: ${esc(x.name)}">−</button>${ל.shopQtyText(x) ? `<button class="qty-b" data-act="qty" aria-label="כמות: ${esc(x.name)}">${qtyHtml(ל.shopQtyText(x))}</button>` : ''}<button class="stp-b" data-act="inc" aria-label="יותר: ${esc(x.name)}">+</button></span><button class="edit-b" data-act="edit" aria-label="עריכה: ${esc(x.name)}">✏️</button></div>`).join('')}</div></div>`).join('')
@@ -2639,17 +2660,70 @@ $('shop-wa').onclick = () => {
   const url = 'https://wa.me/?text=' + encodeURIComponent(t);
   if(!window.open(url, '_blank')) location.href = url;
 };
+/* ---------- מחלקות שהמשתמש מוסיף (הגדרות: shopCats). עם שם, ואמוג'י או תמונה מהגלריה ---------- */
+const syncCats = () => ל.shopSetCats(D.config.shopCats);
+const catIco = c => c && c.pic ? `<img class="cat-pic" src="${esc(c.pic)}" alt="">` : esc(c ? c.emoji : '🛒');
+const NC_EMOJI = '🎲 🧸 🎮 🧩 🃏 🎨 🐾 🍼 💊 🎁 🎉 📚 ✏️ 🔌 🔧 🌱 ⚽ 👕 🚗 🧳 🏠 🍳 💄 💍 🧒 🏖️ 🎵 🎸 📷 💻 📱 🍷 🥩 🧀 🍰 🌮 🍣 🥗 🕯️ 🧹 🛠️ 🧺 🪴 🐟 🍎 🥖 ☕ 🏷️'.split(' ');
+let nc = null;
+/** חלון מחלקה (חדשה או עריכה). מחזיר את המזהה שלה, או null. */
+function openCatEditor(id, name){
+  syncCats();
+  const c = id ? ל.SHOP_CAT[id] : null;
+  nc = {id: c ? id : null, emoji: c ? c.emoji : '🏷️', pic: c ? c.pic || '' : ''};
+  $('nc-title').textContent = c ? 'עריכת מחלקה' : 'מחלקה חדשה';
+  $('nc-name').value = c ? c.name : name || '';
+  $('nc-del').hidden = !c;
+  ncRender();
+  $('dlg-newcat').showModal();
+  setTimeout(() => { if(!c) $('nc-name').focus(); }, 50);
+  return new Promise(res => { nc.res = res; });
+}
+function ncRender(){
+  $('nc-prev').innerHTML = nc.pic ? `<img src="${esc(nc.pic)}" alt="">` : esc(nc.emoji);
+  $('nc-grid').innerHTML = NC_EMOJI.map(e => `<button type="button" data-e="${e}" class="${!nc.pic && e === nc.emoji ? 'on' : ''}" aria-label="${e}">${e}</button>`).join('');
+}
+function ncDone(v){ const r = nc && nc.res; nc = null; if($('dlg-newcat').open) $('dlg-newcat').close(); if(r) r(v); }
+$('nc-grid').onclick = e => { const b = e.target.closest('[data-e]'); if(b){ nc.emoji = b.dataset.e; nc.pic = ''; ncRender(); } };
+$('nc-gal').onclick = () => $('nc-file').click();
+$('nc-file').onchange = async () => { const f = $('nc-file').files[0]; $('nc-file').value = ''; if(!f) return;
+  try{ nc.pic = await shrinkImage(f, 96); ncRender(); }catch(e){ toast(e.message); } };
+$('nc-cancel').onclick = () => ncDone(null);
+$('dlg-newcat').addEventListener('cancel', () => ncDone(null));
+$('nc-ok').onclick = () => {
+  const rec = ל.shopNewCat($('nc-name').value, nc.emoji, nc.pic, nc.id);
+  if(!rec){ toast($('nc-name').value.trim() ? 'יש כבר מחלקה בשם הזה' : 'צריך שם למחלקה', {err: true}); $('nc-name').focus(); return; }
+  const list = (D.config.shopCats || []).filter(x => x.id !== rec.id).concat(rec);
+  saveConfig({shopCats: list}); syncCats();
+  // מוצרים שכבר במחלקה: השם והתמונה החדשים עוברים איתם (גם לחברים ברשימה המשותפת)
+  if(nc.id) for(const x of D.file.shop.items.filter(i => i.cat === rec.id)) saveShop(ל.shopSetCat(x, rec.id, nowIso()));
+  toast(`✓ ${nc.id ? 'נשמרה' : 'נוספה'} המחלקה "${rec.name}"`);
+  ncDone(rec.id); renderShop();
+};
+$('nc-del').onclick = async () => {
+  const id = nc.id, c = ל.SHOP_CAT[id], n = D.file.shop.items.filter(i => i.cat === id && !i.deleted).length;
+  if(!await sure(`למחוק את המחלקה "${c.name}"?${n ? ` (${n} מוצרים יעברו לשונות)` : ''}`)) return;
+  saveConfig({shopCats: (D.config.shopCats || []).map(x => x.id === id ? {id, deleted: true} : x)}); syncCats();
+  for(const x of D.file.shop.items.filter(i => i.cat === id)) saveShop(ל.shopSetCat(x, 'other', nowIso()));
+  toast('✓ נמחקה'); ncDone(null); renderShop();
+};
 let shopCatItem = null;
 function openShopCat(x, isNew){
+  syncCats();
   shopCatItem = x;
   const cur = ל.shopInfo(x).cat;
   $('sc-title').textContent = isNew ? `מוצר חדש: "${x.name}". באיזו מחלקה?` : `באיזו מחלקה: ${x.name}?`;
-  $('sc-opts').innerHTML = ל.SHOP_CATS.map(c => `<button type="button" data-c="${c.id}" class="${c.id === cur ? 'on' : ''}">${c.emoji} ${esc(c.name)}</button>`).join('');
-  $('dlg-shopcat').showModal();
+  $('sc-opts').innerHTML = ל.SHOP_CATS.map(c => { const b = `<button type="button" data-c="${c.id}" class="${c.id === cur ? 'on' : ''}">${catIco(c)} ${esc(c.name)}</button>`;
+    return c.custom ? `<span class="cc">${b}<button type="button" data-ce="${c.id}" aria-label="עריכת ${esc(c.name)}">✏️</button></span>` : b; }).join('')
+    + `<button type="button" data-c="__new">+ מחלקה חדשה</button>`;
+  if(!$('dlg-shopcat').open) $('dlg-shopcat').showModal();
 }
-$('sc-opts').onclick = e => {
+$('sc-opts').onclick = async e => {
+  const ce = e.target.closest('[data-ce]');
+  if(ce){ await openCatEditor(ce.dataset.ce); if(shopCatItem) openShopCat(D.file.shop.items.find(i => i.id === shopCatItem.id) || shopCatItem); return; }
   const b = e.target.closest('[data-c]'); if(!b || !shopCatItem) return;
-  saveShop(ל.shopSetCat(shopCatItem, b.dataset.c, nowIso()));
+  let id = b.dataset.c;
+  if(id === '__new'){ id = await openCatEditor(null); if(!id) return; }
+  saveShop(ל.shopSetCat(D.file.shop.items.find(i => i.id === shopCatItem.id) || shopCatItem, id, nowIso()));
   $('dlg-shopcat').close(); renderShop();
 };
 $('sc-cancel').onclick = () => $('dlg-shopcat').close();
@@ -2740,7 +2814,7 @@ function openShopEdit(x, qtyFirst){
   x = D.file.shop.items.find(i => i.id === x.id) || x;
   se = {x, pic: x.pic || ''};
   $('se-name').value = x.name;
-  $('se-cat').innerHTML = ל.SHOP_CATS.map(c => `<option value="${c.id}"${c.id === ל.shopInfo(x).cat ? ' selected' : ''}>${c.emoji} ${esc(c.name)}</option>`).join('');
+  syncCats(); seCats(ל.shopInfo(x).cat);
   seUnits(ל.shopUnit(x)); $('se-n').value = +x.qty > 0 ? String(+x.qty) : '';
   $('se-qty-f').hidden = !x.active;   // כמות רק למוצר שבסל
   $('se-act').textContent = x.active ? '✓ קניתי' : '🛒 להוסיף לסל';
@@ -2754,7 +2828,15 @@ $('se-gal').onclick = () => $('se-file').click();
 $('se-file').onchange = async () => { const f = $('se-file').files[0]; $('se-file').value = ''; if(!f) return;
   try{ se.pic = await shrinkImage(f, 160); seRenderPic(); }catch(e){ toast(e.message); } };
 $('se-auto').onclick = () => { se.pic = ''; seRenderPic(); };
-$('se-cat').onchange = seRenderPic;
+function seCats(cur){
+  $('se-cat').innerHTML = ל.SHOP_CATS.map(c => `<option value="${c.id}"${c.id === cur ? ' selected' : ''}>${esc(c.emoji)} ${esc(c.name)}</option>`).join('')
+    + '<option value="__new">+ מחלקה חדשה…</option>';
+  $('se-cat').dataset.prev = cur;
+}
+$('se-cat').onchange = async () => {
+  if($('se-cat').value === '__new'){ const id = await openCatEditor(null); seCats(id || $('se-cat').dataset.prev); }
+  $('se-cat').dataset.prev = $('se-cat').value; seRenderPic();
+};
 $('se-unit').onchange = () => { if(!$('se-n').value) return; $('se-n').value = String({'': 1, kg: 1, g: 500, pack: 1, l: 1}[$('se-unit').value]); };
 $('dlg-shopedit').addEventListener('click', e => { const b = e.target.closest('[data-se]'); if(!b) return;
   const st = ל.SHOP_QTY_STEP[$('se-unit').value], cur = +String($('se-n').value).replace(',', '.') || 0;
@@ -2767,7 +2849,7 @@ function seRecord(){
   if(n !== x.name && D.file.shop.items.some(i => !i.deleted && i.id !== x.id && ל.shopKey(i.name) === ל.shopKey(n))){ toast('כבר יש מוצר בשם הזה'); return null; }
   let r = Object.assign({}, x, {name: n, updatedAt: nowIso()});
   if(se.pic) r.pic = se.pic; else delete r.pic;
-  if($('se-cat').value !== ל.shopInfo(x).cat) r.cat = $('se-cat').value;
+  if($('se-cat').value !== ל.shopInfo(x).cat && $('se-cat').value !== '__new') r = ל.shopSetCat(r, $('se-cat').value, r.updatedAt);
   if(x.active) r = ל.shopSetQty(r, +String($('se-n').value).replace(',', '.') || 0, $('se-unit').value, nowIso());
   return r;
 }
@@ -7756,7 +7838,9 @@ async function calRehome(){
    בדיקה בפתיחה ובחזרה לאפליקציה (פעם ב-6 שעות), ומ"אודות". העדכון: מורידים בתוך האפליקציה ונפתח מסך ההתקנה של אנדרואיד. הנתונים נשמרים. */
 const APP_BUILD = +window.APP_BUILD || 0, LIVE_SW = 'https://nadavbenmenan.github.io/mesimot/sw.js';
 let updLive = +store('mesimot.upd-live') || 0;
-const updAvail = () => LOCAL && APP_BUILD && updLive > APP_BUILD;
+const updAvail = () => !!(LOCAL && APP_BUILD && updLive > APP_BUILD);
+/** הנקודה האדומה על "הגדרות" בסרגל: כל עוד יש גרסה חדשה שלא הותקנה. */
+function updBadge(){ document.querySelector('#nav button[data-scr="prefs"]')?.classList.toggle('upd', updAvail()); }
 async function liveBuild(){
   const u = LIVE_SW + '?t=' + Date.now(), H = window.Capacitor?.Plugins?.CapacitorHttp;   // בתוך האפליקציה fetch לאותה כתובת נשאר בטלפון
   const t = H ? (await H.get({url: u, responseType: 'text'})).data : await (await fetch(u, {cache: 'no-store'})).text();
@@ -7768,14 +7852,15 @@ async function checkUpdate(manual){
   if(!manual && Date.now() - (+store('mesimot.upd-at') || 0) < 6 * 3600e3){ if(updAvail()) updOffer(); return; }
   try{ updLive = await liveBuild(); store('mesimot.upd-at', String(Date.now())); store('mesimot.upd-live', String(updLive)); }
   catch(e){ if(manual) toast('אין חיבור. לנסות שוב אחר כך', {err: true}); return; }
-  if(document.getElementById('pf-about')?.offsetParent) renderPrefs();
+  updBadge();
+  if(document.getElementById('scr-prefs')?.offsetParent) renderPrefs();
   if(updAvail()) updOffer(manual); else if(manual) toast('✓ זו הגרסה הכי חדשה');
 }
 async function updOffer(manual){
-  if(!manual && store('mesimot.upd-no') === String(updLive)) return;   // "אחר כך": לא שואלים שוב על אותה גרסה (נשאר ב"אודות")
+  if(!manual && store('mesimot.upd-no') === String(updLive)) return;   // "אחר כך": לא שואלים שוב על אותה גרסה (נשאר ב"הגדרות ← גרסאות", עם נקודה אדומה)
   if(document.querySelector('dialog[open]') && !manual) return;
   if(await sure(`יש גרסה חדשה של ${APP_NAME}. לעדכן עכשיו? כל הנתונים נשמרים`, '⬇️ עדכון', {no: 'אחר כך'})) doUpdate();
-  else store('mesimot.upd-no', String(updLive));
+  else { store('mesimot.upd-no', String(updLive)); toast('אפשר לעדכן מתי שרוצים: הגדרות ← גרסאות ← עדכון גרסה', {ms: 5000}); }
 }
 async function doUpdate(){
   const u = APK_URL + '&b=' + (updLive || Date.now());
@@ -7789,7 +7874,7 @@ async function doUpdate(){
 }
 function localInit(){
   if(!NATIVE) return;
-  if(LOCAL){ setTimeout(() => checkUpdate(), 5000); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkUpdate(); }); }
+  if(LOCAL){ updBadge(); setTimeout(() => checkUpdate(), 5000); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkUpdate(); }); }
   if(SHOP){   // רשימת קניות: רק גיבוי. בלי יומן, ווידג'ט ובריאות
     if(!LOCAL) return;
     backupDaily();
@@ -8134,7 +8219,7 @@ function renderPrefs(){
         : `<div><span class="k">משימות</span><span class="v">${D.tasks.filter(ל.isActiveTask).length}</span></div>`}
       <div><span class="k">מתכונים</span><span class="v">${live(D.file.recipes?.recipes).length}</span></div>
       <div><span class="k">הנתונים נשמרים</span><span class="v">${LOCAL ? 'בטלפון (+ גיבוי לדרייב)' : 'בגיטהאב ובמכשיר'}</span></div></div>
-    <div class="btns">${LOCAL && APP_BUILD ? `<button class="btn${updAvail() ? ' primary' : ''}" type="button" id="pf-updchk">${updAvail() ? '⬇️ עדכון עכשיו' : '🔄 בדיקת עדכון'}</button>` : ''}
+    <div class="btns">${LOCAL && APP_BUILD ? `<button class="btn${updAvail() ? ' primary' : ''}" type="button" id="pf-updchk">${updAvail() ? '⬇️ עדכון גרסה' : '🔄 בדיקת עדכון'}</button>` : ''}
       <button class="btn" type="button" id="pf-upd">⬇️ התקנה מחדש</button></div>
     <div class="note">העדכון יורד בתוך האפליקציה ונפתח מסך ההתקנה של אנדרואיד. כל הנתונים נשמרים.</div></div>`;
   if($('pf-updchk')) $('pf-updchk').onclick = () => updAvail() ? doUpdate() : checkUpdate(true);
@@ -8181,7 +8266,7 @@ function pfPages(){
     NATIVE && ['cal', '📅', 'יומן', c.calRead === false ? 'לא קורא את היומן' : `אירועים בסיכום · תזכורת ${c.eventLead === 0 ? 'כבויה' : leadText(c.eventLead ?? 30) + ' לפני'}`],
     NATIVE && ['phone', '📱', 'טלפון והרשאות', SHOP ? 'בדיקת התראות ושעון מעורר' : 'בדיקת התראות, יומן, יציאה מהבית'],
     ['data', '📤', 'ייצוא וגיבוי', SHOP ? 'ספר מתכונים, גיבוי' : 'אקסל, PDF, גיבוי'],
-    ['about', 'ℹ️', 'אודות', 'גרסה ועדכון']].filter(Boolean)
+    ['about', 'ℹ️', 'גרסאות', updAvail() ? '🔴 יש גרסה חדשה: עדכון גרסה' : 'עדכון גרסה ואודות']].filter(Boolean)
     .filter(p => !SHOP || ['look', 'behav', 'share', 'lists', 'sound', 'ai', 'phone', 'data', 'about'].includes(p[0]))
     .map(p => !SHOP ? p : p[0] === 'lists' ? ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים'] : p[0] === 'ai' ? ['ai', '📷', 'זיהוי מתמונה', store(AIK) ? '✓ Gemini מחובר' : 'מתכון מצילום · צריך מפתח Gemini (חינם)']
       : p[0] === 'sound' ? ['sound', '🔊', 'צלילים', `טיימר: ${(SND_TIMER.find(x => x[0] === tSnd()) || SND_TIMER[0])[1]}`] : p);
@@ -8191,7 +8276,7 @@ function pfShow(){
   if(!cur) pfPage = null;
   $('pf-menu').hidden = !!pfPage; $('pf-back').hidden = !pfPage;
   $('pf-h').textContent = cur ? cur[2] : 'הגדרות';
-  if(!pfPage) $('pf-menu').innerHTML = pages.map(([k, i, t, x]) => `<button type="button" class="more-row" data-pg="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">‹</span></button>`).join('');
+  if(!pfPage) $('pf-menu').innerHTML = pages.map(([k, i, t, x]) => `<button type="button" class="more-row${k === 'about' && updAvail() ? ' upd' : ''}" data-pg="${k}"><span class="i">${i}</span><span class="b"><span class="t">${t}</span><span class="s">${esc(x)}</span></span><span class="side">‹</span></button>`).join('');
   document.querySelectorAll('#scr-prefs .pf-pg').forEach(el => el.hidden = !pfPage || !el.dataset.pg.split(' ').includes(pfPage));
 }
 function pfGo(k){ pfPage = k; pfShow(); scrollTo(0, 0); renderPrefs(); }
@@ -8278,11 +8363,13 @@ function shopItemMenu(x){
 function renderShopPf(){
   const rows = shopRows(), favs = rows.filter(x => x.fav);
   const row = x => `<button type="button" class="more-row${pfSel.has(x.key) ? ' sel' : ''}" data-k="${esc(x.key)}"><span class="i">${pfSel.has(x.key) ? '✅' : x.emoji || '🛒'}</span><span class="b"><span class="t">${x.fav ? '⭐ ' : ''}${esc(x.name)}</span>${x.rec?.active ? '<span class="s">🛒 ברשימה עכשיו</span>' : ''}</span></button>`;
+  syncCats();
   const groups = ל.SHOP_CATS.map(c => [c, rows.filter(x => x.cat === c.id)]).filter(([, l]) => l.length);
   $('pf-l-note').textContent = `כל המוצרים (${rows.length}). לחיצה ארוכה: סימון, מועדפים, עריכה או מחיקה. אפשר לסמן כמה יחד.`;
   $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">מוצר חדש</span></span></button>`
+    + `<button type="button" class="more-row" data-k="+cat"><span class="i">🗂️</span><span class="b"><span class="t">מחלקה חדשה</span><span class="s">עם שם ותמונה. עריכה: ✏️ ליד המחלקה</span></span></button>`
     + (favs.length ? `<h3 class="pf-l-h">⭐ מועדפים</h3>${favs.map(row).join('')}` : '')
-    + (groups.length ? groups.map(([c, l]) => `<h3 class="pf-l-h">${c.emoji} ${esc(c.name)} <small>${l.length}</small></h3>${l.sort((a, b) => a.name.localeCompare(b.name, 'he')).map(row).join('')}`).join('') : '<div class="empty">לא נמצא</div>');
+    + (groups.length ? groups.map(([c, l]) => `<h3 class="pf-l-h">${catIco(c)} ${esc(c.name)} <small>${l.length}</small>${c.custom ? ` <button type="button" class="txt-btn" data-k="ce:${c.id}" aria-label="עריכת ${esc(c.name)}">✏️</button>` : ''}</h3>${l.sort((a, b) => a.name.localeCompare(b.name, 'he')).map(row).join('')}`).join('') : '<div class="empty">לא נמצא</div>');
   renderSelBar();
 }
 function renderSelBar(){
@@ -8300,7 +8387,7 @@ $('pf-l-bar').onclick = async e => {
 // לחיצה ארוכה על מוצר: מסמן ופותח את החלון
 { let t = null, lp = false;
   $('pf-l-list').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); lp = false; clearTimeout(t);
-    if(!b || pfList !== 'shop' || b.dataset.k === '+') return;
+    if(!b || pfList !== 'shop' || b.dataset.k.startsWith('+') || b.dataset.k.startsWith('ce:')) return;
     t = setTimeout(() => { lp = true; navigator.vibrate?.(30); const x = shopRowOf(b.dataset.k); if(!x) return; pfSel.add(x.key); renderPfLists(); shopItemMenu(x); }, 550); });
   for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('pf-l-list').addEventListener(ev, () => clearTimeout(t));
   $('pf-l-list').addEventListener('pointermove', e => { if(Math.abs(e.movementY) > 4) clearTimeout(t); });
@@ -8312,6 +8399,7 @@ $('pf-l-list').onclick = async e => {
   const b = e.target.closest('[data-k]'); if(!b) return;
   const k = b.dataset.k;
   if(pfList === 'shop'){
+    if(k === '+cat' || k.startsWith('ce:')){ await openCatEditor(k === '+cat' ? null : k.slice(3)); renderPfLists(); return; }
     if(k === '+'){
       const [v] = await ask('מוצר חדש', [{label: 'שם המוצר', req: true}], {note: 'נכנס להצעות בקניות (לא לרשימה של עכשיו)'}) || [];
       const r = v && ל.shopAdd(D.file.shop.items, v, nowIso());
