@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="he" dir="rtl" data-theme="system">
 <head>
+<!-- טעינה: ברשימת קניות (mode.js נכנס כאן בקובץ ההתקנה) מסך הקניות מופיע מהרגע הראשון, בלי הבזק של "ניהול שיגרה" -->
+<script>document.documentElement.classList.add('booting'); if(window.SHOP_APP) document.documentElement.classList.add('shop-app');</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F1F2F5">
@@ -13,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap">
 <style>
+  .booting.shop-app #scr-today{display:none!important}
+  .booting.shop-app #scr-shop{display:block!important}
   :root{
     --bg:#F1F2F5; --card:#FFFFFF; --text:#14161B; --muted:#5B6170; --line:#E6E8EC; --soft:#E9EBF0;
     --event:#D5D9E2; --red:#C4281C; --red-soft:#FBE4E1; --accent:#5B5BF7; --on-accent:#fff;
@@ -7854,7 +7858,8 @@ async function liveBuild(){
 }
 async function checkUpdate(manual){
   if(!LOCAL || !APP_BUILD) return;
-  if(!manual && Date.now() - (+store('mesimot.upd-at') || 0) < 6 * 3600e3){ if(updAvail()) updOffer(); return; }
+  // בכל פתיחה ובכל חזרה לאפליקציה (לכל היותר פעם בדקה). עד 26.11.2026 היה פעם ב-6 שעות, וגרסה שיצאה באמצע לא נראתה
+  if(!manual && Date.now() - (+store('mesimot.upd-at') || 0) < 6e4){ updBadge(); if(updAvail()) updOffer(); return; }
   try{ updLive = await liveBuild(); store('mesimot.upd-at', String(Date.now())); store('mesimot.upd-live', String(updLive)); }
   catch(e){ if(manual) toast('אין חיבור. לנסות שוב אחר כך', {err: true}); return; }
   updBadge();
@@ -7879,7 +7884,7 @@ async function doUpdate(){
 }
 function localInit(){
   if(!NATIVE) return;
-  if(LOCAL){ updBadge(); setTimeout(() => checkUpdate(), 5000); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkUpdate(); }); }
+  if(LOCAL){ updBadge(); setTimeout(() => checkUpdate(), 2500); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkUpdate(); }); }
   if(SHOP){   // רשימת קניות: רק גיבוי. בלי יומן, ווידג'ט ובריאות
     if(!LOCAL) return;
     backupDaily();
@@ -8831,6 +8836,7 @@ localInit();
 applyNav();
 if(SHOP){ if(!location.hash) show(SHOP_NAV.includes(D.config.startScreen) ? D.config.startScreen : 'shop'); }
 else if(!location.hash && D.config.startScreen && D.config.startScreen !== 'today' && $('scr-' + D.config.startScreen)) show(D.config.startScreen);
+document.documentElement.classList.remove('booting');
 if(LOCAL) goLocal(); else sync();
 </script>
 </body>
