@@ -736,6 +736,9 @@
   .shop-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
   .cl-tabs{overflow-x:auto;scrollbar-width:none;margin:8px 0 12px} .cl-tabs::-webkit-scrollbar{display:none} .cl-tabs button{flex:1 0 auto;padding:0 12px;white-space:nowrap}
   .cl-tabs .cl-plus{flex:0 0 auto;color:var(--accent)} .cl-tabs button:only-child{flex:1}
+  /* הרשימה (שלי / משותפת): בתחתית המסך וקטנה. בדרך כלל יש רק רשימה אחת, אז היא לא צריכה לבלוט */
+  .cl-tabs.low{clear:both;margin:26px auto 8px;padding:3px;max-width:340px;border-radius:12px;opacity:.9}
+  .cl-tabs.low button{min-height:32px;font-size:13px;border-radius:9px;padding:0 10px}
   .cl-reqs{display:grid;gap:8px;margin:0 0 12px} .cl-req{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:8px 12px}
   .cl-req span{flex:1} .cl-req .btn{min-width:48px;padding:0}
   .cl-cards{display:grid;gap:8px} .cl-main{display:flex;gap:10px;margin-top:14px} .cl-main .btn.primary{flex:1} .cl-i{min-width:48px}
@@ -821,7 +824,7 @@
 <main class="screen" id="scr-shop" hidden>
   <div class="shop-head"><h1 class="hello">קניות</h1>
         <button class="btn" id="shop-wa" type="button" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>שליחה בוואטסאפ</button></div>
-  <div class="subtabs cl-tabs" id="shop-tabs"></div><div class="cl-reqs" id="shop-reqs" hidden></div>
+  <div class="cl-reqs" id="shop-reqs" hidden></div>
   <div class="shop-add">
     <input type="text" id="shop-in" placeholder="מה צריך לקנות?" aria-label="מוצר" enterkeyhint="done" autocomplete="off">
     <button class="btn primary" id="shop-add" type="button">הוספה</button>
@@ -832,14 +835,16 @@
   <div id="shop-list"></div>
   <button class="btn" id="shop-copy" type="button" hidden style="width:100%;margin-top:18px">📋 העתקת הסל לרשימה אחרת</button>
   <button class="btn" id="shop-clear" type="button" hidden style="width:100%;margin-top:10px;color:var(--red)">🗑 ריקון הסל</button>
+  <div class="subtabs cl-tabs low" id="shop-tabs" aria-label="הרשימה"></div>
 </main>
 
 <main class="screen" id="scr-recipes" hidden>
   <h1 class="hello">מתכונים</h1>
-  <div class="subtabs cl-tabs" id="rc-tabs"></div><div class="cl-reqs" id="rc-reqs" hidden></div>
+  <div class="cl-reqs" id="rc-reqs" hidden></div>
   <div class="shop-add"><input type="search" id="rc-q" placeholder="מה מתחשק לך להכין?" aria-label="חיפוש מתכון" autocomplete="off"></div>
   <div class="opts rc-cats" id="rc-cats"></div>
   <div id="rc-list"></div>
+  <div class="subtabs cl-tabs low" id="rc-tabs" aria-label="הרשימה"></div>
   <div id="rc-bar" class="sel-bar" hidden></div>
 </main>
 
