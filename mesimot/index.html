@@ -1,8 +1,10 @@
 <!doctype html>
 <html lang="he" dir="rtl" data-theme="system">
 <head>
-<!-- טעינה: ברשימת קניות (mode.js נכנס כאן בקובץ ההתקנה) מסך הקניות מופיע מהרגע הראשון, בלי הבזק של "ניהול שיגרה" -->
-<script>document.documentElement.classList.add('booting'); if(window.SHOP_APP) document.documentElement.classList.add('shop-app');</script>
+<!-- טעינה: עד שהקוד מסיים (לשוניות, צבעים, מסך פתיחה) לא מציגים כלום, רק את הרקע. אחרת רואים לרגע את "ניהול שיגרה" עם כל הלשוניות.
+     ברשימת קניות mode.js נכנס כאן (בקובץ ההתקנה). ליתר ביטחון: אחרי 3 שניות מציגים בכל מקרה -->
+<script>document.documentElement.classList.add('booting'); if(window.SHOP_APP) document.documentElement.classList.add('shop-app');
+  setTimeout(() => document.documentElement.classList.remove('booting'), 3000);</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F1F2F5">
@@ -15,8 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap">
 <style>
-  .booting.shop-app #scr-today{display:none!important}
-  .booting.shop-app #scr-shop{display:block!important}
+  html.booting body{visibility:hidden}
   :root{
     --bg:#F1F2F5; --card:#FFFFFF; --text:#14161B; --muted:#5B6170; --line:#E6E8EC; --soft:#E9EBF0;
     --event:#D5D9E2; --red:#C4281C; --red-soft:#FBE4E1; --accent:#5B5BF7; --on-accent:#fff;
