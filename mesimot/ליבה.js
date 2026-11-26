@@ -2509,6 +2509,45 @@ function shopAdd(items, name, nowIso){
   if(cur && cur.cat) r.cat = cur.cat;
   if(cur && cur.fav) r.fav = true;
   if(cur && cur.pic) r.pic = cur.pic;   // תמונה שבחרו נשארת
+  if(cur && typeof cur.unit === 'string') r.unit = cur.unit;   // יחידה שבחרו (ק״ג/יח׳...) נשארת לפעם הבאה. הכמות מתחילה מחדש
+  return r;
+}
+
+/* ---------- כמויות בסל ---------- */
+// '' = יחידות (רק מספר: "6"), ובכל השאר המספר עם היחידה. ברירת המחדל לפי המוצר (shopUnit), ואפשר לשנות.
+const SHOP_UNITS = [['', 'יח׳'], ['kg', 'ק״ג'], ['g', 'גרם'], ['pack', 'חבילות'], ['l', 'ליטר']];
+const SHOP_UNIT_NAME = Object.fromEntries(SHOP_UNITS);
+const SHOP_QTY_CHIPS = {'': [1, 2, 3, 4, 6, 10], kg: [.5, 1, 1.5, 2, 3], g: [100, 200, 250, 500], pack: [1, 2, 3, 4], l: [1, 1.5, 2, 3]};
+const SHOP_QTY_STEP = {'': 1, kg: .5, g: 50, pack: 1, l: .5};
+// בשר, עוף ודגים נקנים בקילו, חוץ ממה שנקנה כיחידה או באריזה
+const KG_NOT = ['עוף שלם', 'פרגית שלמה', 'המבורגר', 'נקניק', 'נקניקיות', 'שרימפס', 'נאגטס', 'שניצל קפוא', 'קבב קפוא', 'המבורגר קפוא'];
+// פירות וירקות: בדרך כלל לפי מספר (6 תפוחים). רק מה שתמיד שוקלים
+const KG_VEG = ['ענבים', 'ענבים ירוקים', 'ענבים אדומים', 'דובדבנים', 'ליצ׳י', 'שעועית ירוקה', 'פול ירוק', 'במיה'];
+/** היחידה למוצר: מה שבחרו לו פעם, אחרת ק״ג לבשר/עוף/דגים ולמה שתמיד שוקלים, ואחרת בלי יחידה (מספר). */
+function shopUnit(nameOrItem){
+  const item = typeof nameOrItem === 'object' ? nameOrItem : null, name = item ? item.name : nameOrItem;
+  if(item && typeof item.unit === 'string' && item.unit in SHOP_UNIT_NAME) return item.unit;
+  const n = shopNorm(canonName(name)), cat = shopInfo(item || name).cat;
+  const is = list => list.some(w => { w = shopNorm(w); return n === w || n.startsWith(w + ' '); });
+  if(cat === 'meat' && !is(KG_NOT)) return 'kg';
+  if(cat === 'veg' && is(KG_VEG)) return 'kg';
+  return '';
+}
+const qtyNum = q => { const r = Math.round(q * 100) / 100, w = Math.floor(r), f = Math.round((r - w) * 100) / 100;
+  return f === .5 ? (w ? w + '½' : '½') : String(r); };
+/** "1½ ק״ג", "6", "500 גרם". בלי כמות: ריק */
+function shopQtyText(item){
+  const q = +(item && item.qty);
+  if(!(q > 0)) return '';
+  const u = shopUnit(item);
+  return u ? `${qtyNum(q)} ${SHOP_UNIT_NAME[u]}` : qtyNum(q);
+}
+/** שמירת כמות (ויחידה). qty ריק/0 = בלי כמות. היחידה נשמרת עם המוצר רק אם שונתה מברירת המחדל. */
+function shopSetQty(item, qty, unit, nowIso){
+  const r = Object.assign({}, item, {updatedAt: nowIso}), q = Math.round(+qty * 100) / 100;
+  if(q > 0) r.qty = q; else delete r.qty;
+  if(typeof unit === 'string'){ const def = shopUnit(Object.assign({}, item, {unit: undefined}));
+    if(unit === def) delete r.unit; else r.unit = unit; }
   return r;
 }
 /** רשומה למוצר (גם מוצר מהרשימה המובנית שעוד לא השתמשו בו), בלי להכניס לרשימת הקניות. */
@@ -2524,7 +2563,7 @@ function shopAll(items){
     .concat(SHOP_CATALOG.filter(x => !known.has(shopStemKey(x.name))).map(x => ({key: 'c:' + x.name, name: x.name, rec: null})))
     .map(x => { const i = shopInfo(x.rec || x.name); return Object.assign(x, {cat: i.cat, emoji: i.textEmoji, fav: !!(x.rec && x.rec.fav)}); });
 }
-function shopBuy(item, nowIso){ return Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); }
+function shopBuy(item, nowIso){ const r = Object.assign({}, item, {active: false, boughtAt: nowIso, updatedAt: nowIso}); delete r.qty; return r; }
 function shopSetCat(item, cat, nowIso){ return Object.assign({}, item, {cat: SHOP_CAT[cat] ? cat : 'other', updatedAt: nowIso}); }
 /** הצעות: קודם מוצרים מהעבר (הפופולריים קודם), ואחריהם מוצרים נפוצים מהרשימה המובנית. עם טקסט: רק מה שמכיל אותו. */
 function shopSuggest(items, query, limit){
@@ -2577,7 +2616,7 @@ function shopText(items){
   const groups = shopGroups(items), n = groups.reduce((s, g) => s + g.items.length, 0);
   if(!n) return '';
   return `🛒 *רשימת קניות* (${n})\n\n` +
-    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `${x.textEmoji || '▫️'} ${x.name}`).join('\n')).join('\n\n');
+    groups.map(g => `${g.emoji} *${g.name}*\n` + g.items.map(x => `${x.textEmoji || '▫️'} ${x.name}${shopQtyText(x) ? ` – ${shopQtyText(x).replace(/^[\d.½]+/, '\u2066$&\u2069')}` : ''}`).join('\n')).join('\n\n');
 }
 function mergeShopFile(a, b, now){ return {v: 1, items: mergeById(a?.items, b?.items, now)}; }
 
@@ -2786,7 +2825,7 @@ return {
   mergeById, mergeConfig, mergeTasksFile, mergeOccFile,
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
-  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
+  parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopUnit, shopQtyText, shopSetQty, SHOP_UNITS, SHOP_QTY_CHIPS, SHOP_QTY_STEP, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
   SHOP_CATS, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
