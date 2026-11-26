@@ -790,6 +790,18 @@
   .sq-u::after{content:"▾";position:absolute;left:3px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none}
   .sq-row .btn.primary{margin-inline-start:auto;flex:none;width:64px;padding:0}
   .sq .opts{margin-top:8px}.sq .opts button{min-height:36px;padding:4px 12px}
+  .se-top{display:flex;align-items:center;gap:12px}.se-top input{flex:1;min-width:0;font-size:18px;font-weight:600}
+  .se-pic{position:relative;border:0;background:transparent;padding:0;cursor:pointer}.se-pic .pic{width:64px;height:64px;font-size:38px}
+  .se-pic::after{content:"✏️";position:absolute;bottom:-4px;left:-4px;font-size:14px;background:var(--card);border-radius:50%;padding:2px}
+  #dlg-shopedit .sq-row{margin-top:4px}
+  #se-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;max-height:150px;overflow-y:auto}#se-grid button{font-size:20px;border-radius:8px;min-width:0;min-height:0;padding:0}
+  #se-pics .btns{margin-top:6px}#se-pics .btn{min-height:40px}
+  .stp{flex:none;display:flex;align-items:center;gap:0;background:var(--soft);border-radius:999px;padding:2px}
+  #shop-list .shop-name{gap:8px}
+  #shop-list .t{min-width:0;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .stp-b{width:30px;height:32px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:19px;font-weight:600;cursor:pointer;line-height:1}
+  .stp .qty-b{background:transparent;padding:4px 2px;font-size:13.5px}
+  .edit-b{flex:none;width:34px;height:40px;border:0;background:transparent;border-radius:12px;font-size:17px;cursor:pointer;opacity:.75}
   .qty-b{flex:none;border:0;background:var(--soft);border-radius:999px;padding:4px 10px;font-size:14px;font-weight:600;color:inherit;cursor:pointer;white-space:nowrap}
   .shop-name{display:flex;align-items:center;gap:12px;flex:1;min-width:0;border:0;background:transparent;text-align:right;padding:4px 0;color:inherit}
   .lbl.sug{margin-top:14px;display:block}
@@ -1215,6 +1227,18 @@
   <div class="pic-grid" id="sp-grid"></div>
   <div class="btns" style="flex-wrap:wrap"><button class="btn" id="sp-gal" type="button">📷 מהגלריה</button><button class="btn" id="sp-auto" type="button">↺ אוטומטית</button><button class="btn" id="sp-cancel" type="button">ביטול</button><button class="btn primary" id="sp-ok" type="button">שמירה</button></div>
   <input type="file" id="sp-file" accept="image/*" hidden>
+</div></dialog>
+<dialog id="dlg-shopedit" aria-label="עריכת מוצר"><div class="dlg">
+  <h2>עריכת מוצר</h2>
+  <div class="se-top"><button type="button" id="se-pic" class="se-pic" aria-label="החלפת תמונה"></button><input type="text" id="se-name" aria-label="שם המוצר" autocomplete="off"></div>
+  <div id="se-pics" hidden><div class="pic-grid" id="se-grid"></div>
+    <div class="btns"><button class="btn" id="se-gal" type="button">📷 מהגלריה</button><button class="btn" id="se-auto" type="button">↺ אוטומטית</button></div>
+    <input type="file" id="se-file" accept="image/*" hidden></div>
+  <div class="field" id="se-qty-f"><span class="lbl">כמות (לא חובה)</span><div class="sq-row">
+    <button type="button" data-se="-" aria-label="פחות">−</button><input id="se-n" type="text" inputmode="decimal" placeholder="—" aria-label="כמות"><button type="button" data-se="+" aria-label="יותר">+</button>
+    <label class="sq-u"><select id="se-unit" aria-label="יחידה"></select></label></div></div>
+  <div class="field"><label for="se-cat">מחלקה</label><select id="se-cat"></select></div>
+  <div class="btns"><button class="btn" id="se-act" type="button">✓ קניתי</button><button class="btn" id="se-cancel" type="button">ביטול</button><button class="btn primary" id="se-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-shopcat" aria-label="מחלקה"><div class="dlg">
   <h2 id="sc-title">מחלקה</h2>
@@ -2572,7 +2596,7 @@ function renderShop(){
   $('shop-list').innerHTML = groups.length ? groups.map(g => `<div class="sec"><h2>${g.emoji} ${esc(g.name)} <b>${g.items.length}</b></h2>
     <div class="list">${g.items.map(x => `<div class="item" data-p="${esc(x.id)}">
       <button class="check" data-act="buy" aria-label="קניתי: ${esc(x.name)}"><i></i></button>
-      <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}">${prodPic(x)}<span class="t">${esc(x.name)}</span></button>${ל.shopQtyText(x) ? `<button class="qty-b" data-act="qty" aria-label="כמות: ${esc(x.name)}">${qtyHtml(ל.shopQtyText(x))}</button>` : ''}</div>`).join('')}</div></div>`).join('')
+      <button class="shop-name" data-act="cat" aria-label="מחלקה: ${esc(x.name)}">${prodPic(x)}<span class="t">${esc(x.name)}</span></button><span class="stp"><button class="stp-b" data-act="dec" aria-label="פחות: ${esc(x.name)}">−</button>${ל.shopQtyText(x) ? `<button class="qty-b" data-act="qty" aria-label="כמות: ${esc(x.name)}">${qtyHtml(ל.shopQtyText(x))}</button>` : ''}<button class="stp-b" data-act="inc" aria-label="יותר: ${esc(x.name)}">+</button></span><button class="edit-b" data-act="edit" aria-label="עריכה: ${esc(x.name)}">✏️</button></div>`).join('')}</div></div>`).join('')
     : `<div class="empty" style="margin-top:16px">הרשימה ריקה</div>`;
 }
 // ריקון הסל: כל המוצרים יורדים מהרשימה (בלי לספור כ"נקנה", כדי לא לשנות את ההצעות). אפשר לבטל
@@ -2668,25 +2692,70 @@ $('shop-list').onclick = e => {
   const x = D.file.shop.items.find(i => i.id === b.closest('[data-p]').dataset.p);
   if(!x) return;
   if(b.dataset.act === 'cat') return openShopCat(x);
-  if(b.dataset.act === 'qty') return openShopQty(x);
+  if(b.dataset.act === 'qty') return openShopEdit(x, true);
+  if(b.dataset.act === 'edit') return openShopEdit(x);
+  // −/+ בשורה: צעד לפי היחידה (1, ½ ק״ג, 50 גרם). מתחת לצעד אחד = בלי כמות
+  if(b.dataset.act === 'inc' || b.dataset.act === 'dec'){
+    const u = ל.shopUnit(x), st = ל.SHOP_QTY_STEP[u], cur = +x.qty || 0;
+    const v = b.dataset.act === 'inc' ? (cur ? cur + st : (u === 'g' ? 100 : 1)) : cur - st;
+    saveShop(ל.shopSetQty(x, v > 0 ? Math.round(v * 100) / 100 : 0, u, nowIso())); renderShop(); return;
+  }
   if(sqId === x.id) closeShopQty();
   saveShop(ל.shopBuy(x, nowIso()));
   toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))});
 };
 // לחיצה ארוכה על מוצר (בסל או בהצעות): שינוי שם, החלפת תמונה, מחלקה. השינוי נשמר עם המוצר, וברשימה משותפת עובר לכולם
 const shopRecOf = name => ל.shopRecord(D.file.shop.items, name, nowIso());
-function shopProdMenu(x){
-  const ed = ch => Object.assign({}, x, ch, {updatedAt: nowIso()});
-  sheet(x.name, [
-    ['✏️ שינוי שם', async () => { const [v] = await ask('שם המוצר', [{label: 'שם', value: x.name, req: true}]) || []; const n = (v || '').trim().replace(/\s+/g, ' ');
-      if(!n || n === x.name) return;
-      if(D.file.shop.items.some(i => !i.deleted && i.id !== x.id && ל.shopKey(i.name) === ל.shopKey(n))) return toast('כבר יש מוצר בשם הזה');
-      saveShop(ed({name: n})); renderShop(); toast('✓ נשמר'); }],
-    ['🖼️ החלפת תמונה', () => openShopPic(x)],
-    [`🗂️ מחלקה: ${ל.shopInfo(x).catName}`, () => openShopCat(x)],
-    ...(x.active ? [[`⚖️ כמות${ל.shopQtyText(x) ? ': ' + ל.shopQtyText(x) : ''}`, () => openShopQty(x)]] : []),
-    ...(x.active ? [['✓ קניתי', () => { saveShop(ל.shopBuy(x, nowIso())); renderShop(); }]] : [['🛒 להוסיף לסל', () => { shopAddName(x.name); renderShop(); }]])]);
+/* לחיצה ארוכה / לחיצה על הכמות: חלון אחד עם שם, תמונה, כמות ומחלקה. שום דבר לא משתנה עד "שמירה" */
+let se = null;
+function seRenderPic(){
+  const now = Object.assign({}, se.x, {pic: se.pic, cat: $('se-cat').value || se.x.cat});
+  $('se-pic').innerHTML = prodPic(Object.assign(now, ל.shopInfo(now)));
+  $('se-grid').innerHTML = SHOP_PICS.map(e => `<button type="button" data-e="${e}" class="${se.pic === e ? 'on' : ''}" aria-label="${e}">${e}</button>`).join('');
 }
+function seUnits(u){ $('se-unit').innerHTML = ל.SHOP_UNITS.map(([k, n]) => `<option value="${k}"${k === u ? ' selected' : ''}>${n}</option>`).join(''); }
+function openShopEdit(x, qtyFirst){
+  x = D.file.shop.items.find(i => i.id === x.id) || x;
+  se = {x, pic: x.pic || ''};
+  $('se-name').value = x.name;
+  $('se-cat').innerHTML = ל.SHOP_CATS.map(c => `<option value="${c.id}"${c.id === ל.shopInfo(x).cat ? ' selected' : ''}>${c.emoji} ${esc(c.name)}</option>`).join('');
+  seUnits(ל.shopUnit(x)); $('se-n').value = +x.qty > 0 ? String(+x.qty) : '';
+  $('se-qty-f').hidden = !x.active;   // כמות רק למוצר שבסל
+  $('se-act').textContent = x.active ? '✓ קניתי' : '🛒 להוסיף לסל';
+  $('se-pics').hidden = true; seRenderPic();
+  $('dlg-shopedit').showModal();
+  if(qtyFirst) setTimeout(() => $('se-n').focus(), 50); else $('se-name').blur();
+}
+$('se-pic').onclick = () => { $('se-pics').hidden = !$('se-pics').hidden; };
+$('se-grid').onclick = e => { const b = e.target.closest('[data-e]'); if(b){ se.pic = b.dataset.e; seRenderPic(); } };
+$('se-gal').onclick = () => $('se-file').click();
+$('se-file').onchange = async () => { const f = $('se-file').files[0]; $('se-file').value = ''; if(!f) return;
+  try{ se.pic = await shrinkImage(f, 160); seRenderPic(); }catch(e){ toast(e.message); } };
+$('se-auto').onclick = () => { se.pic = ''; seRenderPic(); };
+$('se-cat').onchange = seRenderPic;
+$('se-unit').onchange = () => { if(!$('se-n').value) return; $('se-n').value = String({'': 1, kg: 1, g: 500, pack: 1, l: 1}[$('se-unit').value]); };
+$('dlg-shopedit').addEventListener('click', e => { const b = e.target.closest('[data-se]'); if(!b) return;
+  const st = ל.SHOP_QTY_STEP[$('se-unit').value], cur = +String($('se-n').value).replace(',', '.') || 0;
+  const v = Math.round((cur + (b.dataset.se === '+' ? st : -st)) * 100) / 100;
+  $('se-n').value = v > 0 ? String(v) : ''; });
+/** השינויים מהחלון כרשומה אחת. null = שם לא תקין (כבר נאמר למה) */
+function seRecord(){
+  const x = se.x, n = $('se-name').value.trim().replace(/\s+/g, ' ');
+  if(!n){ toast('צריך שם'); return null; }
+  if(n !== x.name && D.file.shop.items.some(i => !i.deleted && i.id !== x.id && ל.shopKey(i.name) === ל.shopKey(n))){ toast('כבר יש מוצר בשם הזה'); return null; }
+  let r = Object.assign({}, x, {name: n, updatedAt: nowIso()});
+  if(se.pic) r.pic = se.pic; else delete r.pic;
+  if($('se-cat').value !== ל.shopInfo(x).cat) r.cat = $('se-cat').value;
+  if(x.active) r = ל.shopSetQty(r, +String($('se-n').value).replace(',', '.') || 0, $('se-unit').value, nowIso());
+  return r;
+}
+const seDone = () => { $('dlg-shopedit').close(); if(sqId === se.x.id) closeShopQty(); renderShop(); if(pfList === 'shop') renderPfLists(); };
+$('se-ok').onclick = () => { const r = seRecord(); if(!r) return; saveShop(r); seDone(); toast('✓ נשמר'); };
+$('se-act').onclick = () => { const r = seRecord(); if(!r) return;
+  if(se.x.active){ saveShop(ל.shopBuy(r, nowIso())); seDone(); toast(`קניתי: ${r.name}`); }
+  else { saveShop(r); seDone(); shopAddName(r.name, true); renderShop(); } };
+$('se-cancel').onclick = () => $('dlg-shopedit').close();
+function shopProdMenu(x){ return openShopEdit(x); }
 const SHOP_PICS = '🥛 🧀 🥚 🧈 🍞 🥖 🥐 🥯 🍎 🍌 🍊 🍋 🍇 🍓 🍉 🍐 🍑 🥝 🥭 🍍 🥥 🍅 🥒 🥕 🌽 🥔 🧅 🧄 🥬 🥦 🫑 🌶️ 🍄 🥑 🍆 🫘 🍚 🍝 🥫 🧂 🫒 🍯 ☕ 🍵 🧃 🥤 🍷 🍺 💧 🍫 🍪 🍬 🍿 🥜 🍗 🥩 🐟 🍤 🌭 🥓 🍕 🍦 🧊 🧻 🧽 🧼 🧴 🪥 💊 🩹 🍼 🐶 🐱 🔋 💡 🛒'.split(' ');
 let spItem = null, spSel = '';
 function renderShopPic(){
@@ -2710,9 +2779,9 @@ $('sp-ok').onclick = () => spSave(spSel);
 $('sp-auto').onclick = () => spSave('');
 $('sp-cancel').onclick = () => $('dlg-shoppic').close();
 { let t = null, lp = false;
-  const at = e => { const p = e.target.closest('#shop-list [data-p]'), q = e.target.closest('#shop-quick [data-n]');
-    if(p) return D.file.shop.items.find(i => i.id === p.dataset.p); if(q) return shopRecOf(q.dataset.n); return null; };
-  for(const root of [$('shop-list'), $('shop-quick')]){
+  // בסל עורכים בכפתור ✏️ בסוף השורה. לחיצה ארוכה רק בפס ההצעות בצד (אין שם מקום לכפתור)
+  const at = e => { const q = e.target.closest('#shop-quick [data-n]'); return q ? shopRecOf(q.dataset.n) : null; };
+  for(const root of [$('shop-quick')]){
     root.addEventListener('pointerdown', e => { lp = false; clearTimeout(t); if(!at(e)) return;
       t = setTimeout(() => { const x = at(e); if(!x) return; lp = true; navigator.vibrate?.(30); shopProdMenu(x); }, 550); });
     for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, () => clearTimeout(t));
