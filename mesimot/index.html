@@ -2529,7 +2529,8 @@ function prodPic(x){
 function renderShop(){
   const items = D.file.shop.items, q = $('shop-in').value, groups = ל.shopGroups(items);
   // כשמקלידים: עד 10 הצעות להשלמה, מתחת לשורה. בלי הקלדה: אין הצעות בתוך הסל, רק הפס בצד (תמיד 10 הצעות)
-  const sug = q ? ל.shopSuggest(items, q, 10) : [], quick = q ? [] : ל.shopQuick(items);
+  // הפס בצד מופיע רק אם הדליקו אותו בהגדרות ← התנהגות (בדיפולט כבוי)
+  const sug = q ? ל.shopSuggest(items, q, 10) : [], quick = q || !D.config.shopQuick ? [] : ל.shopQuick(items);
   $('shop-wa').hidden = !groups.length;
   $('shop-clear').hidden = !groups.length;
   $('shop-copy').hidden = !groups.length || !clCanCopy('shop');
@@ -7949,8 +7950,9 @@ function renderPrefs(){
 }
 /* תתי נושאים בהגדרות: תפריט, וכל נושא בדף משלו (‹ הגדרות חוזר) */
 var pfPage = null;
-const PF_SHOP = ['haptics', 'askExit', 'timerSound', 'cookAwake'];   // ההתנהגות שרלוונטית לרשימת קניות
-const PF_TOGGLES = [['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר כשמחזיקים משימה, מתכון או לשונית', true],
+const PF_SHOP = ['shopQuick', 'haptics', 'askExit', 'timerSound', 'cookAwake'];   // ההתנהגות שרלוונטית לרשימת קניות
+const PF_TOGGLES = [['shopQuick', 'גישה מהירה בקניות', 'פס הצעות בצד מסך הקניות: לחיצה מוסיפה לסל', false],
+  ['haptics', 'רטט בלחיצה ארוכה', 'רטט קצר כשמחזיקים משימה, מתכון או לשונית', true],
   ['askExit', 'לשאול לפני יציאה', 'כפתור "הקודם" במסך רגיל שואל "לצאת מהאפליקציה?"', true],
   ['timerSound', 'צליל בטיימר', 'כשטיימר מסתיים והאפליקציה פתוחה', true],
   ['cookAwake', 'מסך דלוק במצב בישול', 'המסך לא נכבה בזמן שמבשלים לפי מתכון', true],
@@ -7965,7 +7967,7 @@ function pfPages(){
   const c = D.config, kst = ל.calSettings(KF()), doms = D.domains.filter(x => !x.deleted).length;
   return [['look', '🎨', 'תצוגה ולשוניות', `${{system: 'לפי הטלפון', light: 'בהיר', dark: 'כהה'}[c.theme || 'system']} · טקסט ${{s: 'קטן', m: 'רגיל', l: 'גדול', xl: 'גדול מאוד'}[c.fontSize || 'm']} · סדר הלשוניות`],
     ['notif', '🔔', 'התראות ושעות', `התראות ${c.activeFrom}–${c.activeTo} · סיכום בוקר ${c.summaryTime}`],
-    ['behav', '⚙️', 'התנהגות', 'רטט, יציאה, טיימר, מצב בישול'],
+    ['behav', '⚙️', 'התנהגות', 'גישה מהירה, רטט, יציאה, טיימר, מצב בישול'],
     ['doms', '🗂️', 'תחומים', `${doms} תחומים`],
     ['share', '👥', 'רשימות משותפות', (() => { const s = clState(), n = clAllReqs().length; return (n ? `📨 ${n} · ` : '') + (s.lists.map(l => l.name).join(', ') || 'יצירה או התחברות'); })()],
     ['lists', '📋', 'רשימות', 'מוצרים לקניות, מתכונים, מאכלים'],
