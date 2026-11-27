@@ -579,6 +579,19 @@
   .more-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .more-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;border:0;text-align:right;color:inherit;width:100%}
   .more-row .i{font-size:26px;flex:none}
+  .fl-q{width:100%;margin-top:12px}
+  .fl-chips{margin:10px 0 0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .fl-chips::-webkit-scrollbar{display:none}
+  .fl-chips .chip{flex:none;white-space:nowrap}
+  .fl-chips .chip small{opacity:.7;margin-inline-start:4px}
+  .fl-sel{margin-top:10px;gap:8px}.fl-sel select{flex:1;min-width:0}
+  .fl-range{gap:8px;margin-top:6px}
+  .fl-sum{color:var(--muted);font-size:14px;margin:12px 2px 8px}
+  .fl-row .i.th{width:44px;height:44px;border-radius:10px;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:22px}
+  .fl-row .b{flex:1;min-width:0}.fl-row .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fl-row .acts{display:flex;gap:2px;flex:none}
+  .fl-row .acts button{border:0;background:transparent;min-width:40px;min-height:40px;border-radius:12px;font-size:18px;color:inherit}
+  .fl-row .acts button:active{background:var(--soft)}
   .more-row.sel{outline:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
   .pf-l-h{font-size:15px;margin:14px 4px 4px;color:var(--muted)} .pf-l-h small{font-weight:400}
   .sel-bar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--card);border-radius:16px;padding:8px;margin-top:10px;box-shadow:0 4px 18px rgba(0,0,0,.18);z-index:5}
@@ -1164,6 +1177,18 @@
   <h1 class="hello">מסמכים</h1>
   <div id="doc-list" class="more-list"></div>
 </main>
+<main class="screen" id="scr-files" hidden>
+  <h1 class="hello">קבצים</h1>
+  <input type="search" id="fl-q" class="fl-q" placeholder="🔍 חיפוש לפי שם" aria-label="חיפוש קובץ">
+  <div class="chips fl-chips" id="fl-time" aria-label="סינון לפי זמן"></div>
+  <div class="row fl-range" id="fl-range" hidden><div class="field"><label for="fl-from">מתאריך</label><input type="date" id="fl-from"></div><div class="field"><label for="fl-to">עד תאריך</label><input type="date" id="fl-to"></div></div>
+  <div class="chips fl-chips" id="fl-type" aria-label="סינון לפי סוג"></div>
+  <div class="row fl-sel"><select id="fl-src" aria-label="סינון לפי מקור"></select>
+    <select id="fl-sort" aria-label="מיון"><option value="new">חדש ← ישן</option><option value="old">ישן ← חדש</option><option value="name">לפי שם</option><option value="size">הכי גדולים</option></select></div>
+  <div class="fl-sum" id="fl-sum"></div>
+  <div id="fl-list" class="more-list"></div>
+  <input type="file" id="fl-add" multiple hidden>
+</main>
 <main class="screen" id="scr-history" hidden>
   <button class="txt-btn back-more" type="button" data-back="more">‹ עוד</button>
   <h1 class="hello">היסטוריה</h1>
@@ -1192,6 +1217,7 @@
   <button data-scr="meds"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>תרופות</button>
   <button data-scr="upkeep"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3.6 17.4a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.3-5.3l-2.4 2.4-2-.6-.6-2z"/></svg>תחזוקה</button>
   <button data-scr="docs"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>מסמכים</button>
+  <button data-scr="files"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4.2l2 2.2H19a1.5 1.5 0 0 1 1.5 1.5v8.8A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>קבצים</button>
   <button data-scr="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>לוח שנה</button>
   <button data-scr="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg>היסטוריה</button>
   <button data-scr="bills"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>חשבונות</button>
@@ -2575,9 +2601,9 @@ function show(s){
   if((s === 'shop' || s === 'recipes') && screen !== s) try{ clOpenDefault(s); }catch(e){}   // נפתחים על הרשימה המועדפת
   if(s === 'notif' && screen !== 'notif') ntTab = 'notif';
   screen = s;
-  for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'calendar', 'history', 'calc']) $('scr-' + x).hidden = x !== s;
+  for(const x of ['today', 'notif', 'todo', 'bills', 'shop', 'recipes', 'kcal', 'meds', 'upkeep', 'prefs', 'more', 'docs', 'files', 'calendar', 'history', 'calc']) $('scr-' + x).hidden = x !== s;
   $('fab').hidden = ['shop', 'more', 'kcal', 'meds', 'prefs', 'todo', 'bills', 'notif', 'calc'].includes(s);
-  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
+  $('fab').setAttribute('aria-label', {recipes: 'מתכון חדש', birthdays: 'יום מיוחד חדש', docs: 'מסמך חדש', files: 'הוספת קובץ', upkeep: 'פריט תחזוקה חדש'}[s] || 'משימה חדשה');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.scr === s));
   if(s === 'prefs') renderSettings();
   const on = document.querySelector('nav button.on');   // הסרגל נגלל: הכפתור הפעיל תמיד בתצוגה
@@ -2602,6 +2628,7 @@ function renderAll(){
   else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'calc') renderCalcPad();
   else if(screen === 'docs') renderDocs();
+  else if(screen === 'files') renderFiles();
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
   renderStatus();
@@ -4800,6 +4827,7 @@ function renderMore(){
   const tiles = [
     ['birthdays', '🎂', 'ימים מיוחדים', nextBd ? `${nextBd.emoji} ${nextBd.task.person || nextBd.label}: ${daysText(nextBd.inDays)}` : 'ימי הולדת, נישואין ועוד'],
     ['docs', '📄', 'מסמכים', urgent.length ? `${urgent.length} לחידוש בקרוב` : dc.length ? `${dc.length} בתוקף` : 'עוד לא נוספו'],
+    ['files', '📁', 'קבצים', (n => n ? `${n} קבצים` : 'תמונות ו-PDF במקום אחד')(ל.filesAll(D.tasks, D.config).length)],
     ['calendar', '📅', 'לוח שנה', 'כל המשימות לפי תאריך'],
     ['domains', '🗂️', 'תחומים', 'משימות לפי תחום'],
     ['history', '🕘', 'היסטוריה', 'מה בוצע ומתי'],
@@ -4985,7 +5013,7 @@ $('doc-file').onchange = async e => {
   // מסמך קיים: נשמר מיד (גם בלי ללחוץ "שמירה")
   if(docEdit) saveTask(Object.assign({}, taskById(docEdit.id), {docImages: docPics}));
 };
-let phOpen = null;
+let phOpen = null, phFile = null;
 // קובץ (PDF, Word): עולה כמו שהוא, עד 15MB. לחיצה פותחת אותו באפליקציה המתאימה בנייד
 $('doc-att').onchange = async e => {
   const files = [...e.target.files]; e.target.value = '';
@@ -5028,13 +5056,14 @@ $('doc-pics').onclick = async e => {
   const fb = e.target.closest('[data-f]');
   if(fb) return openDocFile(docPics[+fb.dataset.f]);
   const b = e.target.closest('[data-i]'); if(!b) return;
-  phOpen = +b.dataset.i;
+  phOpen = +b.dataset.i; phFile = null;
   $('ph-title').textContent = $('doc-name').value || 'מסמך';
   try{ $('ph-img').src = await rawFile(docPics[phOpen].path); }catch(err){ return toast('אין רשת', {err: true}); }
   $('dlg-photo').showModal();
 };
 $('ph-close').onclick = () => $('dlg-photo').close();
 $('ph-del').onclick = async () => {
+  if(phFile){ if(await delFile(phFile)) $('dlg-photo').close(); return; }
   if(!await sure('למחוק את התמונה?')) return;
   const p = docPics[phOpen];
   try{ const g = await gh('GET', p.path); if(g) await gh('DELETE', p.path, {message: 'משימות: מחיקת תמונה של מסמך', branch: BRANCH, sha: g.sha}); }catch(err){}
@@ -5073,6 +5102,78 @@ $('doc-ok').onclick = () => {
 $('doc-del').onclick = async () => {
   if(!docEdit || !await sure(`למחוק את ${docEdit.docName}?`)) return;
   saveTask(Object.assign({}, docEdit, {deleted: true})); $('dlg-doc').close();
+};
+
+/* ---------- קבצים: כל התמונות והקבצים במקום אחד (ליבה.filesView) ---------- */
+// מקורות: תמונות וקבצים של מסמכים, וקבצים כלליים (D.config.files, נשמרים ב-משימות/מסמכים/כללי/). סינון לפי זמן, סוג, מקור וחיפוש.
+const flF = {time: 'all', type: 'all', src: 'all', sort: 'new', q: '', from: '', to: ''};
+function renderFiles(){
+  const v = ל.filesView(D.tasks, D.config, flF, today());
+  if(flF.src !== 'all' && !v.sources.some(([k]) => k === flF.src)){ flF.src = 'all'; return renderFiles(); }
+  $('fl-time').innerHTML = ל.FILE_TIMES.map(([k, n]) => `<button type="button" class="chip${flF.time === k ? ' on' : ''}" data-ft="${k}">${n}${k === 'range' ? '' : `<small>${v.counts.time[k]}</small>`}</button>`).join('');
+  $('fl-type').innerHTML = ל.FILE_TYPES.filter(([k]) => k === 'all' || k === flF.type || v.counts.type[k]).map(([k, n, i]) => `<button type="button" class="chip${flF.type === k ? ' on' : ''}" data-fy="${k}">${i ? i + ' ' : ''}${n}<small>${v.counts.type[k]}</small></button>`).join('');
+  $('fl-range').hidden = flF.time !== 'range';
+  $('fl-src').innerHTML = `<option value="all">כל המקורות</option>` + v.sources.sort((a, b) => (a[0] === 'free' ? -1 : b[0] === 'free' ? 1 : a[1].localeCompare(b[1], 'he')))
+    .map(([k, n]) => `<option value="${esc(k)}"${flF.src === k ? ' selected' : ''}>${k === 'free' ? '📁' : '📄'} ${esc(n)}</option>`).join('');
+  $('fl-sort').value = flF.sort;
+  const filtered = flF.time !== 'all' || flF.type !== 'all' || flF.src !== 'all' || flF.q;
+  $('fl-sum').innerHTML = v.total ? `${v.list.length === v.total ? `${v.total} קבצים` : `${v.list.length} מתוך ${v.total}`}${v.size ? ` · ${ל.sizeText(v.size)}` : ''}${filtered ? ' · <button type="button" class="txt-btn" id="fl-clear">ניקוי סינון</button>' : ''}` : '';
+  const ico = {image: '📷', pdf: '📕', word: '📘', excel: '📗', other: '📄'};
+  $('fl-list').innerHTML = v.list.length ? v.list.map(f => `<div class="more-row fl-row" role="button" tabindex="0" data-fl="${esc(f.path)}">
+      <span class="i th" data-th="${f.type === 'image' ? esc(f.path) : ''}">${ico[f.type]}</span>
+      <span class="b"><span class="t" style="display:block">${esc(f.name)}</span><span class="s" style="display:block">${f.src === 'free' ? '📁' : '📄'} ${esc(f.srcName)}${f.date ? ' · ' + esc(fullDate(f.date)) : ''}${f.size ? ' · ' + flSize(f.size) : ''}</span></span>
+      <span class="acts">${f.src === 'free' ? '' : `<button type="button" data-fdoc="${esc(f.src)}" aria-label="פתיחת המסמך">📄</button>`}<button type="button" data-fdel="${esc(f.path)}" aria-label="מחיקה">🗑️</button></span></div>`).join('')
+    : `<div class="empty">${v.total ? 'אין קבצים שמתאימים לסינון' : 'כאן יופיעו כל התמונות והקבצים של המסמכים. לוחצים + כדי להוסיף קובץ'}</div>`;
+  $('fl-list').querySelectorAll('[data-th]').forEach(el => { const p = el.dataset.th; if(p) rawFile(p).then(u => { el.textContent = ''; el.style.backgroundImage = `url('${u}')`; }).catch(() => {}); });
+}
+const flSize = b => esc(ל.sizeText(b));
+const flFind = path => ל.filesAll(D.tasks, D.config).find(f => f.path === path);
+$('fl-time').onclick = e => { const b = e.target.closest('[data-ft]'); if(b){ flF.time = b.dataset.ft; renderFiles(); } };
+$('fl-type').onclick = e => { const b = e.target.closest('[data-fy]'); if(b){ flF.type = b.dataset.fy; renderFiles(); } };
+$('fl-src').onchange = () => { flF.src = $('fl-src').value; renderFiles(); };
+$('fl-sort').onchange = () => { flF.sort = $('fl-sort').value; renderFiles(); };
+$('fl-q').addEventListener('input', () => { flF.q = $('fl-q').value; renderFiles(); });
+$('fl-from').onchange = () => { flF.from = $('fl-from').value; renderFiles(); };
+$('fl-to').onchange = () => { flF.to = $('fl-to').value; renderFiles(); };
+$('fl-sum').onclick = e => { if(e.target.id === 'fl-clear'){ Object.assign(flF, {time: 'all', type: 'all', src: 'all', q: '', from: '', to: ''}); $('fl-q').value = $('fl-from').value = $('fl-to').value = ''; renderFiles(); } };
+$('fl-list').onclick = async e => {
+  const d = e.target.closest('[data-fdoc]'); if(d) return openDoc(d.dataset.fdoc);
+  const x = e.target.closest('[data-fdel]'); if(x){ const f = flFind(x.dataset.fdel); if(f) delFile(f); return; }
+  const r = e.target.closest('[data-fl]'); if(!r) return;
+  const f = flFind(r.dataset.fl); if(!f) return;
+  if(f.type !== 'image') return openDocFile(f);
+  phFile = f; $('ph-title').textContent = f.name;
+  try{ $('ph-img').src = await rawFile(f.path); }catch(err){ return toast('אין רשת', {err: true}); }
+  $('dlg-photo').showModal();
+};
+$('fl-list').addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.matches('[data-fl]')) e.target.click(); });
+/** מחיקת קובץ: מהמסמך שלו או מהקבצים הכלליים, וגם מהמאגר/מהטלפון. */
+async function delFile(f){
+  if(!await sure(`למחוק את ${f.name}?`)) return false;
+  try{ const g = await gh('GET', f.path); if(g) await gh('DELETE', f.path, {message: 'משימות: מחיקת קובץ', branch: BRANCH, sha: g.sha}); }catch(err){}
+  if(f.src === 'free') saveConfig({files: (D.config.files || []).filter(x => x.path !== f.path)});
+  else { const t = taskById(f.src); if(t) saveTask(Object.assign({}, t, {docImages: (t.docImages || []).filter(x => x.path !== f.path)})); }
+  toast('🗑️ נמחק');
+  return true;
+}
+// קובץ כללי (לא של מסמך): תמונה מוקטנת כמו במסמכים, כל קובץ אחר עולה כמו שהוא (עד 15MB)
+$('fl-add').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if(!token && !LOCAL) return toast('צריך חיבור לגיטהאב כדי לשמור קבצים', {err: true});
+  for(const f of files){
+    if(f.size > 15 * 1024 * 1024){ toast(`${f.name}: גדול מ-15MB`, {err: true}); continue; }
+    try{
+      toast('מעלה...', {ms: 15000});
+      const img = /^image\/(jpeg|png|webp|heic|heif)$/i.test(f.type), blob = img ? await shrink(f) : f, id = uid();
+      const ext = img ? '.jpg' : (/\.[a-z0-9]{1,5}$/i.exec(f.name) || ['.bin'])[0].toLowerCase(), path = `משימות/מסמכים/כללי/${id}${ext}`;
+      await gh('PUT', path, {message: 'משימות: קובץ', branch: BRANCH, content: await blobTo64(blob)});
+      picCache[path] = URL.createObjectURL(blob);
+      const rec = img ? {id, path, name: f.name.replace(/\.[^.]+$/, '') + '.jpg', mime: 'image/jpeg', size: blob.size, addedAt: nowIso()}
+        : {id, path, kind: 'file', name: f.name, mime: f.type || '', size: f.size, addedAt: nowIso()};
+      saveConfig({files: [...(D.config.files || []), rec]});
+      toast('✓ נשמר: ' + f.name);
+    }catch(err){ toast('השמירה נכשלה. צריך רשת', {err: true}); }
+  }
 };
 
 /* ---------- פעולות על מופע ---------- */
@@ -5399,7 +5500,7 @@ onHold(document.body, '#fab', () => sheet('מה להוסיף?', [
   ['📄 מסמך', () => openDoc()],
   ['🔧 פריט תחזוקה', () => openUpkeep()],
 ]));
-$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'docs' ? openDoc() : screen === 'upkeep' ? openUpkeep() : openQuick();
+$('fab').onclick = () => screen === 'recipes' ? $('dlg-radd').showModal() : screen === 'docs' ? openDoc() : screen === 'files' ? $('fl-add').click() : screen === 'upkeep' ? openUpkeep() : openQuick();
 document.addEventListener('click', e => { const b = e.target.closest('[data-back]'); if(b) show(b.dataset.back); });
 /* ---------- יומן גוגל ---------- */
 // כפתור היומן מסמן את המשימה (calendar: true). המנוע בגוגל יוצר את האירוע ביומן הראשי, ורושם ב-משימות/יומן.json.
@@ -6096,7 +6197,7 @@ function onboard(step){
 
 /* ---------- התקנה חדשה: גיבוי, כמה שאלות, והסבר קצר ---------- */
 const NAV_PICK = [['todo', '📝 משימות'], ['shop', '🛒 קניות'], ['recipes', '🍳 מתכונים'], ['kcal', '❤️ בריאות'], ['meds', '💊 תרופות'], ['upkeep', '🔧 תחזוקה'],
-  ['docs', '📄 מסמכים'], ['calendar', '📅 לוח שנה'], ['history', '🕘 היסטוריה'], ['bills', '🧾 חשבונות לדייר'], ['calc', '🧮 מחשבון']];
+  ['docs', '📄 מסמכים'], ['files', '📁 קבצים'], ['calendar', '📅 לוח שנה'], ['history', '🕘 היסטוריה'], ['bills', '🧾 חשבונות לדייר'], ['calc', '🧮 מחשבון']];
 let wz = {};
 function welcome(step){
   const b = $('o-body'), done = () => { store(K.onboard, '1'); $('dlg-onboard').close(); renderAll(); handleHash(); };
@@ -7413,7 +7514,7 @@ async function goLocal(){
   finally{ goingLocal = false; renderAll(); }
 }
 async function pullDocs(){
-  const paths = [...new Set(D.tasks.filter(t => !t.deleted).flatMap(t => (t.docImages || []).map(x => x.path)).filter(Boolean))];
+  const paths = [...new Set(ל.filesAll(D.tasks, D.config).map(x => x.path).filter(Boolean))];
   for(const p of paths){
     const r = await fetch(api(p) + `?ref=${BRANCH}`, {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
     if(r.status === 404) continue;
@@ -7421,7 +7522,7 @@ async function pullDocs(){
     await NPhone.writeFile({path: p, b64: await blobTo64(await r.blob())});
   }
 }
-const MIME = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain'};
+const MIME = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf', webp: 'image/webp', gif: 'image/gif', xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', csv: 'text/csv', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain'};
 async function localBlob(path, mime){
   const r = await NPhone.readFile({path}); if(!r.b64) throw new Error('הקובץ לא נמצא בטלפון');
   const bin = atob(r.b64), u8 = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
