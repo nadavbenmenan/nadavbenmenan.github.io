@@ -592,6 +592,9 @@
   .fl-row .acts{display:flex;gap:2px;flex:none}
   .fl-row .acts button{border:0;background:transparent;min-width:40px;min-height:40px;border-radius:12px;font-size:18px;color:inherit}
   .fl-row .acts button:active{background:var(--soft)}
+  .fl-gate{background:var(--card);border-radius:16px;padding:18px;margin-top:14px;text-align:center}
+  .fl-gate .big{font-size:40px}.fl-gate p{margin:8px 0 14px;color:var(--muted)}
+  .fl-sum .txt-btn{min-height:32px;padding:0 6px}
   .more-row.sel{outline:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
   .pf-l-h{font-size:15px;margin:14px 4px 4px;color:var(--muted)} .pf-l-h small{font-weight:400}
   .sel-bar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--card);border-radius:16px;padding:8px;margin-top:10px;box-shadow:0 4px 18px rgba(0,0,0,.18);z-index:5}
@@ -1179,6 +1182,9 @@
 </main>
 <main class="screen" id="scr-files" hidden>
   <h1 class="hello">קבצים</h1>
+  <div class="subtabs" id="fl-tabs"><button type="button" data-flt="phone" class="on">📱 בטלפון</button><button type="button" data-flt="app">📎 באפליקציה</button></div>
+  <div class="fl-gate" id="fl-gate" hidden></div>
+  <div id="fl-main">
   <input type="search" id="fl-q" class="fl-q" placeholder="🔍 חיפוש לפי שם" aria-label="חיפוש קובץ">
   <div class="chips fl-chips" id="fl-time" aria-label="סינון לפי זמן"></div>
   <div class="row fl-range" id="fl-range" hidden><div class="field"><label for="fl-from">מתאריך</label><input type="date" id="fl-from"></div><div class="field"><label for="fl-to">עד תאריך</label><input type="date" id="fl-to"></div></div>
@@ -1187,6 +1193,8 @@
     <select id="fl-sort" aria-label="מיון"><option value="new">חדש ← ישן</option><option value="old">ישן ← חדש</option><option value="name">לפי שם</option><option value="size">הכי גדולים</option></select></div>
   <div class="fl-sum" id="fl-sum"></div>
   <div id="fl-list" class="more-list"></div>
+  <div class="btns" id="fl-more" hidden><button class="btn" type="button" id="fl-more-b">הצגת עוד</button></div>
+  </div>
   <input type="file" id="fl-add" multiple hidden>
 </main>
 <main class="screen" id="scr-history" hidden>
@@ -2628,7 +2636,7 @@ function renderAll(){
   else if(screen === 'meds'){ window.medsRender?.(); }
   else if(screen === 'calc') renderCalcPad();
   else if(screen === 'docs') renderDocs();
-  else if(screen === 'files') renderFiles();
+  else if(screen === 'files'){ renderFiles(); if(flTab === 'phone') phLoad(); }
   else renderHistory();
   if(!$('task-page').hidden) renderTaskPage();
   renderStatus();
@@ -4827,7 +4835,7 @@ function renderMore(){
   const tiles = [
     ['birthdays', '🎂', 'ימים מיוחדים', nextBd ? `${nextBd.emoji} ${nextBd.task.person || nextBd.label}: ${daysText(nextBd.inDays)}` : 'ימי הולדת, נישואין ועוד'],
     ['docs', '📄', 'מסמכים', urgent.length ? `${urgent.length} לחידוש בקרוב` : dc.length ? `${dc.length} בתוקף` : 'עוד לא נוספו'],
-    ['files', '📁', 'קבצים', (n => n ? `${n} קבצים` : 'תמונות ו-PDF במקום אחד')(ל.filesAll(D.tasks, D.config).length)],
+    ['files', '📁', 'קבצים', 'כל הקבצים בטלפון, לפי זמן וסוג'],
     ['calendar', '📅', 'לוח שנה', 'כל המשימות לפי תאריך'],
     ['domains', '🗂️', 'תחומים', 'משימות לפי תחום'],
     ['history', '🕘', 'היסטוריה', 'מה בוצע ומתי'],
@@ -5104,43 +5112,106 @@ $('doc-del').onclick = async () => {
   saveTask(Object.assign({}, docEdit, {deleted: true})); $('dlg-doc').close();
 };
 
-/* ---------- קבצים: כל התמונות והקבצים במקום אחד (ליבה.filesView) ---------- */
-// מקורות: תמונות וקבצים של מסמכים, וקבצים כלליים (D.config.files, נשמרים ב-משימות/מסמכים/כללי/). סינון לפי זמן, סוג, מקור וחיפוש.
-const flF = {time: 'all', type: 'all', src: 'all', sort: 'new', q: '', from: '', to: ''};
+/* ---------- קבצים: "בטלפון" (כל הקבצים במכשיר, דרך Phone.phoneFiles) ו"באפליקציה" (ליבה.filesView) ---------- */
+// בטלפון: צריך "גישה לכל הקבצים" (אנדרואיד 11+). הרשימה נקראת מאינדקס הקבצים של הטלפון, נשארת רק בזיכרון ולא עולה לשום מקום.
+// באפליקציה: תמונות וקבצים של מסמכים, וקבצים כלליים (D.config.files, ב-משימות/מסמכים/כללי/).
+const FL_DEF = () => ({time: 'all', type: 'all', src: 'all', sort: 'new', q: '', from: '', to: ''});
+const flS = {phone: FL_DEF(), app: FL_DEF()};
+let flTab = 'phone', flShow = 150, phRows = null, phAt = 0, phState = 'idle';
+const phApi = () => window.__phoneFs || NPhone;
+const phHas = () => !!(window.__phoneFs || (NATIVE && NPhone?.phoneFiles));
+const phThumbs = {};
+let phBusy = null;
+function phLoad(force){ return phBusy || (phBusy = phLoad1(force).finally(() => { phBusy = null; })); }
+async function phLoad1(force){
+  if(!phHas()){ if(phState !== 'web'){ phState = 'web'; renderFiles(); } return; }
+  if(!force && phRows && Date.now() - phAt < 60000) return;
+  try{
+    const a = await phApi().filesAccess();
+    if(!a.granted){ phState = 'noaccess'; return renderFiles(); }
+    phState = phRows ? 'ok' : 'loading'; renderFiles();
+    const r = await phApi().phoneFiles({});
+    phRows = ל.phoneFilesRows(r.files || []); phAt = Date.now(); phState = 'ok';
+  }catch(e){ phState = phRows ? 'ok' : 'err'; }
+  renderFiles();
+}
 function renderFiles(){
-  const v = ל.filesView(D.tasks, D.config, flF, today());
-  if(flF.src !== 'all' && !v.sources.some(([k]) => k === flF.src)){ flF.src = 'all'; return renderFiles(); }
-  $('fl-time').innerHTML = ל.FILE_TIMES.map(([k, n]) => `<button type="button" class="chip${flF.time === k ? ' on' : ''}" data-ft="${k}">${n}${k === 'range' ? '' : `<small>${v.counts.time[k]}</small>`}</button>`).join('');
-  $('fl-type').innerHTML = ל.FILE_TYPES.filter(([k]) => k === 'all' || k === flF.type || v.counts.type[k]).map(([k, n, i]) => `<button type="button" class="chip${flF.type === k ? ' on' : ''}" data-fy="${k}">${i ? i + ' ' : ''}${n}<small>${v.counts.type[k]}</small></button>`).join('');
-  $('fl-range').hidden = flF.time !== 'range';
-  $('fl-src').innerHTML = `<option value="all">כל המקורות</option>` + v.sources.sort((a, b) => (a[0] === 'free' ? -1 : b[0] === 'free' ? 1 : a[1].localeCompare(b[1], 'he')))
-    .map(([k, n]) => `<option value="${esc(k)}"${flF.src === k ? ' selected' : ''}>${k === 'free' ? '📁' : '📄'} ${esc(n)}</option>`).join('');
-  $('fl-sort').value = flF.sort;
-  const filtered = flF.time !== 'all' || flF.type !== 'all' || flF.src !== 'all' || flF.q;
-  $('fl-sum').innerHTML = v.total ? `${v.list.length === v.total ? `${v.total} קבצים` : `${v.list.length} מתוך ${v.total}`}${v.size ? ` · ${ל.sizeText(v.size)}` : ''}${filtered ? ' · <button type="button" class="txt-btn" id="fl-clear">ניקוי סינון</button>' : ''}` : '';
-  const ico = {image: '📷', pdf: '📕', word: '📘', excel: '📗', other: '📄'};
-  $('fl-list').innerHTML = v.list.length ? v.list.map(f => `<div class="more-row fl-row" role="button" tabindex="0" data-fl="${esc(f.path)}">
-      <span class="i th" data-th="${f.type === 'image' ? esc(f.path) : ''}">${ico[f.type]}</span>
-      <span class="b"><span class="t" style="display:block">${esc(f.name)}</span><span class="s" style="display:block">${f.src === 'free' ? '📁' : '📄'} ${esc(f.srcName)}${f.date ? ' · ' + esc(fullDate(f.date)) : ''}${f.size ? ' · ' + flSize(f.size) : ''}</span></span>
-      <span class="acts">${f.src === 'free' ? '' : `<button type="button" data-fdoc="${esc(f.src)}" aria-label="פתיחת המסמך">📄</button>`}<button type="button" data-fdel="${esc(f.path)}" aria-label="מחיקה">🗑️</button></span></div>`).join('')
-    : `<div class="empty">${v.total ? 'אין קבצים שמתאימים לסינון' : 'כאן יופיעו כל התמונות והקבצים של המסמכים. לוחצים + כדי להוסיף קובץ'}</div>`;
-  $('fl-list').querySelectorAll('[data-th]').forEach(el => { const p = el.dataset.th; if(p) rawFile(p).then(u => { el.textContent = ''; el.style.backgroundImage = `url('${u}')`; }).catch(() => {}); });
+  const F = flS[flTab], ph = flTab === 'phone';
+  $('fl-tabs').querySelectorAll('[data-flt]').forEach(b => b.classList.toggle('on', b.dataset.flt === flTab));
+  $('fab').hidden = ph;
+  const gate = ph && phState !== 'ok';
+  $('fl-gate').hidden = !gate; $('fl-main').hidden = gate;
+  if(gate){
+    $('fl-gate').innerHTML = phState === 'web' ? '<div class="big">📱</div><p>הקבצים של הטלפון מופיעים באפליקציית האנדרואיד</p>'
+      : phState === 'noaccess' ? '<div class="big">📂</div><p>כדי לראות ולסנן את כל הקבצים בטלפון (הורדות, מצלמה, וואטסאפ, מסמכים) צריך לאשר "גישה לכל הקבצים". הרשימה נשארת רק בטלפון.</p><button class="btn primary" type="button" id="fl-allow">אישור גישה לקבצים</button>'
+      : phState === 'err' ? '<div class="big">⚠️</div><p>לא הצלחתי לקרוא את הקבצים</p><button class="btn" type="button" id="fl-retry">🔄 שוב</button>'
+      : '<div class="big">⏳</div><p>קורא את הקבצים בטלפון...</p>';
+    if(phState === 'idle') phLoad();
+    return;
+  }
+  const v = ph ? ל.filterFiles(phRows || [], F, today()) : ל.filesView(D.tasks, D.config, F, today());
+  if(F.src !== 'all' && !v.sources.some(([k]) => k === F.src)){ F.src = 'all'; return renderFiles(); }
+  $('fl-q').value = F.q; $('fl-from').value = F.from; $('fl-to').value = F.to;
+  $('fl-time').innerHTML = ל.FILE_TIMES.map(([k, n]) => `<button type="button" class="chip${F.time === k ? ' on' : ''}" data-ft="${k}">${n}${k === 'range' ? '' : `<small>${v.counts.time[k]}</small>`}</button>`).join('');
+  $('fl-type').innerHTML = ל.FILE_TYPES.filter(([k]) => k === 'all' || k === F.type || v.counts.type[k]).map(([k, n, i]) => `<button type="button" class="chip${F.type === k ? ' on' : ''}" data-fy="${k}">${i ? i + ' ' : ''}${n}<small>${v.counts.type[k]}</small></button>`).join('');
+  $('fl-range').hidden = F.time !== 'range';
+  const srcs = ph ? v.sources.sort((a, b) => b[2] - a[2]) : v.sources.sort((a, b) => (a[0] === 'free' ? -1 : b[0] === 'free' ? 1 : a[1].localeCompare(b[1], 'he')));
+  $('fl-src').innerHTML = `<option value="all">${ph ? 'כל התיקיות' : 'כל המקורות'}</option>` + srcs
+    .map(([k, n, c]) => `<option value="${esc(k)}"${F.src === k ? ' selected' : ''}>${ph ? '📁' : k === 'free' ? '📁' : '📄'} ${esc(n)} (${c})</option>`).join('');
+  $('fl-sort').value = F.sort;
+  const filtered = F.time !== 'all' || F.type !== 'all' || F.src !== 'all' || F.q;
+  $('fl-sum').innerHTML = v.total ? `${v.list.length === v.total ? `${v.total} קבצים` : `${v.list.length} מתוך ${v.total}`}${v.size ? ` · ${ל.sizeText(v.size)}` : ''}${filtered ? ' · <button type="button" class="txt-btn" id="fl-clear">ניקוי סינון</button>' : ''}${ph ? ' · <button type="button" class="txt-btn" id="fl-reload" aria-label="רענון">🔄</button>' : ''}` : '';
+  const ico = {image: '📷', video: '🎬', audio: '🎵', pdf: '📕', word: '📘', excel: '📗', archive: '🗜️', apk: '📦', other: '📄'};
+  const list = v.list.slice(0, flShow);
+  $('fl-list').innerHTML = list.length ? list.map(f => `<div class="more-row fl-row" role="button" tabindex="0" data-fl="${esc(f.path)}">
+      <span class="i th" data-th="${(f.type === 'image' || (ph && f.type === 'video')) ? esc(f.path) : ''}">${ico[f.type] || '📄'}</span>
+      <span class="b"><span class="t" style="display:block">${esc(f.name)}</span><span class="s" style="display:block">${ph ? '📁' : f.src === 'free' ? '📁' : '📄'} ${esc(f.srcName)}${f.date ? ' · ' + esc(fullDate(f.date)) : ''}${f.size ? ' · ' + flSize(f.size) : ''}</span></span>
+      <span class="acts">${ph ? `<button type="button" data-fshare="${esc(f.path)}" aria-label="שיתוף">📤</button>` : f.src === 'free' ? '' : `<button type="button" data-fdoc="${esc(f.src)}" aria-label="פתיחת המסמך">📄</button>`}<button type="button" data-fdel="${esc(f.path)}" aria-label="מחיקה">🗑️</button></span></div>`).join('')
+    : `<div class="empty">${v.total ? 'אין קבצים שמתאימים לסינון' : ph ? 'לא נמצאו קבצים' : 'כאן יופיעו כל התמונות והקבצים של המסמכים. לוחצים + כדי להוסיף קובץ'}</div>`;
+  $('fl-more').hidden = v.list.length <= flShow;
+  $('fl-more-b').textContent = `הצגת עוד (${v.list.length - flShow})`;
+  flThumbs(ph);
+}
+let flObs = null;
+function flThumbs(ph){
+  const load = el => { const p = el.dataset.th; if(!p) return; el.dataset.th = '';
+    const put = u => { el.textContent = ''; el.style.backgroundImage = `url('${u}')`; };
+    if(!ph) return rawFile(p).then(put).catch(() => {});
+    if(phThumbs[p]) return put(phThumbs[p]);
+    const f = phRows.find(x => x.path === p);
+    phApi().phoneThumb({id: f?.id ?? -1, path: p}).then(r => { if(r?.b64) put(phThumbs[p] = 'data:image/jpeg;base64,' + r.b64); }).catch(() => {}); };
+  const els = [...$('fl-list').querySelectorAll('[data-th]')].filter(el => el.dataset.th);
+  if(!('IntersectionObserver' in window)) return els.forEach(load);
+  flObs?.disconnect();
+  flObs = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ flObs.unobserve(e.target); load(e.target); } }), {rootMargin: '300px'});
+  els.forEach(el => flObs.observe(el));
 }
 const flSize = b => esc(ל.sizeText(b));
-const flFind = path => ל.filesAll(D.tasks, D.config).find(f => f.path === path);
-$('fl-time').onclick = e => { const b = e.target.closest('[data-ft]'); if(b){ flF.time = b.dataset.ft; renderFiles(); } };
-$('fl-type').onclick = e => { const b = e.target.closest('[data-fy]'); if(b){ flF.type = b.dataset.fy; renderFiles(); } };
-$('fl-src').onchange = () => { flF.src = $('fl-src').value; renderFiles(); };
-$('fl-sort').onchange = () => { flF.sort = $('fl-sort').value; renderFiles(); };
-$('fl-q').addEventListener('input', () => { flF.q = $('fl-q').value; renderFiles(); });
-$('fl-from').onchange = () => { flF.from = $('fl-from').value; renderFiles(); };
-$('fl-to').onchange = () => { flF.to = $('fl-to').value; renderFiles(); };
-$('fl-sum').onclick = e => { if(e.target.id === 'fl-clear'){ Object.assign(flF, {time: 'all', type: 'all', src: 'all', q: '', from: '', to: ''}); $('fl-q').value = $('fl-from').value = $('fl-to').value = ''; renderFiles(); } };
+const flFind = path => flTab === 'phone' ? (phRows || []).find(f => f.path === path) : ל.filesAll(D.tasks, D.config).find(f => f.path === path);
+const flSet = o => { Object.assign(flS[flTab], o); flShow = 150; renderFiles(); };
+$('fl-tabs').onclick = e => { const b = e.target.closest('[data-flt]'); if(!b) return; flTab = b.dataset.flt; flShow = 150; if(flTab === 'phone') phLoad(); renderFiles(); };
+$('fl-gate').onclick = async e => {
+  if(e.target.id === 'fl-retry') return phLoad(true);
+  if(e.target.id !== 'fl-allow') return;
+  try{ const r = await phApi().filesAccessAsk(); if(r.granted) phLoad(true); else if(r.settings) toast('מסמנים "אפשר גישה לניהול כל הקבצים" וחוזרים לכאן', {ms: 7000}); }catch(err){ toast('לא הצלחתי לפתוח את ההגדרות', {err: true}); }
+};
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && screen === 'files' && flTab === 'phone') phLoad(phState === 'noaccess'); });
+$('fl-time').onclick = e => { const b = e.target.closest('[data-ft]'); if(b) flSet({time: b.dataset.ft}); };
+$('fl-type').onclick = e => { const b = e.target.closest('[data-fy]'); if(b) flSet({type: b.dataset.fy}); };
+$('fl-src').onchange = () => flSet({src: $('fl-src').value});
+$('fl-sort').onchange = () => flSet({sort: $('fl-sort').value});
+$('fl-q').addEventListener('input', () => flSet({q: $('fl-q').value}));
+$('fl-from').onchange = () => flSet({from: $('fl-from').value});
+$('fl-to').onchange = () => flSet({to: $('fl-to').value});
+$('fl-more-b').onclick = () => { flShow += 300; renderFiles(); };
+$('fl-sum').onclick = e => { if(e.target.id === 'fl-clear') flSet(FL_DEF()); else if(e.target.id === 'fl-reload') phLoad(true); };
 $('fl-list').onclick = async e => {
   const d = e.target.closest('[data-fdoc]'); if(d) return openDoc(d.dataset.fdoc);
   const x = e.target.closest('[data-fdel]'); if(x){ const f = flFind(x.dataset.fdel); if(f) delFile(f); return; }
+  const sh = e.target.closest('[data-fshare]'); if(sh){ const f = flFind(sh.dataset.fshare); if(f) phApi().phoneOpen({path: f.path, id: f.id, mime: f.mime, share: true}).catch(() => toast('השיתוף נכשל', {err: true})); return; }
   const r = e.target.closest('[data-fl]'); if(!r) return;
   const f = flFind(r.dataset.fl); if(!f) return;
+  if(flTab === 'phone') return phApi().phoneOpen({path: f.path, id: f.id, mime: f.mime}).catch(err => toast(/no app/.test(err?.message || err) ? 'אין בטלפון אפליקציה שפותחת את הקובץ הזה' : 'הקובץ לא נמצא (אולי נמחק)', {err: true}));
   if(f.type !== 'image') return openDocFile(f);
   phFile = f; $('ph-title').textContent = f.name;
   try{ $('ph-img').src = await rawFile(f.path); }catch(err){ return toast('אין רשת', {err: true}); }
@@ -5149,6 +5220,11 @@ $('fl-list').onclick = async e => {
 $('fl-list').addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.matches('[data-fl]')) e.target.click(); });
 /** מחיקת קובץ: מהמסמך שלו או מהקבצים הכלליים, וגם מהמאגר/מהטלפון. */
 async function delFile(f){
+  if(phRows?.includes(f)){
+    if(!await sure(`למחוק מהטלפון את ${f.name}?`)) return false;
+    try{ await phApi().phoneDelete({path: f.path, id: f.id}); }catch(err){ toast('המחיקה נכשלה', {err: true}); return false; }
+    phRows = phRows.filter(x => x.path !== f.path); delete phThumbs[f.path]; toast('🗑️ נמחק מהטלפון'); renderFiles(); return true;
+  }
   if(!await sure(`למחוק את ${f.name}?`)) return false;
   try{ const g = await gh('GET', f.path); if(g) await gh('DELETE', f.path, {message: 'משימות: מחיקת קובץ', branch: BRANCH, sha: g.sha}); }catch(err){}
   if(f.src === 'free') saveConfig({files: (D.config.files || []).filter(x => x.path !== f.path)});
