@@ -1364,11 +1364,16 @@ function docsView(tasks, occ, today){
 // כל הקבצים במקום אחד: תמונות וקבצים של מסמכים (task.docImages), וקבצים כלליים (config.files) שלא שייכים למסמך.
 // opts: {time: all|today|week|month|q3|year|older|range, from, to, type: all|image|pdf|word|excel|other, src: all|free|<id של מסמך>, q, sort: new|old|name|size}
 const FILE_TIMES = [['all', 'הכול'], ['today', 'היום'], ['week', 'השבוע'], ['month', 'החודש'], ['q3', '3 חודשים'], ['year', 'השנה'], ['older', 'ישן יותר'], ['range', '📅 תאריכים']];
-const FILE_TYPES = [['all', 'הכול', ''], ['image', 'תמונות', '📷'], ['pdf', 'PDF', '📕'], ['word', 'Word', '📘'], ['excel', 'Excel', '📗'], ['other', 'אחר', '📄']];
+const FILE_TYPES = [['all', 'הכול', ''], ['image', 'תמונות', '📷'], ['video', 'סרטונים', '🎬'], ['audio', 'שמע', '🎵'], ['pdf', 'PDF', '📕'], ['word', 'Word', '📘'],
+  ['excel', 'Excel', '📗'], ['archive', 'ארכיון', '🗜️'], ['apk', 'אפליקציות', '📦'], ['other', 'אחר', '📄']];
 function fileType(f){
   const n = String(f.name || f.path || '').toLowerCase(), m = String(f.mime || '');
   if(f.kind !== 'file' || /^image\//.test(m) || /\.(jpe?g|png|gif|webp|heic)$/.test(n)) return 'image';
+  if(/^video\//.test(m) || /\.(mp4|mkv|mov|3gp|webm|avi)$/.test(n)) return 'video';
+  if(/^audio\//.test(m) || /\.(mp3|m4a|aac|wav|ogg|opus|amr|flac)$/.test(n)) return 'audio';
   if(/\.pdf$/.test(n) || m === 'application/pdf') return 'pdf';
+  if(/\.apk$/.test(n) || m === 'application/vnd.android.package-archive') return 'apk';
+  if(/\.(zip|rar|7z|tar|gz)$/.test(n) || /zip|rar|compressed/.test(m)) return 'archive';
   if(/\.docx?$/.test(n) || /word/.test(m)) return 'word';
   if(/\.(xlsx?|csv)$/.test(n) || /sheet|excel/.test(m)) return 'excel';
   return 'other';
@@ -1395,9 +1400,26 @@ function filesAll(tasks, cfg){
   }
   return out;
 }
-function filesView(tasks, cfg, opts, today){
+/** תיקייה ראשית בטלפון לסינון: Download, DCIM, WhatsApp, Documents... (בלי /storage/emulated/0/). */
+function phoneFolder(path){
+  const rel = String(path || '').replace(/^\/storage\/(emulated\/\d+|[^/]+)\/|^\/sdcard\//, '');
+  if(/whatsapp/i.test(rel)) return 'WhatsApp';
+  if(/telegram/i.test(rel)) return 'Telegram';
+  const seg = rel.split('/'); return seg.length > 1 ? (seg[0] === 'Android' ? 'Android' : seg[0]) : 'ראשי';
+}
+/** שורות מהטלפון (Phone.phoneFiles): [id, נתיב, שם, גודל, שינוי בשניות, mime]. */
+function phoneFilesRows(rows){
+  return (rows || []).map(([id, path, name, size, mod, mime]) => {
+    const f = {id, path, name: name || String(path).split('/').pop(), size: +size || 0, mime: mime || '', kind: 'file', addedAt: mod ? new Date(mod * 1000).toISOString() : null};
+    const dir = phoneFolder(path);
+    return Object.assign(f, {type: fileType(f), src: dir, srcName: dir});
+  });
+}
+function phoneFilesView(rows, opts, today){ return filterFiles(Array.isArray(rows) && rows[0] && !Array.isArray(rows[0]) ? rows : phoneFilesRows(rows), opts, today); }
+function filesView(tasks, cfg, opts, today){ return filterFiles(filesAll(tasks, cfg), opts, today); }
+function filterFiles(all, opts, today){
   opts = opts || {};
-  const all = filesAll(tasks, cfg), q = String(opts.q || '').trim().toLowerCase();
+  const q = String(opts.q || '').trim().toLowerCase();
   const days = f => f.addedAt ? diffDays(today, localDate(toMs(f.addedAt))) : 99999;
   const dateOf = f => f.addedAt ? localDate(toMs(f.addedAt)) : '';
   const inTime = f => opts.time === 'range' ? (!opts.from || dateOf(f) >= opts.from) && (!opts.to || (dateOf(f) && dateOf(f) <= opts.to)) : fileAge(days(f), opts.time || 'all');
@@ -1410,7 +1432,7 @@ function filesView(tasks, cfg, opts, today){
   const sort = opts.sort || 'new';
   list.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name, 'he') : sort === 'size' ? (+b.size || 0) - (+a.size || 0)
     : sort === 'old' ? String(a.addedAt || '').localeCompare(String(b.addedAt || '')) : String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
-  const sources = [...new Map(all.map(f => [f.src, f.srcName])).entries()];
+  const sources = [...all.reduce((m, f) => m.set(f.src, [f.srcName, (m.get(f.src)?.[1] || 0) + 1]), new Map()).entries()].map(([k, [n, c]]) => [k, n, c]);
   return {list, counts, total: all.length, size: list.reduce((n, f) => n + (+f.size || 0), 0), sources};
 }
 const sizeText = b => !(b > 0) ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
@@ -2984,7 +3006,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopUnit, shopQtyText, shopSetQty, SHOP_UNITS, SHOP_QTY_CHIPS, SHOP_QTY_STEP, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, FILE_TIMES, FILE_TYPES, fileType, filesAll, filesView, sizeText, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, FILE_TIMES, FILE_TYPES, fileType, filesAll, filesView, filterFiles, phoneFolder, phoneFilesRows, phoneFilesView, sizeText, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
