@@ -1360,6 +1360,61 @@ function docsView(tasks, occ, today){
   }).sort((a, b) => ({expired: 0, soon: 1, ok: 2, renewed: 3}[a.state] - {expired: 0, soon: 1, ok: 2, renewed: 3}[b.state]) || a.inDays - b.inDays);
 }
 
+/* ---------- ניהול קבצים ---------- */
+// כל הקבצים במקום אחד: תמונות וקבצים של מסמכים (task.docImages), וקבצים כלליים (config.files) שלא שייכים למסמך.
+// opts: {time: all|today|week|month|q3|year|older|range, from, to, type: all|image|pdf|word|excel|other, src: all|free|<id של מסמך>, q, sort: new|old|name|size}
+const FILE_TIMES = [['all', 'הכול'], ['today', 'היום'], ['week', 'השבוע'], ['month', 'החודש'], ['q3', '3 חודשים'], ['year', 'השנה'], ['older', 'ישן יותר'], ['range', '📅 תאריכים']];
+const FILE_TYPES = [['all', 'הכול', ''], ['image', 'תמונות', '📷'], ['pdf', 'PDF', '📕'], ['word', 'Word', '📘'], ['excel', 'Excel', '📗'], ['other', 'אחר', '📄']];
+function fileType(f){
+  const n = String(f.name || f.path || '').toLowerCase(), m = String(f.mime || '');
+  if(f.kind !== 'file' || /^image\//.test(m) || /\.(jpe?g|png|gif|webp|heic)$/.test(n)) return 'image';
+  if(/\.pdf$/.test(n) || m === 'application/pdf') return 'pdf';
+  if(/\.docx?$/.test(n) || /word/.test(m)) return 'word';
+  if(/\.(xlsx?|csv)$/.test(n) || /sheet|excel/.test(m)) return 'excel';
+  return 'other';
+}
+function fileAge(days, time){
+  return time === 'today' ? days === 0 : time === 'week' ? days < 7 : time === 'month' ? days < 30 : time === 'q3' ? days < 91
+    : time === 'year' ? days < 365 : time === 'older' ? days >= 365 : true;
+}
+function filesAll(tasks, cfg){
+  const out = [];
+  for(const t of tasks || []){
+    if(t.deleted || !Array.isArray(t.docImages)) continue;
+    let pic = 0;
+    for(const f of t.docImages){
+      if(!f || !f.path) continue;
+      const type = fileType(f);
+      out.push(Object.assign({}, f, {type, name: f.kind === 'file' && f.name ? f.name : `${t.docName || t.title || 'מסמך'} · תמונה ${++pic}`,
+        addedAt: f.addedAt || t.updatedAt || null, src: t.id, srcName: t.docName || t.title || 'מסמך'}));
+    }
+  }
+  for(const f of (cfg && cfg.files) || []){
+    if(!f || !f.path || f.deleted) continue;
+    out.push(Object.assign({}, f, {type: fileType(f), name: f.name || 'קובץ', src: 'free', srcName: 'קבצים כלליים'}));
+  }
+  return out;
+}
+function filesView(tasks, cfg, opts, today){
+  opts = opts || {};
+  const all = filesAll(tasks, cfg), q = String(opts.q || '').trim().toLowerCase();
+  const days = f => f.addedAt ? diffDays(today, localDate(toMs(f.addedAt))) : 99999;
+  const dateOf = f => f.addedAt ? localDate(toMs(f.addedAt)) : '';
+  const inTime = f => opts.time === 'range' ? (!opts.from || dateOf(f) >= opts.from) && (!opts.to || (dateOf(f) && dateOf(f) <= opts.to)) : fileAge(days(f), opts.time || 'all');
+  const base = all.filter(f => (!opts.src || opts.src === 'all' || f.src === opts.src) && (!q || (f.name + ' ' + f.srcName).toLowerCase().includes(q)));
+  const counts = {time: {}, type: {}};
+  for(const [k] of FILE_TIMES) counts.time[k] = base.filter(f => (!opts.type || opts.type === 'all' || f.type === opts.type) && (k === 'range' ? inTime(f) : fileAge(days(f), k))).length;
+  const timed = base.filter(inTime);
+  for(const [k] of FILE_TYPES) counts.type[k] = k === 'all' ? timed.length : timed.filter(f => f.type === k).length;
+  const list = timed.filter(f => !opts.type || opts.type === 'all' || f.type === opts.type).map(f => Object.assign(f, {days: days(f), date: dateOf(f)}));
+  const sort = opts.sort || 'new';
+  list.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name, 'he') : sort === 'size' ? (+b.size || 0) - (+a.size || 0)
+    : sort === 'old' ? String(a.addedAt || '').localeCompare(String(b.addedAt || '')) : String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
+  const sources = [...new Map(all.map(f => [f.src, f.srcName])).entries()];
+  return {list, counts, total: all.length, size: list.reduce((n, f) => n + (+f.size || 0), 0), sources};
+}
+const sizeText = b => !(b > 0) ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
+
 /* ---------- חישוב קלוריות ---------- */
 // משימות/קלוריות.json: {v, foods, entries, acts, recipes, meals, weights, settings}. כל רשימה ממוזגת לפי id (מאוחר מנצח).
 // foods: מאכלים אישיים, וגם תיקון של מאכל מהמאגר (אותו id). entries: מה נאכל {date, meal, foodId, name, qty, unit, grams, kcal, manual}.
@@ -2929,7 +2984,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopUnit, shopQtyText, shopSetQty, SHOP_UNITS, SHOP_QTY_CHIPS, SHOP_QTY_STEP, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, FILE_TIMES, FILE_TYPES, fileType, filesAll, filesView, sizeText, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
