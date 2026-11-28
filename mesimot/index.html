@@ -704,6 +704,18 @@
   .pl-week{display:flex;justify-content:space-between;gap:8px;width:100%;border:0;background:var(--soft);border-radius:14px;padding:10px 12px;margin-top:10px;font:inherit;color:inherit;text-align:start}
   .pl-week b{color:var(--accent)}
   #ks-body .note{white-space:pre-line}
+  /* תפריט לחיצה ארוכה / אפשרויות: חלון גבוה באמצע המסך (לא פס למטה), שורות גדולות עם סמל */
+  #dlg-ksheet{margin:auto;border-radius:24px;width:min(520px,calc(100vw - 24px));min-height:min(62vh,560px);max-height:calc(100vh - 40px)}
+  .native #dlg-ksheet{max-height:calc(100vh - var(--st) - var(--sb) - 16px)}
+  #dlg-ksheet[open]{display:flex;flex-direction:column}
+  #dlg-ksheet .dlg{flex:1;display:flex;flex-direction:column}
+  #ks-title{font-size:21px;line-height:1.3;word-break:break-word}
+  #ks-sub{color:var(--muted);font-size:14px;margin:-4px 0 12px}
+  #ks-body{flex:1}
+  #ks-body .btn{min-height:56px;font-size:17px;display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:0 16px;border-radius:16px}
+  #ks-body .btn .mi{font-size:22px;width:30px;flex:none;text-align:center}
+  #ks-body .btn.del{color:var(--red)}
+  #ks-body .btn[data-x]{margin-top:auto;justify-content:center;color:var(--muted)}
   #pl-hist .more-row{width:100%;border:0;background:transparent;font:inherit;color:inherit;text-align:start}
   #pl-hist .more-row.flash{animation:plFlash 2.4s ease-out}
   @keyframes plFlash{0%,40%{background:color-mix(in srgb,var(--accent) 22%,transparent)}100%{background:transparent}}
@@ -1397,7 +1409,7 @@
   <div class="btns"><button class="btn" id="ka-del" type="button" style="color:var(--red)">מחיקה</button><button class="btn" id="ka-cancel" type="button">ביטול</button><button class="btn primary" id="ka-ok" type="button">שמירה</button></div>
 </div></dialog>
 <dialog id="dlg-ksheet" aria-label="אפשרויות"><div class="dlg">
-  <h2 id="ks-title"></h2><div class="sheet-list" id="ks-body"></div>
+  <h2 id="ks-title"></h2><div id="ks-sub" hidden></div><div class="sheet-list" id="ks-body"></div>
 </div></dialog>
 <dialog id="dlg-krec" class="full" aria-label="מתכון אישי"><div class="dlg-head">
     <button class="txt-btn" id="kr-close">ביטול</button><h2>מתכון אישי</h2><button class="txt-btn" id="kr-ok">שמירה</button></div>
@@ -2903,7 +2915,22 @@ $('se-act').onclick = () => { const r = seRecord(); if(!r) return;
   if(se.x.active){ saveShop(ל.shopBuy(r, nowIso())); seDone(); toast(`קניתי: ${r.name}`); }
   else { saveShop(r); seDone(); shopAddName(r.name, true); renderShop(); } };
 $('se-cancel').onclick = () => $('dlg-shopedit').close();
-function shopProdMenu(x){ return openShopEdit(x); }
+/** לחיצה ארוכה על מוצר (בסל או בהצעות): כל הפעולות בחלון אחד. */
+function shopProdMenu(x){
+  const cat = (ל.SHOP_CATS.find(c => c.id === (x.cat || ל.shopInfo(x).cat)) || {}).name || 'אחר';
+  const t = () => D.file.shop.items.find(i => i.id === x.id) || x;
+  sheet(x.name, [
+    x.active ? ['✓ קניתי', () => { saveShop(ל.shopBuy(t(), nowIso())); toast(`קניתי: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))}); }]
+      : ['🛒 להוסיף לרשימה', () => { shopAddName(x.name, true); renderShop(); }],
+    ['✏️ עריכה (שם, תמונה, כמות, מחלקה)', () => openShopEdit(t())],
+    x.active && ['🔢 כמות', () => openShopEdit(t(), true)],
+    [`🗂️ מחלקה: ${cat}`, () => openShopCat(t())],
+    ['🖼️ החלפת תמונה', () => openShopPic(t())],
+    x.active && clCanCopy('shop') && ['📋 העתקה לרשימה אחרת', () => clCopyMenu('shop', x.name, g => clCopyShop(g, [x]))],
+    x.active && ['🗑 הסרה מהרשימה', () => { const r = Object.assign({}, t(), {active: false, updatedAt: nowIso()}); delete r.qty; saveShop(r); renderShop();
+      toast(`הוסר: ${x.name}`, {undo: () => saveShop(Object.assign({}, x, {updatedAt: nowIso()}))}); }],
+  ], '', x.active ? `ברשימה · ${cat}` : cat);
+}
 const SHOP_PICS = '🥛 🧀 🥚 🧈 🍞 🥖 🥐 🥯 🍎 🍌 🍊 🍋 🍇 🍓 🍉 🍐 🍑 🥝 🥭 🍍 🥥 🍅 🥒 🥕 🌽 🥔 🧅 🧄 🥬 🥦 🫑 🌶️ 🍄 🥑 🍆 🫘 🍚 🍝 🥫 🧂 🫒 🍯 ☕ 🍵 🧃 🥤 🍷 🍺 💧 🍫 🍪 🍬 🍿 🥜 🍗 🥩 🐟 🍤 🌭 🥓 🍕 🍦 🧊 🧻 🧽 🧼 🧴 🪥 💊 🩹 🍼 🐶 🐱 🔋 💡 🛒'.split(' ');
 let spItem = null, spSel = '';
 function renderShopPic(){
@@ -2927,9 +2954,10 @@ $('sp-ok').onclick = () => spSave(spSel);
 $('sp-auto').onclick = () => spSave('');
 $('sp-cancel').onclick = () => $('dlg-shoppic').close();
 { let t = null, lp = false;
-  // בסל עורכים בכפתור ✏️ בסוף השורה. לחיצה ארוכה רק בפס ההצעות בצד (אין שם מקום לכפתור)
-  const at = e => { const q = e.target.closest('#shop-quick [data-n]'); return q ? shopRecOf(q.dataset.n) : null; };
-  for(const root of [$('shop-quick')]){
+  // לחיצה ארוכה על מוצר בסל או בהצעות: חלון עם כל הפעולות (וגם ✏️ בסוף השורה)
+  const at = e => { const q = e.target.closest('#shop-quick [data-n]'); if(q) return shopRecOf(q.dataset.n);
+    const p = e.target.closest('#shop-list .item[data-p]'); return p ? D.file.shop.items.find(i => i.id === p.dataset.p) : null; };
+  for(const root of [$('shop-quick'), $('shop-list')]){
     root.addEventListener('pointerdown', e => { lp = false; clearTimeout(t); if(!at(e)) return;
       t = setTimeout(() => { const x = at(e); if(!x) return; lp = true; navigator.vibrate?.(30); shopProdMenu(x); }, 550); });
     for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, () => clearTimeout(t));
@@ -3030,7 +3058,7 @@ function onLongPress(root, sel, getId, menu){
     longPressed = false;   // לחיצה חדשה: מה שנשאר מלחיצה ארוכה קודמת לא בולע אותה
     const el = e.target.closest(sel); if(!el) return;
     clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? rcToggle(r.id) : openImagePicker(r)); }, 550);
+    lpTimer = setTimeout(() => { longPressed = true; navigator.vibrate?.(30); const r = recipeById(getId(el)); if(r) (menu ? (rcSel.size ? rcToggle(r.id) : recipeMenu(r)) : openImagePicker(r)); }, 550);
   });
   for(const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) root.addEventListener(ev, e => { if(ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(lpTimer); });
   root.addEventListener('contextmenu', e => { if(e.target.closest(sel)) e.preventDefault(); });
@@ -3039,12 +3067,14 @@ function onLongPress(root, sel, getId, menu){
 onLongPress($('rc-list'), '[data-r]', el => el.closest('[data-r]').dataset.r, true);
 function recipeMenu(r){
   sheet(r.title, [
+    ['📖 פתיחה', () => openRecipe(r.id)],
     ['✏️ עריכת המתכון', () => openRecipeEditor(r)],
     ['🖼️ החלפת תמונה', () => openImagePicker(r)],
     [`🗂️ קטגוריה: ${ל.recipeCat(r)}`, () => sheet(`קטגוריה: ${r.title}`, ל.RECIPE_CATS.map(c => [(ל.recipeCat(r) === c ? '✓ ' : '') + c, () => { saveRecipe(Object.assign({}, r, {cat: c})); toast(`✓ ${r.title} → ${c}`); }]))],
     ...(clCanCopy('recipes') ? [['📋 העתקה לרשימה אחרת', () => clCopyMenu('recipes', 'המתכון', g => { clCopyRecipe(g, r); return 1; })]] : []),
-    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
-  ]);
+    rcSel.size ? null : ['☑️ סימון כמה מתכונים', () => rcToggle(r.id)],
+    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${r.title}"?`)) return; saveRecipe(Object.assign({}, r, {deleted: true})); rcSel.delete(r.id); toast('נמחק', {undo: () => saveRecipe(Object.assign({}, r, {deleted: false}))}); }],
+  ], '', ל.recipeCat(r));
 }
 // לחיצה ארוכה על לשונית בסרגל: לסידור הלשוניות
 { let t = null, lp = false;
@@ -4704,9 +4734,14 @@ async function printDoc(html, name){
   fr.srcdoc = html; fr.onload = () => { try{ fr.contentWindow.print(); }catch(e){} setTimeout(() => fr.remove(), 60e3); };
 }
 
-function sheet(title, items, note){
+/** חלון אפשרויות (גם בלחיצה ארוכה על כל פריט): כותרת, שורה משנית לא חובה, ושורות גדולות. סמל בתחילת הטקסט עובר לעמודה משלו, ומחיקה באדום. */
+function sheet(title, items, note, sub){
+  items = items.filter(Boolean);
   $('ks-title').textContent = title;
-  $('ks-body').innerHTML = (note ? `<div class="note">${esc(note)}</div>` : '') + items.map(([t], i) => `<button class="btn" type="button" data-i="${i}">${esc(t)}</button>`).join('') + '<button class="btn" type="button" data-x="1">סגירה</button>';
+  $('ks-sub').hidden = !sub; $('ks-sub').textContent = sub || '';
+  const row = t => { const m = /^(\p{Extended_Pictographic}\uFE0F?|[✓✕↺★＋⋯☑]\uFE0F?)\s*/u.exec(t);
+    return m ? `<span class="mi">${esc(m[1])}</span> ${esc(t.slice(m[0].length))}` : esc(t); };
+  $('ks-body').innerHTML = (note ? `<div class="note">${esc(note)}</div>` : '') + items.map(([t], i) => `<button class="btn${/^🗑/.test(t) ? ' del' : ''}" type="button" data-i="${i}">${row(t)}</button>`).join('') + '<button class="btn" type="button" data-x="1">סגירה</button>';
   $('ks-body').onclick = e => { const b = e.target.closest('button'); if(!b) return; $('dlg-ksheet').close(); if(b.dataset.i != null) items[+b.dataset.i][1](); };
   $('dlg-ksheet').showModal();
 }
@@ -4867,6 +4902,12 @@ $('up-list').onclick = e => {
   if(d){ const t = ל.normTask(taskById(d.dataset.done), D.config); return doDone(t, currentOcc(t)); }
   const r = e.target.closest('[data-id]'); if(r) openUpkeep(r.dataset.id);
 };
+onHold($('up-list'), '[data-id]', el => { const t0 = taskById(el.dataset.id); if(!t0) return; const t = ל.normTask(t0, D.config);
+  sheet(`${t.emoji || '🔧'} ${t.title}`, [
+    ['✓ ' + (t.doneLabel || 'החלפתי'), () => doDone(t, currentOcc(t))],
+    ['✏️ עריכה', () => openUpkeep(t.id)],
+    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${t.title}"?`)) return; saveTask(Object.assign({}, t0, {deleted: true})); toast('נמחק', {undo: () => saveTask(Object.assign({}, t0, {deleted: false}))}); }],
+  ]); });
 let upEdit = null, upEmoji = '🔧', upEvery = [30, 30];
 function renderUpForm(){
   $('up-emojis').innerHTML = UP_EMOJIS.map(e => `<button type="button" data-e="${e}" class="${upEmoji === e ? 'on' : ''}" aria-label="סמל ${e}">${e}</button>`).join('');
@@ -4934,6 +4975,11 @@ function renderBirthdays(){
   }).join('') : '<div class="empty">לוחצים + כדי להוסיף יום הולדת, יום נישואין או כל יום אחר</div>';
 }
 $('bd-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openBday(b.dataset.id); };
+onHold($('bd-list'), '[data-id]', el => { const t = taskById(el.dataset.id); if(!t) return;
+  sheet(t.title, [
+    ['✏️ עריכה', () => openBday(t.id)],
+    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את "${t.title}"?`)) return; saveTask(Object.assign({}, t, {deleted: true})); toast('נמחק', {undo: () => saveTask(Object.assign({}, t, {deleted: false}))}); }],
+  ]); });
 let bdEdit = null, bdKind = 'birthday';
 function renderBdKind(){
   $('bd-kinds').innerHTML = Object.entries(ל.OCCASIONS).map(([k, o]) => `<button type="button" data-k="${k}" class="${bdKind === k ? 'on' : ''}">${o.emoji} ${o.name}</button>`).join('');
@@ -4979,6 +5025,14 @@ function renderDocs(){
     : '<div class="empty">לוחצים + כדי להוסיף מסמך (דרכון, רישיון, ביטוח...)</div>';
 }
 $('doc-list').onclick = e => { const b = e.target.closest('[data-id]'); if(b) openDoc(b.dataset.id); };
+onHold($('doc-list'), '[data-id]', el => { const t = taskById(el.dataset.id); if(!t) return;
+  const n = (t.docImages || []).length;
+  sheet(t.docName, [
+    ['✏️ עריכה', () => openDoc(t.id)],
+    ['🔄 חידשתי (תאריך תוקף חדש)', () => pickDate(ל.addDays(t.once.date, 365 * 10), 'בתוקף עד').then(d => { if(!d) return; saveTask(Object.assign({}, t, {once: Object.assign({}, t.once, {date: d}), updatedAt: nowIso()})); toast(`✓ ${t.docName} חודש, בתוקף עד ${ל.shortDate(d)}`); })],
+    n && ['📁 הקבצים של המסמך (' + n + ')', () => { flTab = 'app'; Object.assign(flS.app, FL_DEF(), {src: t.id}); show('files'); }],
+    ['🗑 מחיקה', async () => { if(!await sure(`למחוק את ${t.docName}?`)) return; saveTask(Object.assign({}, t, {deleted: true})); toast('נמחק', {undo: () => saveTask(Object.assign({}, t, {deleted: false}))}); }],
+  ], '', 'בתוקף עד ' + fullDate(t.once.date)); });
 let docEdit = null, docPics = [], docNewId = null;
 // תמונות של מסמכים: מוקטנות במכשיר (עד 1600 פיקסלים, JPEG), ונשמרות ב-משימות/מסמכים/<מזהה>/ במאגר הפרטי
 const picCache = {};
@@ -5210,13 +5264,23 @@ $('fl-list').onclick = async e => {
   const x = e.target.closest('[data-fdel]'); if(x){ const f = flFind(x.dataset.fdel); if(f) delFile(f); return; }
   const sh = e.target.closest('[data-fshare]'); if(sh){ const f = flFind(sh.dataset.fshare); if(f) phApi().phoneOpen({path: f.path, id: f.id, mime: f.mime, share: true}).catch(() => toast('השיתוף נכשל', {err: true})); return; }
   const r = e.target.closest('[data-fl]'); if(!r) return;
-  const f = flFind(r.dataset.fl); if(!f) return;
+  const f = flFind(r.dataset.fl); if(f) flOpen(f);
+};
+async function flOpen(f){
   if(flTab === 'phone') return phApi().phoneOpen({path: f.path, id: f.id, mime: f.mime}).catch(err => toast(/no app/.test(err?.message || err) ? 'אין בטלפון אפליקציה שפותחת את הקובץ הזה' : 'הקובץ לא נמצא (אולי נמחק)', {err: true}));
   if(f.type !== 'image') return openDocFile(f);
   phFile = f; $('ph-title').textContent = f.name;
   try{ $('ph-img').src = await rawFile(f.path); }catch(err){ return toast('אין רשת', {err: true}); }
   $('dlg-photo').showModal();
-};
+}
+onHold($('fl-list'), '[data-fl]', el => { const f = flFind(el.dataset.fl); if(!f) return; const ph = flTab === 'phone';
+  sheet(f.name, [
+    ['📂 פתיחה', () => flOpen(f)],
+    ph && ['📤 שיתוף', () => phApi().phoneOpen({path: f.path, id: f.id, mime: f.mime, share: true}).catch(() => toast('השיתוף נכשל', {err: true}))],
+    !ph && f.src !== 'free' && ['📄 פתיחת המסמך', () => openDoc(f.src)],
+    ph && ['📁 עוד מהתיקייה ' + f.srcName, () => flSet({src: f.src})],
+    ['🗑 מחיקה', () => delFile(f)],
+  ], '', [f.srcName, f.date && fullDate(f.date), f.size && ל.sizeText(f.size)].filter(Boolean).join(' · ')); });
 $('fl-list').addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.matches('[data-fl]')) e.target.click(); });
 /** מחיקת קובץ: מהמסמך שלו או מהקבצים הכלליים, וגם מהמאגר/מהטלפון. */
 async function delFile(f){
@@ -5292,7 +5356,7 @@ document.addEventListener('pointerdown', e => {
   const card = e.target.closest('.item, .mini, .pill, .soon button[data-task]');
   if(!card || e.button > 0) return;
   press = {card, x: e.clientX, y: e.clientY, dx: 0, long: false, id: e.pointerId,
-    timer: setTimeout(() => { press.long = true; suppressClick = true; navigator.vibrate?.(15); card.matches('.soon button') ? openEditor(card.dataset.task) : taskHold(card); }, 550)};
+    timer: setTimeout(() => { press.long = true; suppressClick = true; navigator.vibrate?.(15); taskHold(card); }, 550)};
 });
 document.addEventListener('pointermove', e => {
   if(!press || e.pointerId !== press.id) return;
@@ -5305,15 +5369,27 @@ document.addEventListener('pointermove', e => {
 });
 /** לחיצה ארוכה על משימה: דחייה למחר / לתאריך אחר / עוד שעה, בוצע, או עריכה. */
 function taskHold(card){
-  const f = resolve(card.dataset.occ, card.dataset.task);
+  const f = resolve(card.dataset.occ, card.dataset.task) || (taskById(card.dataset.task) ? {task: taskById(card.dataset.task), occ: null} : null);
   if(!f) return;
-  if(!f.occ) return openEditor(f.task.id);
-  sheet(ל.displayTitle(f.task), [
-    ['⏰ דחייה למחר', () => doSnooze(f.task, f.occ, 'tomorrow')],
-    ['📅 דחייה לתאריך אחר', () => pickDate(ל.addDays(today(), 1), 'לדחות עד').then(d => d && doSnooze(f.task, f.occ, {date: d < today() ? today() : d, time: f.task.time}))],
-    ['🕐 עוד שעה', () => doSnooze(f.task, f.occ, '1h')],
-    ['✏️ עריכה', () => openEditor(f.task.id)],
-  ]);
+  const t = f.task, occ = f.occ;
+  sheet(ל.displayTitle(t), [
+    occ && ['✓ ' + doneLabel(t), () => doDone(t, occ)],
+    occ && ['⏰ דחייה למחר', () => doSnooze(t, occ, 'tomorrow')],
+    occ && ['📅 דחייה לתאריך אחר', () => pickDate(ל.addDays(today(), 1), 'לדחות עד').then(d => d && doSnooze(t, occ, {date: d < today() ? today() : d, time: t.time}))],
+    occ && ['🕐 עוד שעה', () => doSnooze(t, occ, '1h')],
+    ['📄 פתיחה', () => openTask(t.id, occ?.id)],
+    ['✏️ עריכה', () => openEditor(t.id)],
+    t.archived ? ['↺ החזרה מהארכיון', () => { saveTask(Object.assign({}, t, {archived: false})); toast('חזרה מהארכיון'); }] : null,
+    ['🗑 ' + (isRecurring(t) && !t.archived ? 'מחיקה (לארכיון)' : 'מחיקה'), () => taskRemove(t)],
+  ], '', domainOf(t).name);
+}
+/** מחיקה מהתפריט: משימה חוזרת עוברת לארכיון (ההיסטוריה נשמרת), אחרת נמחקת. עם "ביטול". */
+async function taskRemove(t){
+  t = taskById(t.id) || t;
+  const arch = isRecurring(t) && !t.archived;
+  if(!await sure(arch ? `להעביר את "${t.title}" לארכיון?` : `למחוק את "${t.title}"?`, arch ? 'לארכיון' : 'מחיקה', arch ? {note: 'ההיסטוריה נשמרת, ואפשר להחזיר'} : undefined)) return;
+  saveTask(Object.assign({}, t, arch ? {archived: true} : {deleted: true}));
+  toast(arch ? 'הועברה לארכיון' : 'נמחקה', {undo: () => saveTask(Object.assign({}, t))});
 }
 function endPress(){
   if(!press) return;
@@ -8546,6 +8622,7 @@ function shopItemMenu(x){
     ['🖼️ החלפת תמונה', () => openShopPic(shopRecWith(x, {}))],
     [`🗂️ מחלקה: ${(ל.SHOP_CATS.find(c => c.id === x.cat) || {}).name || 'אחר'}`, () => openShopCat(shopRecWith(x, {}))],
     x.rec?.active ? ['✓ כבר ברשימת הקניות', () => {}] : ['🛒 להוסיף לרשימת הקניות', () => { shopAddName(x.name); toast(`✓ ${x.name} ברשימה`); }],
+    ['☑️ סימון כמה מוצרים', () => { pfSel.add(x.key); renderPfLists(); }],
     ['🗑 מחיקה (גם מההצעות)', () => { pfSel.delete(x.key); shopHideMany([x]); }]]);
 }
 function renderShopPf(){
@@ -8553,7 +8630,7 @@ function renderShopPf(){
   const row = x => `<button type="button" class="more-row${pfSel.has(x.key) ? ' sel' : ''}" data-k="${esc(x.key)}"><span class="i">${pfSel.has(x.key) ? '✅' : x.emoji || '🛒'}</span><span class="b"><span class="t">${x.fav ? '⭐ ' : ''}${esc(x.name)}</span>${x.rec?.active ? '<span class="s">🛒 ברשימה עכשיו</span>' : ''}</span></button>`;
   syncCats();
   const groups = ל.SHOP_CATS.map(c => [c, rows.filter(x => x.cat === c.id)]).filter(([, l]) => l.length);
-  $('pf-l-note').textContent = `כל המוצרים (${rows.length}). לחיצה ארוכה: סימון, מועדפים, עריכה או מחיקה. אפשר לסמן כמה יחד.`;
+  $('pf-l-note').textContent = `כל המוצרים (${rows.length}). לחיצה ארוכה: כל הפעולות (מועדפים, עריכה, מחיקה, סימון כמה).`;
   $('pf-l-list').innerHTML = `<button type="button" class="more-row" data-k="+"><span class="i">＋</span><span class="b"><span class="t">מוצר חדש</span></span></button>`
     + `<button type="button" class="more-row" data-k="+cat"><span class="i">🗂️</span><span class="b"><span class="t">מחלקה חדשה</span><span class="s">עם שם ותמונה. עריכה: ✏️ ליד המחלקה</span></span></button>`
     + (favs.length ? `<h3 class="pf-l-h">⭐ מועדפים</h3>${favs.map(row).join('')}` : '')
@@ -8576,7 +8653,7 @@ $('pf-l-bar').onclick = async e => {
 { let t = null, lp = false;
   $('pf-l-list').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); lp = false; clearTimeout(t);
     if(!b || pfList !== 'shop' || b.dataset.k.startsWith('+') || b.dataset.k.startsWith('ce:')) return;
-    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); const x = shopRowOf(b.dataset.k); if(!x) return; pfSel.add(x.key); renderPfLists(); shopItemMenu(x); }, 550); });
+    t = setTimeout(() => { lp = true; navigator.vibrate?.(30); const x = shopRowOf(b.dataset.k); if(!x) return; pfSel.size ? (pfSel.has(x.key) ? pfSel.delete(x.key) : pfSel.add(x.key), renderPfLists()) : shopItemMenu(x); }, 550); });
   for(const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('pf-l-list').addEventListener(ev, () => clearTimeout(t));
   $('pf-l-list').addEventListener('pointermove', e => { if(Math.abs(e.movementY) > 4) clearTimeout(t); });
   $('pf-l-list').addEventListener('click', e => { if(lp){ lp = false; e.stopImmediatePropagation(); } }, true);
