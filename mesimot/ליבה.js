@@ -1390,7 +1390,7 @@ function filesAll(tasks, cfg){
     for(const f of t.docImages){
       if(!f || !f.path) continue;
       const type = fileType(f);
-      out.push(Object.assign({}, f, {type, name: f.kind === 'file' && f.name ? f.name : `${t.docName || t.title || 'מסמך'} · תמונה ${++pic}`,
+      out.push(Object.assign({}, f, {type, name: f.name ? (f.kind !== 'file' && ++pic, f.name) : `${t.docName || t.title || 'מסמך'} · תמונה ${++pic}`,
         addedAt: f.addedAt || t.updatedAt || null, src: t.id, srcName: t.docName || t.title || 'מסמך'}));
     }
   }
@@ -1417,25 +1417,68 @@ function phoneFilesRows(rows){
 }
 function phoneFilesView(rows, opts, today){ return filterFiles(Array.isArray(rows) && rows[0] && !Array.isArray(rows[0]) ? rows : phoneFilesRows(rows), opts, today); }
 function filesView(tasks, cfg, opts, today){ return filterFiles(filesAll(tasks, cfg), opts, today); }
+// opts מתקדם: minSize/maxSize (בייטים), dup (רק כפולים: אותו שם ואותו גודל), opened ({נתיב: ms} שנפתחו דרך האפליקציה), openedOnly,
+// dir (רק מתחת לתיקייה הזו). מיון: new, old, name, zname, size, small, type, folder, opened.
+const FILE_SORTS = [['new', 'חדש ← ישן'], ['old', 'ישן ← חדש'], ['name', 'שם א ← ת'], ['zname', 'שם ת ← א'], ['size', 'הכי גדולים'], ['small', 'הכי קטנים'],
+  ['type', 'לפי סוג'], ['folder', 'לפי תיקייה'], ['opened', 'נפתחו לאחרונה']];
+const FILE_SIZES = [['all', 'כל גודל', 0, 0], ['s1', 'עד 1MB', 0, 1 << 20], ['s10', '1–10MB', 1 << 20, 10 << 20], ['s100', '10–100MB', 10 << 20, 100 << 20],
+  ['b100', 'מעל 100MB', 100 << 20, 0], ['b1g', 'מעל 1GB', 1 << 30, 0]];
 function filterFiles(all, opts, today){
   opts = opts || {};
-  const q = String(opts.q || '').trim().toLowerCase();
-  const days = f => f.addedAt ? diffDays(today, localDate(toMs(f.addedAt))) : 99999;
-  const dateOf = f => f.addedAt ? localDate(toMs(f.addedAt)) : '';
-  const inTime = f => opts.time === 'range' ? (!opts.from || dateOf(f) >= opts.from) && (!opts.to || (dateOf(f) && dateOf(f) <= opts.to)) : fileAge(days(f), opts.time || 'all');
-  const base = all.filter(f => (!opts.src || opts.src === 'all' || f.src === opts.src) && (!q || (f.name + ' ' + f.srcName).toLowerCase().includes(q)));
+  const q = String(opts.q || '').trim().toLowerCase(), opened = opts.opened || {};
+  // תאריך וימים מחושבים פעם אחת לכל קובץ (ולא בכל ספירה): מהיר גם עם עשרות אלפי קבצים
+  for(const f of all) if(f._t !== today){ f._t = today; f.date = f.addedAt ? localDate(toMs(f.addedAt)) : ''; f.days = f.date ? diffDays(today, f.date) : 99999; }
+  const inTime = f => opts.time === 'range' ? (!opts.from || f.date >= opts.from) && (!opts.to || (f.date && f.date <= opts.to)) : fileAge(f.days, opts.time || 'all');
+  let dupKeys = null;
+  if(opts.dup){ const c = new Map(); for(const f of all){ const k = f.name.toLowerCase() + '|' + (+f.size || 0); c.set(k, (c.get(k) || 0) + 1); } dupKeys = c; }
+  const pre = opts.dir ? opts.dir + '/' : '';
+  const scope = pre ? all.filter(f => f.path.startsWith(pre)) : all;
+  const base = scope.filter(f => (!opts.src || opts.src === 'all' || f.src === opts.src) && (!q || (f.name + ' ' + f.srcName).toLowerCase().includes(q))
+    && (!(opts.minSize > 0) || (+f.size || 0) >= opts.minSize) && (!(opts.maxSize > 0) || (+f.size || 0) <= opts.maxSize)
+    && (!dupKeys || dupKeys.get(f.name.toLowerCase() + '|' + (+f.size || 0)) > 1) && (!opts.openedOnly || opened[f.path]));
   const counts = {time: {}, type: {}};
-  for(const [k] of FILE_TIMES) counts.time[k] = base.filter(f => (!opts.type || opts.type === 'all' || f.type === opts.type) && (k === 'range' ? inTime(f) : fileAge(days(f), k))).length;
+  const typed = base.filter(f => !opts.type || opts.type === 'all' || f.type === opts.type);
+  for(const [k] of FILE_TIMES) counts.time[k] = k === 'range' ? typed.filter(inTime).length : typed.filter(f => fileAge(f.days, k)).length;
   const timed = base.filter(inTime);
-  for(const [k] of FILE_TYPES) counts.type[k] = k === 'all' ? timed.length : timed.filter(f => f.type === k).length;
-  const list = timed.filter(f => !opts.type || opts.type === 'all' || f.type === opts.type).map(f => Object.assign(f, {days: days(f), date: dateOf(f)}));
-  const sort = opts.sort || 'new';
-  list.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name, 'he') : sort === 'size' ? (+b.size || 0) - (+a.size || 0)
-    : sort === 'old' ? String(a.addedAt || '').localeCompare(String(b.addedAt || '')) : String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
-  const sources = [...all.reduce((m, f) => m.set(f.src, [f.srcName, (m.get(f.src)?.[1] || 0) + 1]), new Map()).entries()].map(([k, [n, c]]) => [k, n, c]);
-  return {list, counts, total: all.length, size: list.reduce((n, f) => n + (+f.size || 0), 0), sources};
+  for(const [k] of FILE_TYPES) counts.type[k] = 0;
+  for(const f of timed) counts.type[f.type] = (counts.type[f.type] || 0) + 1;
+  counts.type.all = timed.length;
+  const list = timed.filter(f => !opts.type || opts.type === 'all' || f.type === opts.type);
+  const sort = opts.sort || 'new', at = f => String(f.addedAt || ''), dirOf = f => f.path.replace(/\/[^/]*$/, '');
+  const by = {
+    name: (a, b) => a.name.localeCompare(b.name, 'he'), zname: (a, b) => b.name.localeCompare(a.name, 'he'),
+    size: (a, b) => (+b.size || 0) - (+a.size || 0), small: (a, b) => (+a.size || 0) - (+b.size || 0),
+    old: (a, b) => at(a).localeCompare(at(b)), type: (a, b) => a.type.localeCompare(b.type) || at(b).localeCompare(at(a)),
+    folder: (a, b) => dirOf(a).localeCompare(dirOf(b), 'he') || a.name.localeCompare(b.name, 'he'),
+    opened: (a, b) => (opened[b.path] || 0) - (opened[a.path] || 0) || at(b).localeCompare(at(a)),
+  }[sort] || ((a, b) => at(b).localeCompare(at(a)));
+  if(dupKeys && sort === 'new') list.sort((a, b) => (a.name.toLowerCase() + a.size).localeCompare(b.name.toLowerCase() + b.size) || at(b).localeCompare(at(a)));
+  else list.sort(by);
+  const sources = [...scope.reduce((m, f) => m.set(f.src, [f.srcName, (m.get(f.src)?.[1] || 0) + 1]), new Map()).entries()].map(([k, [n, c]]) => [k, n, c]);
+  return {list, counts, total: scope.length, size: list.reduce((n, f) => n + (+f.size || 0), 0), sources};
 }
-const sizeText = b => !(b > 0) ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
+/** שורש האחסון של נתיב: /storage/emulated/0 (פנימי) או /storage/XXXX-XXXX (כרטיס זיכרון). */
+const fileRoot = p => (/^\/storage\/emulated\/\d+|^\/storage\/[^/]+|^\/sdcard/.exec(String(p)) || [''])[0];
+/** תיקייה: תת-התיקיות (עם מספר הקבצים, גודל וחדש ביותר, מתוך list) והקבצים שישירות בה. */
+function folderView(list, dir){
+  const pre = dir + '/', dirs = new Map(), files = [];
+  for(const f of list){
+    if(!f.path.startsWith(pre)) continue;
+    const rest = f.path.slice(pre.length), i = rest.indexOf('/');
+    if(i < 0){ files.push(f); continue; }
+    const n = rest.slice(0, i), d = dirs.get(n) || {path: pre + n, name: n, count: 0, size: 0, latest: ''};
+    d.count++; d.size += +f.size || 0; if(String(f.addedAt || '') > d.latest) d.latest = String(f.addedAt || '');
+    dirs.set(n, d);
+  }
+  return {dirs: [...dirs.values()].sort((a, b) => a.name.localeCompare(b.name, 'he')), files};
+}
+/** כל התיקיות שידועות מהרשימה (לבחירת יעד בהעברה), ממוינות. */
+function folderTree(list){
+  const set = new Set();
+  for(const f of list){ const r = fileRoot(f.path); if(!r) continue; let d = f.path.replace(/\/[^/]*$/, ''); while(d.length > r.length){ if(set.has(d)) break; set.add(d); d = d.replace(/\/[^/]*$/, ''); } set.add(r); }
+  return [...set].sort((a, b) => a.localeCompare(b, 'he'));
+}
+const sizeText = b => !(b > 0) ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : b < 1024 ** 3 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${(b / 1024 ** 3).toFixed(2)} GB`;
 
 /* ---------- חישוב קלוריות ---------- */
 // משימות/קלוריות.json: {v, foods, entries, acts, recipes, meals, weights, settings}. כל רשימה ממוזגת לפי id (מאוחר מנצח).
@@ -3006,7 +3049,7 @@ return {
   extractAmount, taskFromMail, newMailTasks,
   shortDate, longDate, describeRule, initialData,
   parseQuick, shopKey, shopId, shopAdd, shopBuy, shopSetCat, shopSuggest, shopQuick, SHOP_QUICK_MIN, shopUnit, shopQtyText, shopSetQty, SHOP_UNITS, SHOP_QTY_CHIPS, SHOP_QTY_STEP, shopList, shopGroups, shopText, shopInfo, shopMatch, sameWord, canonName, mergeShopFile,
-  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, FILE_TIMES, FILE_TYPES, fileType, filesAll, filesView, filterFiles, phoneFolder, phoneFilesRows, phoneFilesView, sizeText, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
+  SHOP_CATS, SHOP_CAT, shopSetCats, shopAddCat, shopNewCat, SHOP_CATALOG, shopRecord, shopAll, calendarUrl, calendarFor, FOODS, MEALS, addFoodDb, ACTIVITIES, CAL_DEFAULTS, mergeCaloriesFile, calFoods, foodGrams, foodKcal, foodSuggest, calSettings, weightOn, activityKcal, activityMinutes, calDay, calHistory, calEntry, recipeFood, kcalSeed, tenantCharge, tenantMsg, tenantBalance, parseTenantMsg, DOC_TYPES, OCCASIONS, occasionTitle, birthdayTask, docTask, birthdaysView, docsView, FILE_TIMES, FILE_TYPES, fileType, filesAll, filesView, filterFiles, FILE_SORTS, FILE_SIZES, fileRoot, folderView, folderTree, phoneFolder, phoneFilesRows, phoneFilesView, sizeText, upkeepTask, upkeepView, everyText, UPKEEP_EVERY, HE_MONTHS, RECIPE_CATS, mergeRecipesFile, guessRecipeCat, recipeCat, recipeKind, recipeImages, recipeImageGroup, imageOptions, imageTopics, topicImages, makeXlsx, zipStore, fmtQty, scaleLine, scaleServings, stepIngredients, sleepNights, idleGaps, napSuggest, stepsByDay, imageGroupOf, recipeEmojiOf, RECIPE_IMAGES, mergeTimersFile, liveTimers, timersDue, timerPayload, ingredientProduct, durationsIn, parseRecipeText, recipeText, cleanRecipe, calendarSpec, calendarDiff, mergeCalFile, REPEATS, repeatText, ruleFor, rruleOf, pushDue, pushKey, pushPayload, pruneSent, mergeSubsFile, liveSubs,
   foodProt, entryProt, prot100Of, LEAVE_RULES, leaveItems, aiFoodRequest, aiFoodParse, aiFoodMatch, AI_FOOD_PROMPT, calcEval, docxText, pdfLines,
   WORKOUT_LEVELS, WORKOUT_SAFETY, workoutState, workoutAdvice, EX_INFO, WARMUP, COOLDOWN, exSeconds, workoutTimeline,
   TENANT_DEFAULT, tenantCfg, calcElec, calcWater, calcArnona, calcCharge, tenantText, money, migrate,
